@@ -1,0 +1,28 @@
+# Normalización de finales de línea.
+#
+# Todo lo que ejecuta Linux dentro de los contenedores tiene que llegar con LF,
+# venga de donde venga el commit. Un .sh guardado con CRLF muere en el arranque
+# con «bad interpreter: /bin/bash^M», y el error no dice nada útil: el fichero
+# está ahí, se lee, y aun así no arranca.
+*                   text=auto
+
+*.sh                text eol=lf
+Dockerfile          text eol=lf
+*.conf              text eol=lf
+*.template          text eol=lf
+*.cnf               text eol=lf
+*.yml               text eol=lf
+*.yaml              text eol=lf
+.env.example        text eol=lf
+.env.docker         text eol=lf
+
+# Binarios: que Git no los toque.
+*.webp              binary
+*.png               binary
+*.jpg               binary
+*.jpeg              binary
+*.ico               binary
+*.woff              binary
+*.woff2             binary
+*.ttf               binary
+*.pdf               binary

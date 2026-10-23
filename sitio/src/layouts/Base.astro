@@ -1,0 +1,338 @@
+---
+import '../styles/global.css';
+import { obtenerConfiguracion, obtenerMenu, enVistaPrevia } from '../lib/api';
+import BotonWhatsapp from '../components/BotonWhatsapp.astro';
+import RedesSociales from '../components/RedesSociales.astro';
+import VolverArriba from '../components/VolverArriba.astro';
+import Cabecera from '../components/Cabecera.astro';
+import { ClientRouter } from 'astro:transitions';
+
+interface Props {
+    titulo: string;
+    descripcion?: string;
+    imagen?: string;
+    /** Objeto schema.org que se inyecta como JSON-LD en esta página. */
+    datos?: Record<string, unknown>;
+    /**
+     * Deja la página fuera de los buscadores. Para las que no son contenido
+     * sino herramienta: una página de resultados indexada compite con el
+     * contenido que ella misma enlaza.
+     */
+    sinIndexar?: boolean;
+    /**
+     * La página abre con una imagen a sangre y la cabecera se monta encima.
+     * Lo usa la portada; el resto lleva la cabecera como banda sólida.
+     */
+    sobreHero?: boolean;
+}
+
+const {
+    titulo,
+    descripcion,
+    imagen,
+    datos,
+    sinIndexar = false,
+    sobreHero = false,
+} = Astro.props;
+
+// Nada de esto está escrito en la plantilla a propósito: el nombre, el menú y
+// los datos de contacto se editan desde el panel. Si estuvieran aquí, cambiar
+// el correo de la oficina exigiría tocar código y desplegar.
+const sitio = await obtenerConfiguracion();
+const menu = await obtenerMenu();
+
+const contacto = sitio.contacto;
+
+const resumen = descripcion ?? sitio.descripcion ?? "";
+const canonica = new URL(Astro.url.pathname, Astro.site).href;
+const imagenSocial = imagen ?? undefined;
+
+// Ficha de la organización para buscadores. Sale de Configuración como todo
+// lo demás: si cambia el correo en el panel, cambia aquí también.
+const organizacion = {
+    "@context": "https://schema.org",
+    "@type": "EducationalOrganization",
+    name: sitio.nombre,
+    description: sitio.descripcion,
+    url: Astro.site?.href,
+    email: contacto.email,
+    telephone: contacto.telefono,
+    address: contacto.direccion,
+    sameAs: Object.values(sitio.redes),
+};
+const telefono = contacto.telefono;
+
+// Destinos internos del menú, aplanados, para la columna de navegación del pie.
+//
+// Antes el pie filtraba los elementos de primer nivel que tuvieran `enlace`. Al
+// agrupar la oferta bajo «Formación» casi todos pasaron a ser desplegables sin
+// enlace propio, y la columna se quedó con una sola entrada. Aplanando se
+// listan los destinos de verdad, y además aguanta cualquier reorganización que
+// haga la Unidad desde el panel sin volver a vaciarse.
+const enlacesDelPie = [
+    ...new Map(
+        menu
+            .flatMap((item) => [item, ...item.hijos])
+            .filter((i) => i.enlace?.startsWith('/') && !i.nueva_pestana)
+            .map((i) => [i.enlace!, { etiqueta: i.etiqueta, enlace: i.enlace! }])
+    ).values(),
+];
+---
+
+<!doctype html>
+<html lang="es">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        {/* En la portada el título de la página ES el nombre del sitio: repetirlo
+            daba «Oficina… · Oficina…» en la pestaña. */}
+        <title>{titulo === sitio.nombre ? titulo : `${titulo} · ${sitio.nombre}`}</title>
+        <meta name="description" content={resumen} />
+        <link rel="canonical" href={canonica} />
+
+        {/* El icono de la pestaña.
+            
+            Los archivos viven en `public/` del propio sitio y no se piden a
+            Laravel: el favicon es de lo primero que busca el navegador —y lo
+            pide a la raiz del dominio, antes de ejecutar nada—, asi que hacerlo
+            depender de otro origen es exponer la identidad del sitio a que ese
+            origen tarde o falle. Son 48 kB entre los tres.
+
+            Si la Unidad sube uno desde Configuración, ese manda: es lo que
+            significa tener el campo. Mientras no lo haga, el de la marca. */}
+        <link rel="icon" type="image/png" sizes="32x32" href={sitio.favicon ?? "/favicon-32.png"} />
+        <link rel="icon" type="image/png" sizes="512x512" href={sitio.favicon ?? "/favicon-512.png"} />
+        <link rel="apple-touch-icon" sizes="180x180" href={sitio.favicon ?? "/favicon-180.png"} />
+        {/* En vista previa, todas las páginas van sin indexar. El build de
+            vista previa sale a un directorio aparte que no se publica nunca, así
+            que esto es un cinturón sobre otro: si alguna vez alguien sirviera
+            ese directorio por error, al menos no acabaría en un buscador. */}
+        {(sinIndexar || enVistaPrevia) && <meta name="robots" content="noindex, nofollow" />}
+
+        {/* Transiciones entre páginas con la API nativa del navegador: se
+            sustituye el documento sin recargar, así el encabezado no parpadea
+            al navegar. Donde el navegador no la soporta, navega como siempre;
+            no hay nada que degradar. Respeta prefers-reduced-motion. */}
+        <ClientRouter />
+
+        {/* Open Graph: lo que se ve al compartir el enlace. Sin esto, un
+            enlace pegado en WhatsApp sale como texto pelado. */}
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content={sitio.nombre ?? ""} />
+        <meta property="og:title" content={titulo} />
+        <meta property="og:description" content={resumen} />
+        <meta property="og:url" content={canonica} />
+        {imagenSocial && <meta property="og:image" content={imagenSocial} />}
+        <meta name="twitter:card" content={imagenSocial ? "summary_large_image" : "summary"} />
+
+        {/* Datos estructurados. Siempre la organizacion; las paginas que lo
+            necesiten anaden el suyo por `datos`. */}
+        <script type="application/ld+json" set:html={JSON.stringify(organizacion)} />
+        {datos && <script type="application/ld+json" set:html={JSON.stringify(datos)} />}
+    </head>
+    <body class="flex min-h-screen flex-col bg-white text-slate-800 antialiased">
+        {/* Primer tabulador de la página: permite saltarse el menú entero, que
+            son 20 enlaces antes de llegar al contenido. */}
+        <a href="#contenido" class="saltar-al-contenido rounded-lg bg-unmsm-azul px-4 py-2 font-semibold text-white">
+            Saltar al contenido
+        </a>
+
+        {/* Aviso de vista previa. Va abajo y no arriba para no pelearse con la
+            cápsula, que es fija. Existe porque una vista previa es idéntica al
+            sitio real: sin este aviso, quien la abre no tiene forma de saber si
+            lo que ve ya está publicado. */}
+        {enVistaPrevia && (
+            <div
+                class="fixed inset-x-0 bottom-0 z-[60] flex flex-wrap items-center justify-center gap-x-3 gap-y-1 bg-amber-400 px-4 py-2 text-center text-xs font-semibold text-amber-950"
+                role="status"
+            >
+                <span>Vista previa · esto todavía NO está publicado</span>
+                <span class="font-normal opacity-80">
+                    Los borradores se ven aquí; en el sitio real, no.
+                </span>
+            </div>
+        )}
+        <Cabecera sitio={sitio} menu={menu} sobreHero={sobreHero} />
+
+        {/* La cabecera es una capsula flotante y no ocupa sitio en el flujo, asi
+            que sin este separador el contenido de la pagina arrancaria por
+            debajo de ella. En las paginas que abren con imagen a sangre el hero
+            ya reserva ese espacio, y la capsula flota encima. */}
+        {!sobreHero && <div class="separador-cabecera" aria-hidden="true" />}
+
+        <main id="contenido" class="flex-1">
+            <slot />
+        </main>
+
+        <script>
+            import { iniciarAnimaciones } from '../lib/animacion';
+
+            // `astro:page-load` cubre tambien la primera carga, asi que basta
+            // con escucharlo. GSAP no se descarga hasta que alguna pagina
+            // tiene algo que animar, y nunca si se pidio menos movimiento.
+            document.addEventListener('astro:page-load', iniciarAnimaciones);
+        </script>
+
+        {contacto.whatsapp && (
+            <BotonWhatsapp url={contacto.whatsapp} telefono={contacto.telefono} />
+        )}
+
+        <VolverArriba />
+
+        {/* Degradado y no color plano, como en el sitio anterior: el pie
+            desciende del casi negro con que termina la ultima seccion hasta el
+            azul institucional, en vez de aparecer como un bloque pegado. */}
+        <footer class="relative isolate bg-linear-to-b from-[#0C1217] via-[#0A1F33] to-unmsm-azul text-sm text-slate-300">
+            {/* Filo dorado que se desvanece por los extremos: el gesto que
+                separaba el pie del contenido. */}
+            <div class="marca-regla h-1 w-full" aria-hidden="true"></div>
+
+            {/* Textura muy tenue, sin imagen ni peticion: un resplandor blanco
+                arriba a la izquierda y uno dorado arriba a la derecha, que
+                evitan que el degradado se lea como un plano liso. */}
+            <div
+                aria-hidden="true"
+                class="pointer-events-none absolute inset-0 -z-10 opacity-[0.07]"
+                style="background-image:
+                    radial-gradient(circle at 15% 20%, #fff 0, transparent 45%),
+                    radial-gradient(circle at 85% 0%, #B6A350 0, transparent 40%);"
+            >
+            </div>
+
+            <div class="mx-auto max-w-6xl px-6 py-16">
+                <div class="grid gap-12 lg:grid-cols-12">
+                    {/* Quiénes somos: la marca, una línea de qué es esto, y las
+                        redes. */}
+                    <div class="lg:col-span-4">
+                        {/* Sobre el azul del pie el logotipo se fuerza a blanco
+                            con el mismo filtro que en la cabecera: servido tal
+                            cual saldria oscuro sobre oscuro. */}
+                        {sitio.logo ? (
+                            <img
+                                src={sitio.logo}
+                                alt={sitio.nombre}
+                                width="1234"
+                                height="310"
+                                loading="lazy"
+                                decoding="async"
+                                class="h-12 w-auto brightness-0 invert"
+                            />
+                        ) : (
+                            <p class="font-serif text-lg font-bold text-white">{sitio.nombre}</p>
+                        )}
+                        {sitio.descripcion && (
+                            <p class="mt-5 max-w-sm leading-relaxed text-slate-400">
+                                {sitio.descripcion}
+                            </p>
+                        )}
+
+                        <div class="mt-7">
+                            <h2 class="text-xs font-semibold uppercase tracking-[0.14em] text-white">
+                                Síguenos
+                            </h2>
+                            <div class="marca-degradado mt-2 h-0.5 w-8 rounded-full" aria-hidden="true"></div>
+                            <div class="mt-4">
+                                <RedesSociales redes={sitio.redes} forma="icono" />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Navegación: los destinos internos del menú, en dos
+                        columnas para que no salga una lista de doce de largo. */}
+                    <div class="lg:col-span-5 lg:pl-8">
+                        <h2 class="text-xs font-semibold uppercase tracking-[0.14em] text-white">
+                            Navegación
+                        </h2>
+                        <div class="marca-degradado mt-2 h-0.5 w-8 rounded-full" aria-hidden="true"></div>
+
+                        {/* `columns` y no `grid`: la rejilla reparte por filas,
+                            así que la primera columna quedaba con las entradas
+                            impares y la segunda con las pares, y ninguna de las
+                            dos se leía en el orden del menú. */}
+                        <ul class="mt-5 columns-2 gap-x-6 space-y-2.5">
+                            {enlacesDelPie.map((enlace) => (
+                                <li class="break-inside-avoid">
+                                    <a
+                                        href={enlace.enlace}
+                                        class="enlace-pie inline-block transition hover:translate-x-1 hover:text-white"
+                                    >
+                                        {enlace.etiqueta}
+                                    </a>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+
+                    {/* Contacto con cada dato etiquetado: en una lista corrida,
+                        un teléfono y un anexo sueltos no dicen cuál es cuál. */}
+                    <div class="lg:col-span-3">
+                        <h2 class="text-xs font-semibold uppercase tracking-[0.14em] text-white">
+                            Contacto
+                        </h2>
+                        <div class="marca-degradado mt-2 h-0.5 w-8 rounded-full" aria-hidden="true"></div>
+
+                        <dl class="mt-5 space-y-4">
+                            {contacto.direccion && (
+                                <div>
+                                    <dt class="text-[11px] font-medium uppercase tracking-wide text-slate-500">
+                                        Dirección
+                                    </dt>
+                                    <dd class="mt-1 leading-relaxed">{contacto.direccion}</dd>
+                                </div>
+                            )}
+
+                            {telefono && (
+                                <div>
+                                    <dt class="text-[11px] font-medium uppercase tracking-wide text-slate-500">
+                                        WhatsApp
+                                    </dt>
+                                    <dd class="mt-1">
+                                        {contacto.whatsapp ? (
+                                            <a href={contacto.whatsapp} target="_blank" rel="noopener noreferrer" class="hover:text-white">
+                                                {telefono}
+                                            </a>
+                                        ) : (
+                                            telefono
+                                        )}
+                                    </dd>
+                                </div>
+                            )}
+
+                            {contacto.email && (
+                                <div>
+                                    <dt class="text-[11px] font-medium uppercase tracking-wide text-slate-500">
+                                        Correo
+                                    </dt>
+                                    <dd class="mt-1">
+                                        <a
+                                            href={`mailto:${contacto.email}`}
+                                            class="break-all hover:text-white"
+                                        >
+                                            {contacto.email}
+                                        </a>
+                                    </dd>
+                                </div>
+                            )}
+
+                            {contacto.horario && (
+                                <div>
+                                    <dt class="text-[11px] font-medium uppercase tracking-wide text-slate-500">
+                                        Horario
+                                    </dt>
+                                    <dd class="mt-1 text-slate-400">{contacto.horario}</dd>
+                                </div>
+                            )}
+                        </dl>
+                    </div>
+                </div>
+
+                <p class="mt-14 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-6 text-xs text-slate-400">
+                    <span>
+                        © {new Date().getFullYear()} {sitio.nombre} · Universidad Nacional Mayor de
+                        San Marcos
+                    </span>
+                </p>
+            </div>
+        </footer>
+    </body>
+</html>

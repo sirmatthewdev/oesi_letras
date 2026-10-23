@@ -1,0 +1,94 @@
+---
+interface Props {
+    titulo: string;
+    bajada?: string;
+    /** Centrado como en la portada, o alineado a la izquierda en interiores. */
+    centrado?: boolean;
+    /** Texto pequeño en versalitas doradas sobre el título. */
+    kicker?: string;
+    claro?: boolean;
+    /**
+     * Va al <h2>. Lo necesitan las secciones que se anuncian con
+     * `aria-labelledby`: sin el, el atributo apunta a un id que no existe y el
+     * lector de pantalla anuncia la seccion sin nombre.
+     */
+    id?: string;
+}
+
+const { titulo, bajada, centrado = false, kicker, claro = false, id } = Astro.props;
+---
+
+<header class={centrado ? 'text-center' : ''}>
+    {
+        kicker && (
+            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-unmsm-dorado-light">
+                {kicker}
+            </p>
+        )
+    }
+
+    <h2
+        id={id}
+        class:list={[
+            'font-serif text-3xl font-bold tracking-tight',
+            kicker ? 'mt-2' : '',
+            claro ? 'text-white' : 'text-unmsm-azul',
+        ]}
+    >
+        {titulo}
+    </h2>
+
+    {/* La regla bajo el título es el gesto que identifica al sitio. Deja de ser
+        un dorado plano: recorre el degradado de marca —azul a dorado— y se
+        ensancha al entrar la sección, que es lo que la hace parecer parte del
+        movimiento y no un adorno pegado. */}
+    <div
+        class:list={[
+            'regla-marca marca-degradado mt-3 h-1 rounded-full',
+            centrado ? 'mx-auto' : '',
+        ]}
+        data-revelar
+        aria-hidden="true"
+    >
+    </div>
+
+    {
+        bajada && (
+            <p
+                class:list={[
+                    'mt-4 max-w-2xl text-lg',
+                    centrado ? 'mx-auto' : '',
+                    claro ? 'text-slate-200' : 'text-slate-600',
+                ]}
+            >
+                {bajada}
+            </p>
+        )
+    }
+</header>
+
+<style>
+    .regla-marca {
+        width: 4rem;
+    }
+
+    /* Al pasar por la cabecera de la seccion la regla se estira: un gesto
+       corto, sobre un elemento decorativo, que no mueve el texto de sitio. */
+    header:hover .regla-marca {
+        width: 6rem;
+    }
+
+    .regla-marca {
+        transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .regla-marca {
+            transition: none;
+        }
+
+        header:hover .regla-marca {
+            width: 4rem;
+        }
+    }
+</style>

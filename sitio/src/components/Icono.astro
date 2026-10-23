@@ -1,0 +1,31 @@
+---
+import type { IconDefinition } from '@fortawesome/fontawesome-svg-core';
+
+interface Props {
+    icono: IconDefinition;
+    clase?: string;
+    /** Texto para lectores de pantalla. Sin él, el icono es decorativo. */
+    etiqueta?: string;
+}
+
+const { icono, clase = 'h-4 w-4', etiqueta } = Astro.props;
+
+// FontAwesome resuelto en el build: se emite el <svg> con su `path` y no se
+// carga ni la hoja de estilos ni las fuentes de iconos, que son unos 100 KB en
+// la ruta crítica para pintar media docena de logotipos.
+const [ancho, alto, , , camino] = icono.icon;
+const d = Array.isArray(camino) ? camino.join(' ') : camino;
+---
+
+<svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox={`0 0 ${ancho} ${alto}`}
+    fill="currentColor"
+    class={clase}
+    role={etiqueta ? 'img' : undefined}
+    aria-label={etiqueta}
+    aria-hidden={etiqueta ? undefined : 'true'}
+>
+    {etiqueta && <title>{etiqueta}</title>}
+    <path d={d} />
+</svg>

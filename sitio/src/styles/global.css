@@ -1,0 +1,297 @@
+/* Las mismas familias y pesos que el sitio en Blade, auto-alojadas: Inter para
+   el texto, Playfair Display para los titulos y Merriweather para los
+   destacados. Sin peticiones a Google Fonts en la ruta critica. */
+@import "@fontsource/inter/latin-400.css";
+@import "@fontsource/inter/latin-500.css";
+@import "@fontsource/inter/latin-600.css";
+@import "@fontsource/inter/latin-700.css";
+@import "@fontsource/playfair-display/latin-600.css";
+@import "@fontsource/playfair-display/latin-700.css";
+@import "@fontsource/merriweather/latin-700.css";
+
+@import "tailwindcss";
+
+/* Tipografia para el HTML que llega del panel. Ese contenido se pinta con
+   set:html y no lleva clases: sin `prose`, los parrafos, listas y enlaces
+   salen sin estilo y habia que parchearlo con selectores sueltos por cada
+   pagina ([&_p]:mb-3 y compania), que se desincronizan entre si. */
+@plugin "@tailwindcss/typography";
+
+/* Paleta institucional, la misma del sitio en Blade: #143B63 con su escala.
+   Se declara aquí y no se importa de oesiletras/ a propósito — el sitio no
+   depende del árbol de Laravel para construirse. */
+@theme {
+    --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+    --font-serif: "Playfair Display", Merriweather, ui-serif, Georgia, serif;
+
+    --color-unmsm-azul: #143B63;
+    --color-unmsm-azul-light: #1C5287;
+    --color-unmsm-azul-dark: #0F2B48;
+    --color-unmsm-azul-soft: #88B8E7;
+    --color-unmsm-dorado: #B6A350;
+    --color-unmsm-dorado-light: #C9AA36;
+
+    /*
+     * El oscuro con el que arranca la banda de cifras, y con el que ahora
+     * termina el hero de la portada.
+     *
+     * Estaba escrito a mano en la banda. Se saca a variable porque el hero se
+     * apoya en el para que la costura entre los dos no se vea: si uno cambia y
+     * el otro no, aparece una linea horizontal a media pagina que nadie sabe de
+     * donde sale. Los degradados de la fotografia del hero tambien tiran de el
+     * —son este color desvaneciendose—, asi que son tres sitios.
+     */
+    --color-fondo-hondo: #0F1B26;
+
+    /* El gesto que identificaba al sitio anterior: azul institucional a
+       dorado, a 135°. Estaba escrito a mano en tres plantillas —los avatares
+       de autoridades y de profesores— con los mismos valores repetidos; aquí
+       se declara una vez y se usa por nombre. */
+    /*
+     * Alto que ocupa la cabecera flotante: barra de contacto (2.5rem) + hueco
+     * (1rem) + capsula en su estado ancho (4rem).
+     *
+     * Es un valor FIJO a proposito, aunque la capsula se encoja al bajar: el
+     * separador que reserva este hueco no debe encogerse con ella, o la pagina
+     * entera daria un salto de 0.5rem justo al empezar a rodar la rueda.
+     */
+    --alto-cabecera: 7.5rem;
+
+    /*
+     * Degradado de la banda ancha: azul profundo a dorado, en diagonal.
+     *
+     * No es `--degradado-marca` porque ese termina en el dorado de marca
+     * (#B6A350), y sobre el dorado a plena luz el texto blanco se queda en un
+     * contraste de mesa camilla. Aqui el dorado esta rebajado y llega solo al
+     * ultimo tramo, que es donde no hay parrafo sino el boton. El degradado de
+     * marca sigue siendo el de los filos y los aros, donde no hay texto encima.
+     */
+    /* La inclinacion sale fuera para que quien lo use pueda cambiarla sin
+       reescribir las paradas de color: las tarjetas de programa sin fotografia
+       reparten cuatro inclinaciones entre ellas, y con el angulo escrito aqui
+       dentro habrian tenido que copiarse el degradado entero. Por defecto, la
+       de siempre. */
+    --degradado-banda: linear-gradient(
+        var(--angulo-banda, 115deg),
+        var(--color-unmsm-azul-dark) 0%,
+        var(--color-unmsm-azul) 36%,
+        /* Un paso intermedio a propósito: interpolando en sRGB de azul a dorado
+           el centro sale gris sucio, y con este apoyo el paso se lee como una
+           transición y no como una mancha. */
+        #4A5545 70%,
+        #7A6730 100%
+    );
+
+    --degradado-marca: linear-gradient(135deg, var(--color-unmsm-azul-dark) 0%, var(--color-unmsm-dorado) 100%);
+    --degradado-marca-suave: linear-gradient(
+        135deg,
+        color-mix(in oklab, var(--color-unmsm-azul) 6%, transparent) 0%,
+        color-mix(in oklab, var(--color-unmsm-dorado) 10%, transparent) 100%
+    );
+    /* La regla dorada que separaba secciones en el pie: se desvanece por los
+       dos extremos en vez de cortarse en seco. */
+    --regla-dorada: linear-gradient(90deg, transparent, var(--color-unmsm-dorado), transparent);
+}
+
+/*
+ * Utilidades del degradado de marca.
+ *
+ * Se declaran como clases y no se repiten en cada componente: el sitio en
+ * Blade tenía el mismo `linear-gradient(135deg, #103050, #B6A350)` copiado en
+ * tres plantillas, y cambiarlo exigía acordarse de las tres.
+ */
+@utility marca-degradado {
+    background-image: var(--degradado-marca);
+}
+
+@utility marca-degradado-suave {
+    background-image: var(--degradado-marca-suave);
+}
+
+/* El de la banda ancha, que es el que admite texto encima: el dorado llega
+   rebajado y solo al ultimo tramo. Lo usan la banda de la portada y el fondo de
+   las tarjetas de programa sin fotografia. */
+@utility marca-degradado-banda {
+    background-image: var(--degradado-banda);
+}
+
+@utility marca-regla {
+    background-image: var(--regla-dorada);
+}
+
+/*
+ * Borde degradado sin envolver el elemento en otro: el fondo pinta el borde y
+ * una máscara recorta el interior. Es lo que permite que una tarjeta tenga
+ * filo dorado sin perder su fondo blanco ni añadir marcado.
+ */
+@utility marca-filo {
+    position: relative;
+}
+
+@utility marca-filo-borde {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: var(--degradado-marca);
+    -webkit-mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+    mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+}
+
+/*
+ * Las anclas de la propia pagina se recorren, no se saltan.
+ *
+ * «Ver cursos» en el hero baja hasta «Formación abierta», que esta mil y pico
+ * pixeles mas abajo, y «Ver la oferta» hace lo mismo en los listados. De golpe,
+ * el salto no se lee como un desplazamiento sino como un cambio de pagina: el
+ * visitante pierde de vista de donde venia y tiene que reconstruir donde esta.
+ * Recorriendolo, el gesto se entiende.
+ *
+ * No lleva media query propia: el bloque de `prefers-reduced-motion` de mas
+ * abajo ya devuelve esto a `auto` para quien pide menos movimiento, que es
+ * justo a quien un desplazamiento animado puede marear.
+ *
+ * El destino de cada ancla se aparta de la cabecera fija con su propio
+ * `scroll-mt`; se hace ahi y no con un `scroll-padding-top` aqui porque las
+ * anclas de /tramites ya traian el suyo y los dos se sumarian.
+ */
+html {
+    scroll-behavior: smooth;
+}
+
+/*
+ * Menu plegable: el boton solo existe en pantallas estrechas. Abrir y cerrar
+ * lo hace el atributo `open` —ver el script del layout—, no CSS: `open` es un
+ * atributo y no se puede forzar desde una hoja de estilos.
+ */
+@media (min-width: 40rem) {
+    .nav-plegable > summary {
+        display: none;
+    }
+}
+
+/*
+ * Foco visible en todo lo enfocable.
+ *
+ * Tailwind quita el contorno por defecto del navegador y no lo repone: quien
+ * navega con tabulador se queda sin saber donde esta. Es un requisito de WCAG
+ * (2.4.7), no un detalle estetico, y en el sitio de una entidad publica suele
+ * ser exigible.
+ *
+ * `:focus-visible` y no `:focus`: el anillo aparece al tabular, no al hacer
+ * clic con el raton.
+ */
+:where(a, button, summary, [tabindex]):focus-visible {
+    outline: 3px solid var(--color-unmsm-dorado-light);
+    outline-offset: 3px;
+    border-radius: 2px;
+}
+
+/* Sobre fondo azul el dorado se ve; sobre fondo claro, el azul contrasta mas. */
+:where(.bg-white, .bg-slate-50) :where(a, button, summary):focus-visible {
+    outline-color: var(--color-unmsm-azul);
+}
+
+/* Respeta a quien pide menos movimiento en el sistema. */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+/* Salto al contenido: primer tabulador de la pagina, oculto hasta enfocarse. */
+.saltar-al-contenido {
+    position: absolute;
+    left: -9999px;
+    z-index: 999;
+}
+
+.saltar-al-contenido:focus {
+    left: 1rem;
+    top: 1rem;
+}
+
+/*
+ * Desvelado al entrar en pantalla, con animaciones ligadas al scroll del
+ * propio navegador.
+ *
+ * Sin IntersectionObserver y sin libreria: `animation-timeline: view()` lo
+ * resuelve el compositor, asi que no hay JavaScript en el hilo principal ni
+ * riesgo de repetir el fallo del umbral mal puesto que dejo invisibles los 39
+ * cursos en el sitio de Blade.
+ *
+ * Va dentro de @supports: donde el navegador no lo soporte, el contenido se
+ * ve sin mas. Nunca al reves —nada de ocultarlo primero y confiar en que algo
+ * lo revele—, que es como se llega a una pagina en blanco.
+ */
+@media (prefers-reduced-motion: no-preference) {
+    @supports (animation-timeline: view()) {
+        .aparece {
+            animation: aparecer linear both;
+            animation-timeline: view();
+            animation-range: entry 10% cover 28%;
+        }
+    }
+}
+
+@keyframes aparecer {
+    from {
+        opacity: 0;
+        transform: translateY(18px);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+/*
+ * Hueco de la cabecera flotante.
+ *
+ * La capsula es `fixed` y no ocupa sitio en el flujo, asi que las paginas que no
+ * abren con imagen a sangre necesitan que alguien les reserve ese alto. No se
+ * anima: si encogiera con la capsula, la pagina daria un salto al empezar a
+ * rodar la rueda.
+ */
+.separador-cabecera {
+    height: var(--alto-cabecera);
+    /*
+     * Banda oscura, no un hueco en blanco.
+     *
+     * Arriba la capsula es transparente y su texto va en blanco, asi que
+     * necesita algo oscuro detras. En las paginas con hero lo pone el hero, que
+     * sube a taparla; en las que no lo tienen —busqueda, 404, la ficha de un
+     * docente— este separador es lo unico que hay, y sin color la navegacion
+     * seria texto blanco sobre fondo blanco. Es la garantia de que ninguna
+     * pagina, ni las que se anadan despues, pueda quedarse sin cabecera legible.
+     */
+    background-color: var(--color-unmsm-azul-dark);
+}
+
+/*
+ * El hero de las paginas interiores se traga ese separador y se coloca debajo de
+ * la capsula, para que flote sobre la banda azul igual que sobre la portada.
+ *
+ * Se resuelve aqui, en el propio hero, y no pasando una bandera desde cada
+ * pagina: son diez paginas las que lo usan y todas lo ponen en primer lugar, asi
+ * que una bandera por pagina seria diez sitios donde olvidarla. El margen
+ * negativo sube la banda y el relleno devuelve el contenido a su posicion, de
+ * modo que la altura total del documento no cambia.
+ */
+.hero-pagina {
+    margin-top: calc(-1 * var(--alto-cabecera));
+    padding-top: var(--alto-cabecera);
+}

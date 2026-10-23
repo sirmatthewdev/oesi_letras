@@ -1,0 +1,14 @@
+---
+/**
+ * Paso 1 de la inscripción: la publicación del mes con las fechas.
+ *
+ * Mientras la oficina no publique, «próximamente» (ver `Proximamente`).
+ */
+import PaginaOesi from '../components/oesi/PaginaOesi.astro';
+import Proximamente from '../components/oesi/Proximamente.astro';
+import { obtenerOesi } from '../lib/api';
+
+const oesi = await obtenerOesi();
+---
+
+{oesi ? <PaginaOesi oesi={oesi} pagina="cronograma" /> : <Proximamente />}

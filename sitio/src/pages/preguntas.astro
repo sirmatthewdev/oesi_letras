@@ -1,0 +1,14 @@
+---
+/**
+ * Las preguntas frecuentes, por tema y con buscador.
+ *
+ * Mientras la oficina no publique, «próximamente» (ver `Proximamente`).
+ */
+import PaginaOesi from '../components/oesi/PaginaOesi.astro';
+import Proximamente from '../components/oesi/Proximamente.astro';
+import { obtenerOesi } from '../lib/api';
+
+const oesi = await obtenerOesi();
+---
+
+{oesi ? <PaginaOesi oesi={oesi} pagina="preguntas" /> : <Proximamente />}

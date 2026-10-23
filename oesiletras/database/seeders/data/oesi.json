@@ -1,0 +1,344 @@
+{
+    "_fuente": "Landing de la OESI publicada en letras.unmsm.edu.pe (HTML, CSS y OESI_CONFIG), migrada el 20-10-2026. Los textos son los de la fuente; ** ** marca lo que la fuente ponía en negrita. La oficina validó el contenido, las cifras y los enlaces de San Market el 20-10-2026: entra publicado.",
+
+    "estado": "publicado",
+
+    "nombre": "Oficina de Examen de Suficiencia en Idiomas",
+    "institucion": "Facultad de Letras y Ciencias Humanas · UNMSM",
+    "bajada": null,
+    "whatsapp_numero": "51914033108",
+    "whatsapp_mensaje": "Hola, quiero consultar sobre el examen de suficiencia",
+    "email": "examensuficiencia.flch@unmsm.edu.pe",
+    "horario": "Lun–Vie 9:00–13:00 / 14:00–17:00",
+    "redes": [
+        { "red": "facebook", "url": "https://www.facebook.com/share/1ASMCppqmD/" },
+        { "red": "instagram", "url": "https://www.instagram.com/oesidiomas.unmsm/" },
+        { "red": "whatsapp", "url": "https://whatsapp.com/channel/0029Vb7DK3gDjiObIzW5Cz12" }
+    ],
+
+    "descripcion": "Oficina de Examen de Suficiencia en Idiomas de la Facultad de Letras y Ciencias Humanas de la Universidad Nacional Mayor de San Marcos.",
+    "logo_path": null,
+    "favicon_path": null,
+    "direccion": null,
+    "web_facultad": "https://letras.unmsm.edu.pe",
+
+    "estadisticas": [
+        { "valor": 2500, "prefijo": "", "sufijo": "+", "etiqueta": "Exámenes tomados" },
+        { "valor": 15, "prefijo": "", "sufijo": "", "etiqueta": "Idiomas disponibles" },
+        { "valor": 98, "prefijo": "", "sufijo": "%", "etiqueta": "Satisfacción" },
+        { "valor": 12, "prefijo": "", "sufijo": "", "etiqueta": "Años de trayectoria" }
+    ],
+    "estadisticas_verificadas": true,
+
+    "curso_titulo": "Curso CEID — Inglés",
+    "curso_bajada": "Prepárate para rendir tu examen de suficiencia con nuestro curso especializado.",
+    "curso_imagen": "https://letras.unmsm.edu.pe/wp-content/uploads/2026/06/Curso-de-preparacion-para-rendir-el-examen-de-suficiencia.png",
+    "curso_imagen_alt": "Flyer del curso de preparación para el examen de suficiencia",
+    "curso_url": "https://ceidletras.unmsm.edu.pe/preparacion-suficiencia-ingles/",
+    "curso_whatsapp_numero": "51982086196",
+    "curso_whatsapp_mensaje": "Hola quisiera información",
+
+    "examen_objetivo": "El examen de suficiencia tiene como objetivo general medir el grado de dominio de una lengua para su certificación. Las lenguas para evaluar son extranjeras, nativa u originaria como primera o segunda lengua; también el español como segunda lengua para extranjeros.",
+    "examen_destinatarios": [
+        "Estudiantes de pre y posgrado para el trámite de grados y títulos",
+        "Estudiantes y docentes de la universidad para los programas de intercambio",
+        "Docentes ordinarios de la universidad para su ratificación en la categoría",
+        "Docentes para los procesos de contratación o nombramiento",
+        "Estudiantes y público en general para becas de estudio",
+        "Público en general para trabajo",
+        "Otros que el usuario requiera"
+    ],
+    "examen_jurado": "La evaluación y calificación resultante es emitida por el Jurado de Exámenes de Suficiencia y es inapelable.",
+
+    "escala_intro": "Para la certificación de suficiencia de un idioma, los niveles son los siguientes:",
+    "escala": [
+        {
+            "letra": "A",
+            "nivel": "Básico",
+            "rango": "12–14",
+            "subniveles": [
+                { "codigo": "A1", "nota": "12", "descripcion": "Nivel inicial" },
+                { "codigo": "A2", "nota": "13–14", "descripcion": "Nivel básico" }
+            ]
+        },
+        {
+            "letra": "B",
+            "nivel": "Intermedio",
+            "rango": "15–17",
+            "subniveles": [
+                { "codigo": "B1", "nota": "15", "descripcion": "Nivel intermedio bajo" },
+                { "codigo": "B2", "nota": "16–17", "descripcion": "Nivel intermedio alto" }
+            ]
+        },
+        {
+            "letra": "C",
+            "nivel": "Avanzado",
+            "rango": "18–20",
+            "subniveles": [
+                { "codigo": "C1", "nota": "18", "descripcion": "Nivel avanzado bajo" },
+                { "codigo": "C2", "nota": "19–20", "descripcion": "Nivel avanzado alto" }
+            ]
+        }
+    ],
+
+    "vigencia_intro": "El certificado cuenta con un periodo de validez según el nivel alcanzado:",
+    "vigencia": [
+        { "nivel": "Básico A2", "vigencia": "1 año calendario" },
+        { "nivel": "Intermedio B1", "vigencia": "3 años calendario" },
+        { "nivel": "Intermedio B2", "vigencia": "5 años calendario" },
+        { "nivel": "Avanzado C1, C2", "vigencia": "7 años calendario" }
+    ],
+    "vigencia_nota": "Vencido el periodo de vigencia, el estudiante deberá someterse a un nuevo examen de suficiencia.",
+
+    "resultados_aprobados": "El examinado que ha **aprobado** el examen recibirá su certificado después de **diez días hábiles** de haber rendido la prueba. Este se enviará al correo registrado en el formulario.",
+    "resultados_desaprobados": "El examinado **desaprobado** o que no alcanzó el nivel deseado podrá rendir otra prueba, pagando por un nuevo derecho de examen.",
+    "resultados_virtual": "En los casos de la modalidad virtual, si el jurado observa incongruencias en el desarrollo del examen, puede anularlo.",
+
+    "requisitos": "Contar con estudios del nivel **BÁSICO COMPLETO** de un centro de idiomas, instituto, colegio bilingüe o mediante un examen internacional reconocido.",
+
+    "habilidades_intro": "El examen de suficiencia evalúa cuatro habilidades lingüísticas fundamentales para certificar el dominio del idioma.",
+    "habilidades": [
+        {
+            "titulo": "Comprensión Lectora",
+            "icono": "lectura",
+            "descripcion": "Capacidad para obtener información general y específica de textos diversos (sobre temas generales y/o académicos específicos)."
+        },
+        {
+            "titulo": "Producción Escrita",
+            "icono": "escritura",
+            "descripcion": "Habilidad para redactar un texto en el idioma de la evaluación, mediante la producción de secuencias verbales conectadas de manera lógica y coherente para comunicar con claridad un tema determinado en su expresión escrita."
+        },
+        {
+            "titulo": "Comprensión Auditiva",
+            "icono": "audicion",
+            "descripcion": "Competencia de análisis, síntesis e interpretación de los mensajes percibidos oralmente, es decir, comprende información oral específica, global o la opinión del interlocutor."
+        },
+        {
+            "titulo": "Producción Oral",
+            "icono": "oral",
+            "descripcion": "Capacidad de expresión oral mediante la comunicación espontánea y formal por indicadores de fluidez, organización de unidades significativas según los marcos personales, culturales y académicos adquiridos."
+        }
+    ],
+
+    "modalidades_intro": "El examen de suficiencia se ofrece en dos modalidades: presencial y virtual. Conoce las indicaciones para cada una.",
+    "modalidades": [
+        {
+            "modalidad": "presencial",
+            "titulo": "Modalidad Presencial",
+            "icono": "presencial",
+            "subtitulo": "Examen Ordinario Presencial",
+            "introduccion": "El examinado debe considerar las siguientes indicaciones:",
+            "reglas": [
+                "Ingresar con **veinte minutos** de anticipación a la sala asignada.",
+                "Identificarse con su **DNI** u otro documento de identidad válido y firmar su asistencia."
+            ],
+            "nota": "**Nota:** El número de aula se envía por correo un día antes del examen. **Local:** Ciudad Universitaria – Facultad de Letras (Ref. Puerta 03)",
+            "nota_tipo": "informacion"
+        },
+        {
+            "modalidad": "virtual",
+            "titulo": "Modalidad Virtual",
+            "icono": "virtual",
+            "subtitulo": "Sobre la conectividad",
+            "introduccion": null,
+            "reglas": [
+                "Se recomienda conectarse a internet mediante **cable físico**.",
+                "Cuente con una **computadora o laptop**, no se puede rendir el examen con celular o tablet.",
+                "Verifique el correcto funcionamiento de la **cámara y el micrófono**.",
+                "**No se permite** el uso de audífonos.",
+                "En el ambiente donde rendirá el examen no debe haber otra persona ni escucharse ruidos."
+            ],
+            "nota": "Si el evaluado no cumple con estos requisitos, el examen puede ser anulado u observado. Es responsabilidad del evaluado cumplir con estas condiciones.",
+            "nota_tipo": "aviso"
+        },
+        {
+            "modalidad": "virtual",
+            "titulo": "Antes de iniciar la evaluación",
+            "icono": "antes",
+            "subtitulo": null,
+            "introduccion": null,
+            "reglas": [
+                "Ingrese **15 minutos antes** al enlace meet enviado al correo electrónico. Si ingresa tarde, perderá su derecho de examen.",
+                "El jurado enviará a los correos el enlace **una hora antes** del examen.",
+                "Ingrese con sus **apellidos y nombres**.",
+                "Muestre al jurado su **DNI** para la identificación de su identidad.",
+                "**No use fondo de pantalla**."
+            ],
+            "nota": null,
+            "nota_tipo": "informacion"
+        },
+        {
+            "modalidad": "virtual",
+            "titulo": "Durante el examen",
+            "icono": "durante",
+            "subtitulo": null,
+            "introduccion": null,
+            "reglas": [
+                "La cámara debe estar **encendida** durante todo el desarrollo de la evaluación.",
+                "Si apaga la cámara, abandona el lugar o conversa con otra persona, se procederá a la **anulación** de la evaluación.",
+                "Si pierde conectividad, el examen será **anulado**. Es su responsabilidad contar con buena señal y equipo adecuado."
+            ],
+            "nota": null,
+            "nota_tipo": "informacion"
+        }
+    ],
+
+    "cronograma_intro": "Fechas programadas para los exámenes de suficiencia. Esta imagen se actualiza cada mes; si no llegara a cargar, usa el enlace de respaldo o escríbenos por WhatsApp.",
+    "cronograma_imagen": "https://letras.unmsm.edu.pe/wp-content/uploads/2026/09/CRONOGRAMA-OESI-21-28-SEP.png",
+    "cronograma_imagen_alt": "Cronograma de exámenes de suficiencia",
+    "cronograma_aviso": "Las fechas son las de la publicación vigente. Confírmalas antes de pagar: ante cualquier duda, escríbenos por WhatsApp o al correo.",
+    "cronograma_formularios": [
+        { "nombre": "Pregrado", "url": "https://forms.gle/1w1ySuaFFfbPb1Ff9" },
+        { "nombre": "Posgrado", "url": "https://forms.gle/QZguJrD9xmQd5DqYA" }
+    ],
+
+    "inscripcion_intro": "Conoce los pasos, costos y documentos necesarios para inscribirte al examen de suficiencia.",
+    "proceso_imagen_1": "https://letras.unmsm.edu.pe/wp-content/uploads/2023/02/proceso-de-insc_c.png",
+    "proceso_imagen_1_alt": "Pasos del proceso de inscripción",
+    "proceso_imagen_2": "https://letras.unmsm.edu.pe/wp-content/uploads/2023/02/proceso-de-insc-c2.png",
+    "proceso_imagen_2_alt": "Pasos finales del proceso de inscripción",
+    "medio_pago_imagen": "https://letras.unmsm.edu.pe/wp-content/uploads/2025/04/medio-pago.jpg",
+    "medio_pago_imagen_alt": "Medio de pago",
+
+    "costos_intro": "El pago realizado es a nombre del examinado y tiene validez solo para un examen. Las cantidades a abonar se muestran a continuación:",
+    "costos": [
+        { "concepto": "Extraordinario virtual para Licenciatura, Maestría, Doctorado, Segunda especialidad u otros", "monto": 300 },
+        { "concepto": "Ordinario presencial para Licenciatura, Maestría, Doctorado, Segunda especialidad u otros", "monto": 200 },
+        { "concepto": "Extraordinario presencial para Licenciatura, Maestría, Doctorado, Segunda especialidad u otros", "monto": 300 },
+        { "concepto": "Ordinario presencial para bachiller", "monto": 100 },
+        { "concepto": "Ordinario presencial para bachiller (FLCH)", "monto": 50 }
+    ],
+
+    "pago_banco": "Banco de Crédito del Perú (BCP)",
+    "pago_codigo": "Código de pago en **San Market**",
+    "pago_advertencias": [
+        "**No se acepta transferencia bancaria.**",
+        "En el BCP, todo pago se realizará a Universidad Nacional Mayor de San Marcos como pago de servicios. La oficina tampoco se responsabiliza si no se registra el concepto de pago correcto."
+    ],
+
+    "tarifario": [
+        {
+            "concepto": "Examen Ordinario (Presencial o Virtual)",
+            "monto": 200,
+            "url_pago": "https://sanmarket.unmsm.edu.pe/#/catalogo/10ca399c-2e8c-4149-a3f6-5a4eea239a7a",
+            "distintivo": "Más popular"
+        },
+        {
+            "concepto": "Examen Extraordinario (Presencial o Virtual)",
+            "monto": 300,
+            "url_pago": "https://sanmarket.unmsm.edu.pe/#/catalogo/60c6e0d4-e89e-4b9c-b3b4-5cf28cbba845",
+            "distintivo": null
+        },
+        {
+            "concepto": "Examen de Suficiencia Presencial para Bachiller",
+            "monto": 100,
+            "url_pago": "https://sanmarket.unmsm.edu.pe/#/catalogo/40fba915-602f-4108-a195-c735b1ef124b",
+            "distintivo": null
+        },
+        {
+            "concepto": "Examen de Suficiencia Presencial para Bachiller (FLCH)",
+            "monto": 50,
+            "url_pago": "https://sanmarket.unmsm.edu.pe/#/catalogo/f3d8cd22-201a-4743-9103-4f9e32b27737",
+            "distintivo": null
+        },
+        {
+            "concepto": "Duplicado de Certificado",
+            "monto": 100,
+            "url_pago": "https://sanmarket.unmsm.edu.pe/#/catalogo/72fc7639-34f5-4193-a774-34c1d65da72d",
+            "distintivo": null
+        }
+    ],
+    "tarifario_nota": "Si un botón de pago no funciona, es señal de que el enlace de San Market cambió de código: por favor avisa a la oficina para actualizarlo.",
+
+    "documentos": [
+        "Recibo de pago en formato PDF.",
+        "Copia del DNI (documento nacional de identidad) por ambos lados, carné de extranjería o pasaporte en formato PDF.",
+        "Declaración jurada de estudios mínimo básico completo (el modelo se encuentra en el formulario)."
+    ],
+    "formularios": [
+        { "nombre": "Formulario para posgrado", "url": "https://forms.gle/otuxExVEdg8NX4M89" },
+        { "nombre": "Formulario para bachilleres", "url": "https://forms.gle/tL38aMvUtR7XzAnbA" },
+        { "nombre": "Solicitud de duplicado", "url": "https://forms.gle/stPNDN1qJTkwrHcNA" }
+    ],
+    "inscripcion_cierre": "Se debe llenar el formato en línea con todos los datos requeridos.",
+
+    "faqs_intro": "Resuelve tus dudas sobre el examen de suficiencia en idiomas. Toca una pregunta para ver la respuesta.",
+    "faqs": [
+        {
+            "pregunta": "¿Con qué frecuencia se realizan los exámenes?",
+            "categoria": "fechas",
+            "respuesta": "Se realizan exámenes cada mes. Puede consultar las fechas en la sección de cronograma o consultar a través de nuestro número de WhatsApp.",
+            "lista": []
+        },
+        {
+            "pregunta": "¿Cuántas veces puedo realizar el examen de suficiencia?",
+            "categoria": "resultados",
+            "respuesta": "Es ilimitado. Puede volver a tomar el examen cuantas veces sean necesarias.",
+            "lista": []
+        },
+        {
+            "pregunta": "Si he tomado un curso en el centro de idiomas u otras instituciones, ¿es necesario tomar el examen de suficiencia?",
+            "categoria": "requisitos",
+            "respuesta": "Sí, es necesario. El certificado que emitimos es válido para realizar gestiones de pregrado y posgrado.",
+            "lista": []
+        },
+        {
+            "pregunta": "En caso de tener una emergencia, ¿puedo reprogramar mis exámenes?",
+            "categoria": "fechas",
+            "respuesta": "En caso tenga una emergencia y no pueda asistir al examen deberá enviar por correo una solicitud de reprogramación justificando por qué no pudo o podrá asistir. El plazo máximo para mandar la solicitud es un día después del examen. En caso no se nos notifique, perderá su derecho de examen y deberá abonar nuevamente para tomar otro examen. Solo se puede solicitar una (1) reprogramación.",
+            "lista": []
+        },
+        {
+            "pregunta": "¿Cómo puedo confirmar mi inscripción?",
+            "categoria": "inscripcion",
+            "respuesta": "Le llegará una copia de su formulario una vez lo haya completado.",
+            "lista": []
+        },
+        {
+            "pregunta": "¿Debo adjuntar mis certificados de idiomas en el formulario?",
+            "categoria": "requisitos",
+            "respuesta": "No es necesario adjuntar su certificado. En el formulario solo deberá firmar una declaración jurada con la fecha en la que realizó sus estudios y dónde fue.",
+            "lista": []
+        },
+        {
+            "pregunta": "¿Cómo puedo saber cuál fue mi calificación?",
+            "categoria": "resultados",
+            "respuesta": "El jurado nos entrega las notas entre 2 a 3 días hábiles. En caso repruebe se le enviará un mensaje por correo con su calificación. Caso contrario podrá consultarlo a nuestro número de WhatsApp o por correo.",
+            "lista": []
+        },
+        {
+            "pregunta": "¿Puedo realizar el pago el mismo día del examen?",
+            "categoria": "inscripcion",
+            "respuesta": "No, las inscripciones cierran un día antes del examen al mediodía.",
+            "lista": []
+        },
+        {
+            "pregunta": "¿Cómo puedo solicitar una devolución?",
+            "categoria": "inscripcion",
+            "respuesta": "El proceso para que pueda solicitar la devolución de su dinero se hace por el MAT y debe de poner \"Devolución de dinero\", eso automáticamente lo deriva a la mesa de partes de la FLCH y debe de adjuntar los siguientes archivos: su FUT, su DNI en PDF, sus vouchers y la cuenta a la que se va a depositar. Demora máximo 1 mes.",
+            "lista": []
+        },
+        {
+            "pregunta": "¿Cuál es la diferencia entre modalidad extraordinaria y ordinaria?",
+            "categoria": "fechas",
+            "respuesta": "Los exámenes en modalidad extraordinaria se abren a partir de 1 persona, mientras que los exámenes ordinarios se abren a partir de 10 personas.",
+            "lista": []
+        },
+        {
+            "pregunta": "¿Cuánto tiempo de vigencia tiene mi voucher?",
+            "categoria": "inscripcion",
+            "respuesta": "El voucher es válido únicamente durante el año en curso (hasta el 31 de diciembre del año actual).",
+            "lista": []
+        },
+        {
+            "pregunta": "¿Debo tener estudios previos para tomar el examen?",
+            "categoria": "requisitos",
+            "respuesta": "Sí, para rendir el examen de suficiencia es requisito haber completado el nivel Básico en uno de los siguientes:",
+            "lista": [
+                "Un centro de idiomas certificado.",
+                "Un instituto o colegio bilingüe certificado.",
+                "Un examen internacional reconocido."
+            ]
+        }
+    ]
+}

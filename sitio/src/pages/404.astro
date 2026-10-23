@@ -1,0 +1,73 @@
+---
+import Base from '../layouts/Base.astro';
+import Boton from '../components/Boton.astro';
+import { obtenerConfiguracion } from '../lib/api';
+import { iconoDeAccion } from '../lib/iconos';
+
+/**
+ * Página de error 404.
+ *
+ * Con Nginx sirviendo el sitio estático, una ruta que no existe no pasa por
+ * Laravel: la resuelve `error_page 404 /404.html`. Sin esta página el visitante
+ * veía el error genérico de Nginx —sin cabecera, sin menú y sin salida—.
+ *
+ * El sitio es una página con siete secciones: las salidas son esas secciones.
+ */
+const { contacto } = await obtenerConfiguracion();
+
+const secciones = [
+    { texto: 'Examen de suficiencia', url: '/#examen' },
+    { texto: 'Cronograma', url: '/#cronograma' },
+    { texto: 'Inscripción', url: '/#inscripcion' },
+];
+---
+
+<Base
+    titulo="Página no encontrada"
+    descripcion="La dirección que buscas no existe o cambió de sitio."
+    sinIndexar
+>
+    <div class="mx-auto max-w-3xl px-6 py-24 text-center">
+        <p class="font-serif text-6xl font-bold text-unmsm-dorado">404</p>
+
+        <h1 class="mt-4 font-serif text-3xl font-bold text-unmsm-azul sm:text-4xl">
+            Esta página no existe
+        </h1>
+
+        <p class="mx-auto mt-4 max-w-xl text-slate-600">
+            Puede que la dirección haya cambiado o que el enlace estuviera mal escrito.
+            Desde aquí puedes seguir a lo que sí está publicado.
+        </p>
+
+        <ul class="mt-10 grid gap-4 sm:grid-cols-3">
+            {
+                secciones.map((s) => (
+                    <li>
+                        <a
+                            href={s.url}
+                            class="block rounded-xl border border-slate-200 p-5 text-left font-serif font-bold text-unmsm-azul transition hover:border-unmsm-azul/40 hover:shadow-md"
+                        >
+                            {s.texto}
+                        </a>
+                    </li>
+                ))
+            }
+        </ul>
+
+        <div class="mt-10 flex flex-wrap justify-center gap-4">
+            <Boton href="/" icono={iconoDeAccion('/')}>Ir al inicio</Boton>
+        </div>
+
+        {
+            contacto.email && (
+                <p class="mt-10 text-sm text-slate-500">
+                    ¿Buscabas algo que no encuentras? Escríbenos a{' '}
+                    <a href={`mailto:${contacto.email}`} class="text-unmsm-azul underline">
+                        {contacto.email}
+                    </a>
+                    .
+                </p>
+            )
+        }
+    </div>
+</Base>

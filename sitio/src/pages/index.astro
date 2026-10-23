@@ -1,0 +1,14 @@
+---
+/**
+ * Portada: qué es la oficina, cómo inscribirse en tres pasos y a dónde ir.
+ *
+ * Mientras la oficina no publique, «próximamente» (ver `Proximamente`).
+ */
+import PaginaOesi from '../components/oesi/PaginaOesi.astro';
+import Proximamente from '../components/oesi/Proximamente.astro';
+import { obtenerOesi } from '../lib/api';
+
+const oesi = await obtenerOesi();
+---
+
+{oesi ? <PaginaOesi oesi={oesi} pagina="inicio" /> : <Proximamente />}

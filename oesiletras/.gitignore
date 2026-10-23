@@ -1,0 +1,38 @@
+*.log
+.DS_Store
+.env
+.env.backup
+.env.production
+.phpactor.json
+.phpunit.result.cache
+/.fleet
+/.idea
+/.nova
+/.phpunit.cache
+/.vscode
+/.zed
+/auth.json
+/node_modules
+/public/build
+/public/hot
+/public/storage
+/storage/*.key
+/storage/pail
+/vendor
+Homestead.json
+Homestead.yaml
+Thumbs.db
+
+# Copias de seguridad de la base: contienen datos reales, no van al repositorio.
+/storage/backups
+
+# Instalador de Composer descargado en local.
+/composer.phar
+
+# Assets que publica Filament (4,2 MB). No se versionan: `filament:upgrade` esta
+# enganchado a `post-autoload-dump`, asi que cualquier `composer install` —y todo
+# despliegue hace uno— los regenera. Versionarlos seria guardar binarios
+# reproducibles y comerse un conflicto en cada actualizacion del paquete.
+/public/css/filament
+/public/js/filament
+/public/fonts/filament

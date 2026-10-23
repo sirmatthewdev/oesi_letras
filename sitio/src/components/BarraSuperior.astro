@@ -1,0 +1,113 @@
+---
+import Icono from './Icono.astro';
+import { faEnvelope, faGlobe } from '@fortawesome/free-solid-svg-icons';
+import {
+    faFacebookF,
+    faInstagram,
+    faTiktok,
+    faYoutube,
+    faLinkedinIn,
+    faXTwitter,
+    faWhatsapp,
+} from '@fortawesome/free-brands-svg-icons';
+import type { ConfiguracionSitio } from '../lib/api';
+
+interface Props {
+    sitio: ConfiguracionSitio;
+}
+
+const { sitio } = Astro.props;
+const { contacto, facultad, redes } = sitio;
+
+// Los accesos institucionales: el correo de la oficina y la web de la Facultad.
+// Todo sale del panel; ninguno está escrito aquí.
+const accesos = [
+    contacto.email && {
+        icono: faEnvelope,
+        texto: contacto.email,
+        url: `mailto:${contacto.email}`,
+        externo: false,
+    },
+    facultad.web && { icono: faGlobe, texto: 'Web Facultad', url: facultad.web, externo: true },
+].filter(Boolean) as {
+    icono: typeof faEnvelope;
+    texto: string;
+    url: string;
+    externo: boolean;
+}[];
+
+const iconosRed: Record<string, { icono: typeof faFacebookF; nombre: string }> = {
+    facebook: { icono: faFacebookF, nombre: 'Facebook' },
+    instagram: { icono: faInstagram, nombre: 'Instagram' },
+    tiktok: { icono: faTiktok, nombre: 'TikTok' },
+    youtube: { icono: faYoutube, nombre: 'YouTube' },
+    linkedin: { icono: faLinkedinIn, nombre: 'LinkedIn' },
+    twitter: { icono: faXTwitter, nombre: 'X (Twitter)' },
+    whatsapp: { icono: faWhatsapp, nombre: 'Canal de WhatsApp' },
+};
+
+const sociales = Object.entries(redes)
+    .map(([clave, url]) => ({ url, ...iconosRed[clave.toLowerCase()] }))
+    .filter((r) => r.icono);
+---
+
+{/* La barra se pliega al bajar (ver el script de la cabecera): en el móvil y a
+    media pantalla, cuarenta píxeles fijos de contacto compiten con el
+    contenido, y quien ya está leyendo no los necesita delante. */}
+<div
+    id="barra-superior"
+    class="h-10 overflow-hidden border-b border-white/10 bg-[#1F1F20] text-[13px] text-white transition-[height,opacity] duration-300"
+>
+    <div class="mx-auto flex h-full max-w-7xl items-center justify-between gap-4 px-4 lg:px-8">
+        {/* En pantalla estrecha solo cabe el correo, que es el acceso que
+            importa; los demás están en el pie. */}
+        <div class="flex min-w-0 items-center gap-3 lg:hidden">
+            {contacto.email && (
+                <a
+                    href={`mailto:${contacto.email}`}
+                    class="flex min-w-0 items-center gap-1.5 text-[11px] transition hover:text-white/70"
+                >
+                    <Icono icono={faEnvelope} clase="h-3 w-3 flex-none" />
+                    <span class="truncate">{contacto.email}</span>
+                </a>
+            )}
+        </div>
+
+        <div class="hidden items-center gap-6 lg:flex">
+            {accesos.map((acceso, i) => (
+                <>
+                    <a
+                        href={acceso.url}
+                        target={acceso.externo ? '_blank' : undefined}
+                        rel={acceso.externo ? 'noopener noreferrer' : undefined}
+                        class="flex items-center gap-2 transition hover:text-white/70"
+                    >
+                        <Icono icono={acceso.icono} clase="h-3.5 w-3.5" />
+                        <span>{acceso.texto}</span>
+                    </a>
+                    {i < accesos.length - 1 && (
+                        <span aria-hidden="true" class="text-white/30">
+                            |
+                        </span>
+                    )}
+                </>
+            ))}
+        </div>
+
+        <ul class="ml-auto flex items-center gap-4 lg:ml-0">
+            {sociales.map((red) => (
+                <li>
+                    <a
+                        href={red.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={`${red.nombre} de la OESI (se abre en una pestaña nueva)`}
+                        class="block transition hover:text-white/70"
+                    >
+                        <Icono icono={red.icono} clase="h-3.5 w-3.5" />
+                    </a>
+                </li>
+            ))}
+        </ul>
+    </div>
+</div>

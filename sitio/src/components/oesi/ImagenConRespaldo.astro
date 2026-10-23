@@ -1,0 +1,130 @@
+---
+import Icono from '../Icono.astro';
+import { faCircleExclamation, faUpRightFromSquare } from '@fortawesome/free-solid-svg-icons';
+import { faWhatsapp } from '@fortawesome/free-brands-svg-icons';
+
+interface Props {
+    imagen: { url: string; alt: string };
+    /** Si la imagen es un enlace (el flyer lleva a la página del curso). */
+    enlace?: string | null;
+    /** Qué no se pudo mostrar, en una frase: «el cronograma», «el flyer del curso». */
+    queEs: string;
+    /** WhatsApp al que preguntar si la imagen no carga. */
+    whatsapp?: string | null;
+    /** Un enlace más en el respaldo, como la página del curso. */
+    alternativa?: { texto: string; url: string } | null;
+    clase?: string;
+    /** La primera imagen visible de la página no se difiere. */
+    prioritaria?: boolean;
+    /** Pie de figura: lo que la imagen es, para quien la ve y para quien no. */
+    pie?: string | null;
+}
+
+const { imagen, enlace, queEs, whatsapp, alternativa, clase = '', prioritaria = false, pie } = Astro.props;
+
+/*
+ * <img> y no el <Image> de Astro, a propósito.
+ *
+ * Las cinco imágenes de la OESI viven en letras.unmsm.edu.pe, y el cronograma
+ * cambia cada mes allí. <Image> las descargaría DURANTE el build: si ese
+ * servidor tarda o está caído, se cae la construcción del sitio entero —los 39
+ * cursos incluidos— por una imagen de otra web. Con <img> la descarga la hace
+ * el navegador, y si falla se ve el respaldo de abajo en vez de un hueco.
+ */
+---
+
+<figure class:list={['imagen-oesi', clase]} data-imagen-oesi>
+    {
+        enlace ? (
+            <a href={enlace} target="_blank" rel="noopener noreferrer" class="block" data-imagen-cuerpo>
+                <img
+                    src={imagen.url}
+                    alt={imagen.alt}
+                    loading={prioritaria ? 'eager' : 'lazy'}
+                    decoding="async"
+                    class="w-full rounded-xl shadow-md transition duration-300 hover:shadow-lg"
+                />
+                <span class="sr-only"> (se abre en una pestaña nueva)</span>
+            </a>
+        ) : (
+            <img
+                src={imagen.url}
+                alt={imagen.alt}
+                loading={prioritaria ? 'eager' : 'lazy'}
+                decoding="async"
+                class="w-full rounded-xl shadow-md"
+                data-imagen-cuerpo
+            />
+        )
+    }
+
+    {/* Respaldo: oculto con `hidden` y no con CSS, y destapado por el script
+        solo si la imagen falla. Sin JavaScript se queda oculto, y lo que se ve
+        es la imagen, o el `alt` que pinta el navegador si no carga. */}
+    <div
+        hidden
+        data-imagen-respaldo
+        role="status"
+        class="flex flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 px-6 py-9 text-center text-sm text-slate-600"
+    >
+        <Icono icono={faCircleExclamation} clase="h-7 w-7 text-unmsm-azul" />
+        <p class="max-w-sm leading-relaxed">
+            No pudimos mostrar {queEs}. Puedes abrir la imagen directamente o consultarnos.
+        </p>
+        <p class="flex flex-wrap justify-center gap-x-5 gap-y-2 font-semibold">
+            <a href={imagen.url} target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 text-unmsm-azul hover:underline">
+                <Icono icono={faUpRightFromSquare} clase="h-3.5 w-3.5" />
+                Abrir la imagen
+            </a>
+            {alternativa && (
+                <a href={alternativa.url} target="_blank" rel="noopener noreferrer" class="text-unmsm-azul hover:underline">
+                    {alternativa.texto}
+                </a>
+            )}
+            {whatsapp && (
+                <a href={whatsapp} target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 text-unmsm-azul hover:underline">
+                    <Icono icono={faWhatsapp} clase="h-4 w-4" />
+                    Consultar por WhatsApp
+                </a>
+            )}
+        </p>
+    </div>
+
+    {pie && <figcaption class="mt-4 text-center text-sm leading-relaxed text-slate-500">{pie}</figcaption>}
+</figure>
+
+<script>
+    /*
+     * Cambia la imagen por su respaldo si no carga.
+     *
+     * Dos caminos, porque el `error` puede llegar antes que este script: un
+     * módulo se ejecuta diferido, y una imagen que falla rápido ya ha
+     * disparado su evento cuando nadie escucha. De ahí la comprobación de
+     * `complete` con ancho natural cero, que es como queda una imagen rota.
+     */
+    function marcarRota(figura: HTMLElement) {
+        if (figura.dataset.estado === 'rota') return;
+        figura.dataset.estado = 'rota';
+        figura.querySelector<HTMLElement>('[data-imagen-cuerpo]')?.setAttribute('hidden', '');
+        figura.querySelector<HTMLElement>('[data-imagen-respaldo]')?.removeAttribute('hidden');
+    }
+
+    function vigilar() {
+        document.querySelectorAll<HTMLElement>('[data-imagen-oesi]').forEach((figura) => {
+            if (figura.dataset.vigilada === '1') return;
+            figura.dataset.vigilada = '1';
+
+            const img = figura.querySelector('img');
+            if (!img) return;
+
+            if (img.complete && img.naturalWidth === 0 && img.currentSrc) {
+                marcarRota(figura);
+                return;
+            }
+
+            img.addEventListener('error', () => marcarRota(figura), { once: true });
+        });
+    }
+
+    document.addEventListener('astro:page-load', vigilar);
+</script>

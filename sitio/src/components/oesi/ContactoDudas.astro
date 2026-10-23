@@ -1,0 +1,41 @@
+---
+import Boton from '../Boton.astro';
+import { faWhatsapp } from '@fortawesome/free-brands-svg-icons';
+import { faEnvelope } from '@fortawesome/free-solid-svg-icons';
+import type { WhatsappOesi } from '../../lib/api';
+
+interface Props {
+    whatsapp: WhatsappOesi;
+    email: string | null;
+    horario: string | null;
+    clase?: string;
+}
+
+const { whatsapp, email, horario, clase = '' } = Astro.props;
+---
+
+{/* «¿No encuentras tu respuesta?»: la salida de las preguntas frecuentes. Es
+    un componente porque va en dos sitios —la columna lateral en escritorio y
+    tras las preguntas en móvil, donde delante empujaba las preguntas hacia
+    abajo— y en cada tamaño solo se ve uno. */}
+{
+    (whatsapp || email) && (
+        <div class:list={['relative overflow-hidden rounded-2xl bg-linear-to-br from-unmsm-azul to-unmsm-azul-dark p-6 text-white shadow-sm', clase]}>
+            <div aria-hidden="true" class="marca-regla absolute inset-x-0 top-0 h-px opacity-70" />
+            <p class="font-serif text-lg font-bold">¿No encuentras tu respuesta?</p>
+            {horario && <p class="mt-1 text-sm text-slate-300">Atención: {horario}</p>}
+            <div class="mt-4 flex flex-col gap-2">
+                {whatsapp && (
+                    <Boton href={whatsapp.enlace} icono={faWhatsapp} nuevaPestana ancho>
+                        Escríbenos por WhatsApp
+                    </Boton>
+                )}
+                {email && (
+                    <Boton href={`mailto:${email}`} variante="contorno-claro" icono={faEnvelope} ancho>
+                        Escribir al correo
+                    </Boton>
+                )}
+            </div>
+        </div>
+    )
+}

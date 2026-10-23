@@ -1,0 +1,71 @@
+---
+/**
+ * El recorrido de la inscripción, como indicador común a /cronograma e
+ * /inscripcion.
+ *
+ * La inscripción es un solo flujo repartido en dos páginas —la fecha se elige
+ * en la publicación del mes y el pago y el formulario van después—, y sin un
+ * hilo visible cada página parecía un tema suelto. Cada etapa enlaza a la suya;
+ * la de la página en la que se está lleva `aria-current="step"`.
+ *
+ * La numeración es la de la oficina: sus propias imágenes dicen «Paso N° 1:
+ * Pago» y «Paso N° 2: Formulario». Elegir la fecha va antes y sin número, para
+ * no contradecir lo que la persona ve en esas imágenes.
+ */
+import Icono from '../Icono.astro';
+import { faCalendarDays } from '@fortawesome/free-solid-svg-icons';
+
+interface Props {
+    /** Las etapas que cubre la página actual. */
+    actuales: ('fecha' | 'pago' | 'formulario')[];
+}
+
+const { actuales } = Astro.props;
+
+const ETAPAS = [
+    { clave: 'fecha', rotulo: 'Antes de empezar', marca: null, titulo: 'Elige tu fecha', texto: 'En el cronograma del mes', enlace: '/cronograma' },
+    { clave: 'pago', rotulo: 'Paso 1', marca: '1', titulo: 'Paga el derecho de examen', texto: 'En San Market', enlace: '/inscripcion#paso-pago' },
+    { clave: 'formulario', rotulo: 'Paso 2', marca: '2', titulo: 'Envía el formulario', texto: 'Con tus documentos en PDF', enlace: '/inscripcion#paso-formulario' },
+] as const;
+---
+
+<nav aria-label="Etapas de la inscripción" class="mx-auto max-w-5xl">
+    <ol class="grid gap-3 sm:grid-cols-3">
+        {
+            ETAPAS.map((e) => {
+                const actual = actuales.includes(e.clave);
+                return (
+                    <li>
+                        <a
+                            href={e.enlace}
+                            aria-current={actual ? 'step' : undefined}
+                            class:list={[
+                                'group flex h-full items-center gap-3 rounded-2xl border p-4 transition',
+                                actual
+                                    ? 'border-unmsm-azul/30 bg-white shadow-sm'
+                                    : 'border-slate-200 bg-white/60 hover:border-unmsm-azul/30 hover:bg-white',
+                            ]}
+                        >
+                            <span
+                                aria-hidden="true"
+                                class:list={[
+                                    'flex h-10 w-10 flex-none items-center justify-center rounded-full font-serif text-lg font-bold',
+                                    actual ? 'marca-degradado text-white shadow' : 'bg-slate-100 text-slate-500 group-hover:text-unmsm-azul',
+                                ]}
+                            >
+                                {e.marca ?? <Icono icono={faCalendarDays} clase="h-4 w-4" />}
+                            </span>
+                            <span class="min-w-0">
+                                <span class="block text-[0.7rem] font-semibold uppercase tracking-wider text-slate-500">{e.rotulo}</span>
+                                <span class:list={['block font-semibold leading-snug', actual ? 'text-unmsm-azul' : 'text-slate-700']}>
+                                    {e.titulo}
+                                </span>
+                                <span class="block text-xs text-slate-500">{e.texto}</span>
+                            </span>
+                        </a>
+                    </li>
+                );
+            })
+        }
+    </ol>
+</nav>

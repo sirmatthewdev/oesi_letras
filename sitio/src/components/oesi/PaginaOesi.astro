@@ -1,0 +1,1860 @@
+---
+/**
+ * Las páginas de la Oficina de Examen de Suficiencia en Idiomas, cuando está
+ * publicada: el inicio y una página por tema (ver `pages/`).
+ *
+ * Con las piezas del sitio del CERSEU, que es el diseño de la casa: el hero de
+ * su portada con la fotografía de la Facultad, bandas de sección con
+ * `FondoSeccion` y `TituloSeccion`, tarjetas blancas con filo dorado, la banda
+ * oscura de pasos de «Cómo inscribirte» y la banda de marca en degradado.
+ *
+ * Todo lo que dice sale de la API (`/api/v1/oesi`), que se edita en el panel,
+ * en «Contenido del sitio».
+ *
+ * La landing anterior era una página con siete pestañas, en el orden del
+ * documento de la oficina. Aquí el contenido se reparte por lo que viene a
+ * hacer quien llega:
+ *
+ *   /             qué es, cómo inscribirse y a dónde ir
+ *   /examen       qué es, a quién va, el requisito, qué evalúa y qué pasa después
+ *   /modalidades  las indicaciones para el día del examen
+ *   /cronograma   antes de inscribirse: la fecha
+ *   /inscripcion  pasos 1 y 2 de la oficina: el pago y el formulario
+ *   /preguntas    las dudas, por tema
+ *
+ * Un solo componente y no seis porque las piezas, los estilos y los scripts
+ * son los mismos; cada página pinta sus bloques. Las anclas de la landing
+ * (`/#inscripcion`…) siguen funcionando: el inicio las lleva a su página.
+ */
+import Base from '../../layouts/Base.astro';
+import Boton from '../../components/Boton.astro';
+import Icono from '../../components/Icono.astro';
+import FondoSeccion from '../../components/FondoSeccion.astro';
+import TituloSeccion from '../../components/TituloSeccion.astro';
+import HeroOesi from '../../components/oesi/HeroOesi.astro';
+import HeroPagina from '../../components/HeroPagina.astro';
+import PasosInscripcion from '../../components/oesi/PasosInscripcion.astro';
+import TarjetaOesi from '../../components/oesi/TarjetaOesi.astro';
+import Negritas from '../../components/oesi/Negritas.astro';
+import ImagenConRespaldo from '../../components/oesi/ImagenConRespaldo.astro';
+import ContactoDudas from '../../components/oesi/ContactoDudas.astro';
+import type { Oesi } from '../../lib/api';
+import { agruparPreguntas, normalizar, soles, sinMarcas } from '../../lib/oesi';
+import { faWhatsapp } from '@fortawesome/free-brands-svg-icons';
+import {
+    faBan,
+    faBookOpen,
+    faBuildingColumns,
+    faCalendarDays,
+    faChartColumn,
+    faCircleCheck,
+    faCircleInfo,
+    faClock,
+    faCommentDots,
+    faEnvelope,
+    faFilePdf,
+    faFileSignature,
+    faGraduationCap,
+    faHeadphones,
+    faHourglassStart,
+    faIdCard,
+    faLaptop,
+    faLightbulb,
+    faFeatherPointed,
+    faCheck,
+    faLocationDot,
+    faListCheck,
+    faMagnifyingGlass,
+    faAward,
+    faCircleQuestion,
+    faPenFancy,
+    faPenToSquare,
+    faPencil,
+    faPlus,
+    faReceipt,
+    faTriangleExclamation,
+    faUpRightFromSquare,
+    faArrowRight,
+} from '@fortawesome/free-solid-svg-icons';
+
+export type PaginaOesiClave = 'inicio' | 'examen' | 'modalidades' | 'cronograma' | 'inscripcion' | 'preguntas';
+
+interface Props {
+    oesi: Oesi;
+    pagina: PaginaOesiClave;
+}
+
+const { oesi, pagina } = Astro.props;
+const { contacto, curso, examen, inscripcion } = oesi;
+const wa = contacto.whatsapp;
+
+// Los iconos que el panel deja elegir, por nombre. Uno desconocido no rompe
+// la tarjeta: se queda sin icono.
+const ICONOS = {
+    lectura: faBookOpen,
+    escritura: faPenFancy,
+    audicion: faHeadphones,
+    oral: faCommentDots,
+    presencial: faBuildingColumns,
+    virtual: faLaptop,
+    antes: faHourglassStart,
+    durante: faBan,
+} as const;
+const icono = (clave: string | null) => (clave ? ICONOS[clave as keyof typeof ICONOS] : undefined);
+
+// Los documentos requeridos, en la banda de pasos: un icono por documento en
+// el orden de la fuente (recibo, identidad, declaración jurada).
+const ICONOS_DOCUMENTO = [faReceipt, faIdCard, faFileSignature];
+const LETRAS = 'abcdefghijklmnopqrstuvwxyz';
+
+// Habilidades: la matriz comprensión/producción × escrita/oral. El eje de cada
+// una sale de su icono. Si las que hay no llenan las cuatro celdas, una por
+// celda, no hay matriz y la página pinta la rejilla simple.
+const MODOS = [
+    { clave: 'comprension', etiqueta: 'Comprensión', bajada: 'Lo que se entiende', icono: faLightbulb },
+    { clave: 'produccion', etiqueta: 'Producción', bajada: 'Lo que se expresa', icono: faFeatherPointed },
+] as const;
+const CANALES = [
+    { clave: 'escrita', etiqueta: 'Escrita', corta: 'escrita' },
+    { clave: 'oral', etiqueta: 'Oral', corta: 'oral' },
+] as const;
+const EJES: Record<string, string> = {
+    lectura: 'comprension-escrita',
+    escritura: 'produccion-escrita',
+    audicion: 'comprension-oral',
+    oral: 'produccion-oral',
+};
+const matrizHabilidades = (() => {
+    const celdas: Record<string, Oesi['habilidades']['items'][number]> = {};
+    for (const h of oesi.habilidades.items) {
+        const eje = h.icono ? EJES[h.icono] : undefined;
+        if (!eje || celdas[eje]) return null;
+        celdas[eje] = h;
+    }
+    return Object.keys(celdas).length === 4 ? celdas : null;
+})();
+
+// Modalidades: presencial por un lado y virtual por otro. Un bloque sin
+// modalidad —el panel la pide, pero por si acaso— va con las virtuales, que es
+// la secuencia y donde un paso de más no descoloca nada.
+const presenciales = oesi.modalidades.items.filter((m) => m.modalidad === 'presencial');
+const virtuales = oesi.modalidades.items.filter((m) => m.modalidad !== 'presencial');
+
+// El título de un bloque dentro de su modalidad. «Modalidad Virtual» con el
+// subtítulo «Sobre la conectividad» repetiría el rótulo del bloque, que ya dice
+// la modalidad: en ese caso manda el subtítulo.
+const tituloBloque = (m: Oesi['modalidades']['items'][number]) =>
+    /^modalidad\s/i.test(m.titulo) && m.subtitulo ? m.subtitulo : m.titulo;
+
+const modalidadesIndice = [
+    presenciales.length > 0 && {
+        clave: 'presencial',
+        etiqueta: 'Presencial',
+        icono: faBuildingColumns,
+        resumen: presenciales.map((m) => m.subtitulo ?? m.titulo).join(' · '),
+    },
+    virtuales.length > 0 && {
+        clave: 'virtual',
+        etiqueta: 'Virtual',
+        icono: faLaptop,
+        resumen: virtuales.map(tituloBloque).join(' · '),
+    },
+].filter(Boolean) as { clave: string; etiqueta: string; icono: typeof faLaptop; resumen: string }[];
+
+// Las preguntas frecuentes por tema, en el orden que fija el modelo.
+const gruposFaq = agruparPreguntas(oesi.faqs.temas, oesi.faqs.items);
+const ICONOS_TEMA: Record<string, typeof faCircleQuestion> = {
+    fechas: faCalendarDays,
+    requisitos: faListCheck,
+    inscripcion: faReceipt,
+    resultados: faAward,
+};
+const iconoTema = (clave: string) => ICONOS_TEMA[clave] ?? faCircleQuestion;
+
+// Las preguntas frecuentes, también para los buscadores: es el bloque que más
+// se busca con palabras propias («devolución», «voucher», «reprogramar»).
+const datosFaq = oesi.faqs.items.length
+    ? {
+          '@context': 'https://schema.org',
+          '@type': 'FAQPage',
+          mainEntity: oesi.faqs.items.map((f) => ({
+              '@type': 'Question',
+              name: f.pregunta,
+              acceptedAnswer: {
+                  '@type': 'Answer',
+                  text: [sinMarcas(f.respuesta), ...f.lista].join(' '),
+              },
+          })),
+      }
+    : undefined;
+
+// Las tablas del CERSEU (las de admisión): cabecera clara con el texto en azul,
+// no la barra azul maciza de la landing anterior.
+const cabeceraTabla = 'px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-unmsm-azul';
+const marcoTabla = 'overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm';
+
+// Los enlaces a formularios del paso 2, en la banda oscura.
+const claseFormulario =
+    'group flex h-full items-center gap-4 rounded-xl bg-white/[0.06] p-5 ring-1 ring-white/10 transition hover:bg-white/[0.12] hover:ring-unmsm-dorado/50';
+const claseIconoFormulario =
+    'flex h-11 w-11 flex-none items-center justify-center rounded-xl bg-white/10 text-unmsm-dorado-light transition group-hover:bg-unmsm-dorado group-hover:text-unmsm-azul-dark';
+
+/*
+ * Cada página: su <title>, su descripción para buscadores y su cabecera. El
+ * título es el mismo que el del menú, para que lo que se pulsa y lo que se
+ * encuentra se llamen igual.
+ */
+const PAGINAS: Record<
+    Exclude<PaginaOesiClave, 'inicio'>,
+    { titulo: string; kicker?: string; bajada?: string | null; descripcion: string }
+> = {
+    examen: {
+        titulo: 'El examen',
+        kicker: 'Examen de suficiencia en idiomas',
+        descripcion:
+            'Qué es el examen de suficiencia en idiomas de la Facultad de Letras de la UNMSM, a quién va dirigido, el requisito, qué evalúa y cómo se califica.',
+    },
+    modalidades: {
+        titulo: 'Modalidades',
+        kicker: 'El día del examen',
+        bajada: oesi.modalidades.intro,
+        descripcion: 'Indicaciones para rendir el examen de suficiencia en idiomas de forma presencial o virtual.',
+    },
+    cronograma: {
+        titulo: 'Cronograma',
+        kicker: 'Inscripción · antes de empezar',
+        bajada: 'Consulta la fecha de tu idioma en la publicación del mes.',
+        descripcion:
+            'Fechas de los exámenes de suficiencia en idiomas del mes: consulta la de tu idioma y empieza tu inscripción.',
+    },
+    inscripcion: {
+        titulo: 'Inscripción',
+        kicker: 'Inscripción · pasos 1 y 2',
+        bajada: inscripcion.intro,
+        descripcion:
+            'Cómo inscribirte al examen de suficiencia en idiomas: costos, pago en San Market, documentos y formularios.',
+    },
+    preguntas: {
+        titulo: 'Preguntas frecuentes',
+        kicker: 'Dudas',
+        bajada: oesi.faqs.intro,
+        descripcion:
+            'Respuestas sobre fechas, requisitos, pagos, resultados y certificado del examen de suficiencia en idiomas.',
+    },
+};
+const meta = pagina === 'inicio' ? null : PAGINAS[pagina];
+
+// Los accesos del inicio a las páginas de consulta. La inscripción no va aquí:
+// tiene su propio bloque, el del recorrido.
+const ACCESOS = [
+    { clave: 'examen', titulo: 'El examen', texto: 'Qué es, a quién va dirigido, el requisito, qué se evalúa y cómo se califica.', icono: faAward },
+    { clave: 'modalidades', titulo: 'Modalidades', texto: 'Las indicaciones para rendirlo de forma presencial o virtual.', icono: faLaptop },
+    {
+        clave: 'preguntas',
+        titulo: 'Preguntas frecuentes',
+        texto: `${oesi.faqs.items.length} respuestas sobre fechas, requisitos, pagos y resultados.`,
+        icono: faCircleQuestion,
+    },
+];
+
+// El recorrido de la inscripción, en el inicio, con la numeración de la
+// oficina (ver `PasosInscripcion`). `destino` es la página a la que el inicio
+// lleva las anclas antiguas (ver el script de abajo).
+const PASOS_INICIO = [
+    {
+        rotulo: 'Antes de empezar',
+        marca: null,
+        titulo: 'Elige tu fecha',
+        texto: 'Consulta la fecha de tu idioma en el cronograma del mes.',
+        detalle: oesi.cronograma.imagen?.alt || null,
+        enlace: '/cronograma',
+        destino: 'cronograma',
+        accion: 'Ver el cronograma',
+    },
+    {
+        rotulo: 'Paso 1',
+        marca: '1',
+        titulo: 'Paga el derecho de examen',
+        texto: 'En San Market, con el concepto que te corresponde.',
+        detalle: null,
+        enlace: '/inscripcion#paso-pago',
+        destino: 'inscripcion',
+        accion: 'Ver costos y pagar',
+    },
+    {
+        rotulo: 'Paso 2',
+        marca: '2',
+        titulo: 'Envía el formulario',
+        texto: 'Con el recibo de pago, tu documento de identidad y la declaración jurada.',
+        detalle: null,
+        enlace: '/inscripcion#paso-formulario',
+        destino: null,
+        accion: 'Ver los formularios',
+    },
+];
+---
+
+<Base
+    titulo={meta?.titulo ?? oesi.nombre}
+    descripcion={meta?.descripcion ??
+        'Exámenes de suficiencia en idiomas de la Facultad de Letras y Ciencias Humanas de la UNMSM: requisitos, modalidades, cronograma, pagos e inscripción.'}
+    datos={pagina === 'preguntas' ? datosFaq : undefined}
+    sobreHero={pagina === 'inicio'}
+>
+    {meta ? <HeroPagina titulo={meta.titulo} kicker={meta.kicker} bajada={meta.bajada} /> : <HeroOesi oesi={oesi} />}
+
+    <div data-oesi>
+        {pagina === 'inicio' && (
+            <Fragment>
+                {/* ══ Cómo inscribirte ══ */}
+                {/*
+                 * La tarea principal de quien llega, y por eso lo primero tras el
+                 * hero: la fecha y los dos pasos, cada uno a su página, con lo que hay que
+                 * comprobar antes —el requisito— y lo que cambia cada mes —la
+                 * publicación vigente—.
+                 */}
+                <div id="como-inscribirte" class="panel-oesi">
+                    <section aria-labelledby="t-como-inscribirte" class="relative isolate overflow-hidden bg-slate-50 py-20">
+                        <FondoSeccion />
+                        <div class="mx-auto max-w-6xl px-6">
+                            <TituloSeccion id="t-como-inscribirte" titulo="Cómo inscribirte" kicker="Fecha, pago y formulario" centrado />
+
+                            <ol class="mt-12 grid gap-5 lg:grid-cols-3">
+                                {PASOS_INICIO.map((paso) => (
+                                    <li class="paso relative">
+                                        <a
+                                            href={paso.enlace}
+                                            data-destino={paso.destino ?? undefined}
+                                            class="tarjeta-recurso group flex h-full flex-col rounded-2xl bg-white p-6 shadow-sm"
+                                        >
+                                            <span aria-hidden="true" class="marca-degradado flex h-11 w-11 items-center justify-center rounded-full font-serif text-lg font-bold text-white shadow">
+                                                {paso.marca ?? <Icono icono={faCalendarDays} clase="h-4 w-4" />}
+                                            </span>
+                                            <span class="mt-4 block text-[0.7rem] font-semibold uppercase tracking-wider text-slate-500">{paso.rotulo}</span>
+                                            <span class="block font-serif text-xl font-bold leading-snug text-unmsm-azul">{paso.titulo}</span>
+                                            <span class="mt-2 block text-sm leading-relaxed text-slate-600">{paso.texto}</span>
+                                            {paso.detalle && (
+                                                <span class="mt-3 flex gap-2 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600">
+                                                    <Icono icono={faCalendarDays} clase="mt-0.5 h-3.5 w-3.5 flex-none text-unmsm-dorado" />
+                                                    <span>Publicación vigente: {paso.detalle}</span>
+                                                </span>
+                                            )}
+                                            <span class="mt-auto inline-flex items-center gap-1.5 pt-5 text-sm font-semibold text-unmsm-azul">
+                                                {paso.accion}
+                                                <Icono icono={faArrowRight} clase="h-3.5 w-3.5 transition group-hover:translate-x-0.5" />
+                                            </span>
+                                        </a>
+                                    </li>
+                                ))}
+                            </ol>
+
+                            {examen.requisitos && (
+                                <p class="mx-auto mt-10 flex max-w-3xl gap-3 rounded-xl border border-unmsm-dorado/30 bg-white px-5 py-4 text-sm leading-relaxed text-slate-700">
+                                    <Icono icono={faListCheck} clase="mt-0.5 h-4 w-4 flex-none text-unmsm-dorado" />
+                                    <span>
+                                        <strong class="font-semibold text-slate-800">Antes, comprueba el requisito:</strong>{' '}
+                                        <Negritas texto={examen.requisitos} />
+                                    </span>
+                                </p>
+                            )}
+                        </div>
+                    </section>
+                </div>
+
+                {/* ══ Conoce el examen ══ */}
+                <div id="conoce-el-examen" class="panel-oesi">
+                    <section aria-labelledby="t-conoce" class="relative isolate overflow-hidden bg-white py-20">
+                        <div class="mx-auto max-w-6xl px-6">
+                            <TituloSeccion id="t-conoce" titulo="Conoce el examen" kicker="Antes de rendirlo" centrado />
+
+                            <ul class="mt-12 grid gap-5 md:grid-cols-3">
+                                {ACCESOS.map((a) => (
+                                    <li>
+                                        <a href={`/${a.clave}`} data-destino={a.clave} class="tarjeta-recurso group flex h-full items-start gap-4 rounded-2xl bg-slate-50 p-6">
+                                            <span aria-hidden="true" class="flex h-12 w-12 flex-none items-center justify-center rounded-xl bg-white text-unmsm-dorado shadow-sm transition duration-300 group-hover:bg-unmsm-azul group-hover:text-white">
+                                                <Icono icono={a.icono} clase="h-5 w-5" />
+                                            </span>
+                                            <span>
+                                                <span class="block font-serif text-lg font-bold leading-snug text-unmsm-azul">{a.titulo}</span>
+                                                <span class="mt-1 block text-sm leading-relaxed text-slate-600">{a.texto}</span>
+                                            </span>
+                                        </a>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    </section>
+                </div>
+
+            {/* ══ Curso de preparación ══ */}
+            <div id="curso-preparacion" class="panel-oesi">
+                <section class="relative isolate overflow-hidden bg-slate-50 py-20">
+                    <FondoSeccion />
+                    <div class="mx-auto max-w-6xl px-6">
+                        <TituloSeccion
+                            id="t-curso-preparacion"
+                            titulo="Curso de preparación"
+                            kicker="Opcional · lo dicta el CEID"
+                            bajada={curso.bajada ?? undefined}
+                            centrado
+                        />
+
+                        <div class="mt-12 grid items-start gap-10 lg:grid-cols-2">
+                            {curso.imagen && (
+                                <ImagenConRespaldo
+                                    imagen={curso.imagen}
+                                    enlace={curso.url}
+                                    queEs="el flyer del curso"
+                                    whatsapp={curso.whatsapp?.enlace}
+                                    alternativa={curso.url ? { texto: 'Ver la información del curso', url: curso.url } : null}
+                                    clase="mx-auto w-full max-w-lg"
+                                />
+                            )}
+
+                            <TarjetaOesi titulo={curso.titulo ?? 'Curso de preparación'} icono={faGraduationCap} antetitulo="Recurso relacionado">
+                                {curso.url && (
+                                    <p class="break-all text-sm text-slate-600">
+                                        Más información:{' '}
+                                        <a href={curso.url} target="_blank" rel="noopener noreferrer" class="font-medium text-unmsm-azul underline-offset-2 hover:underline">
+                                            {curso.url}
+                                        </a>
+                                    </p>
+                                )}
+                                {curso.whatsapp && (
+                                    <div class="mt-6">
+                                        <Boton href={curso.whatsapp.enlace} variante="azul" icono={faWhatsapp} nuevaPestana>
+                                            Contáctanos por WhatsApp
+                                        </Boton>
+                                    </div>
+                                )}
+                                <p class="mt-6 flex gap-2.5 rounded-xl bg-slate-50 px-4 py-3 text-sm leading-relaxed text-slate-600">
+                                    <Icono icono={faCircleInfo} clase="mt-0.5 h-4 w-4 flex-none text-unmsm-dorado" />
+                                    <span>
+                                        El curso es una preparación opcional. La inscripción al examen de suficiencia se hace aparte:
+                                        consulta <a href="#como-inscribirte" class="font-semibold text-unmsm-azul hover:underline">cómo inscribirte</a>.
+                                    </span>
+                                </p>
+                            </TarjetaOesi>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+                {/*
+                 * Las anclas de la landing anterior (`/#inscripcion`,
+                 * `/#preguntas`…) circulan en mensajes y publicaciones: se llevan
+                 * a su página. En línea, para que salte sin esperar a que cargue
+                 * el resto, y al final del inicio porque el destino sale de los
+                 * enlaces de arriba (`data-destino`), no de rutas escritas aquí:
+                 * así funciona igual en la vista previa, que sirve el sitio bajo
+                 * otra ruta.
+                 */}
+                <script is:inline>
+                    (function () {
+                        var ANCLAS = {
+                            examen: ['examen', ''],
+                            requisito: ['examen', '#requisito'],
+                            habilidades: ['examen', '#habilidades'],
+                            modalidades: ['modalidades', ''],
+                            'modalidad-presencial': ['modalidades', '#modalidad-presencial'],
+                            'modalidad-virtual': ['modalidades', '#modalidad-virtual'],
+                            cronograma: ['cronograma', ''],
+                            inscripcion: ['inscripcion', ''],
+                            'paso-pago': ['inscripcion', '#paso-pago'],
+                            'paso-formulario': ['inscripcion', '#paso-formulario'],
+                            preguntas: ['preguntas', ''],
+                        };
+                        var id = '';
+                        try {
+                            id = decodeURIComponent(location.hash.slice(1));
+                        } catch (e) {}
+                        var destino = ANCLAS[id] || (id.indexOf('faq-') === 0 ? ['preguntas', '#' + id] : null);
+                        var enlace = destino && document.querySelector('[data-destino="' + destino[0] + '"]');
+                        if (!enlace) return;
+                        var url = new URL(enlace.href);
+                        url.hash = destino[1];
+                        location.replace(url.href);
+                    })();
+                </script>
+            </Fragment>
+        )}
+
+        {pagina === 'examen' && (
+            <Fragment>
+            {/* ══ Examen de suficiencia ══ */}
+            <div id="examen" class="panel-oesi">
+                <section class="relative isolate overflow-hidden bg-slate-50 py-14">
+                    <FondoSeccion />
+                    <div class="mx-auto max-w-6xl px-6">
+                        {examen.objetivo && (
+                            <p class="mx-auto max-w-3xl text-center text-lg leading-relaxed text-slate-600">{examen.objetivo}</p>
+                        )}
+
+                        {/* A quién va dirigido: la lista numerada de los valores en
+                            /nosotros del CERSEU. */}
+                        {examen.destinatarios.length > 0 && (
+                            <div class="mt-14">
+                                <h2 class="text-center font-serif text-2xl font-bold text-unmsm-azul">A quién está dirigido</h2>
+                                <ul class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                                    {examen.destinatarios.map((d, i) => (
+                                        <li class="group flex items-start gap-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-unmsm-azul/30 hover:shadow-md">
+                                            <span aria-hidden="true" class="flex h-9 w-9 flex-none items-center justify-center rounded-lg bg-unmsm-azul/10 font-serif text-sm font-bold text-unmsm-azul transition group-hover:bg-unmsm-azul group-hover:text-white">
+                                                {String(i + 1).padStart(2, '0')}
+                                            </span>
+                                            <p class="font-medium leading-snug text-slate-700">{d}</p>
+                                        </li>
+                                    ))}
+                                </ul>
+                                {examen.jurado && (
+                                    <p class="mx-auto mt-8 flex max-w-3xl gap-3 rounded-xl border border-unmsm-dorado/30 bg-white px-5 py-4 text-sm leading-relaxed text-slate-700">
+                                        <Icono icono={faCircleInfo} clase="mt-0.5 h-4 w-4 flex-none text-unmsm-dorado" />
+                                        <span>{examen.jurado}</span>
+                                    </p>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                </section>
+
+                {/* El requisito va antes que nada de lo que pasa en el examen: es lo
+                    que decide si seguir leyendo. Antes salía junto a los resultados,
+                    después de la escala de notas. */}
+                {examen.requisitos && (
+                    <section id="requisito" aria-labelledby="t-requisito" class="relative isolate scroll-mt-28 bg-white py-16">
+                        <div class="mx-auto max-w-4xl px-6">
+                            <div class="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+                                <span aria-hidden="true" class="absolute inset-y-0 left-0 w-1 bg-unmsm-dorado"></span>
+                                <div class="flex items-start gap-4">
+                                    <span aria-hidden="true" class="flex h-12 w-12 flex-none items-center justify-center rounded-xl bg-slate-100 text-unmsm-dorado shadow-sm">
+                                        <Icono icono={faListCheck} clase="h-5 w-5" />
+                                    </span>
+                                    <div>
+                                        <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Antes de inscribirte</p>
+                                        <h2 id="t-requisito" class="font-serif text-2xl font-bold text-unmsm-azul">Requisito para rendirlo</h2>
+                                        <p class="mt-3 text-lg leading-relaxed text-slate-700"><Negritas texto={examen.requisitos} /></p>
+                                        <a href="/cronograma" class="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-unmsm-azul hover:underline">
+                                            Lo cumplo: ver las fechas del mes
+                                            <Icono icono={faArrowRight} clase="h-3.5 w-3.5" />
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                )}
+            </div>
+
+            {/* ══ Habilidades evaluadas ══ */}
+            {/*
+             * Las cuatro habilidades tienen una estructura propia: dos son de
+             * comprensión y dos de producción, cada par en lengua escrita y oral. Se
+             * pintan como esa matriz —columnas comprensión/producción, filas
+             * escrita/oral— porque dice en un vistazo lo que cuatro tarjetas
+             * iguales no decían.
+             *
+             * El eje de cada una sale del icono que elige la oficina en el panel
+             * (lectura, escritura, audición, oral), no de su título. Si las que hay
+             * no llenan la matriz —una quinta, un icono distinto—, se vuelve a la
+             * rejilla simple: mejor una rejilla correcta que una matriz forzada.
+             */}
+            <div id="habilidades" class="panel-oesi">
+                <section class="relative isolate overflow-clip bg-slate-50 py-20">
+                    <FondoSeccion />
+                    <div class="mx-auto max-w-6xl px-6">
+                        <TituloSeccion
+                            id="t-habilidades"
+                            titulo="Habilidades evaluadas"
+                            kicker="Qué se evalúa"
+                            bajada={oesi.habilidades.intro ?? undefined}
+                            centrado
+                        />
+
+                        {matrizHabilidades ? (
+                            <div class="mt-14 max-lg:space-y-5 lg:grid lg:grid-cols-[8.5rem_1fr_1fr] lg:gap-x-6 lg:gap-y-6">
+                                {/* Cabeceras de la matriz: solo en escritorio, donde
+                                    hay matriz. En móvil cada tarjeta lleva su eje. */}
+                                <div class="hidden lg:block" aria-hidden="true"></div>
+                                {MODOS.map((modo) => (
+                                    <div class="hidden items-end gap-3 border-b-2 border-unmsm-dorado/60 pb-3 lg:flex" aria-hidden="true">
+                                        <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-white text-unmsm-dorado shadow-sm">
+                                            <Icono icono={modo.icono} clase="h-4 w-4" />
+                                        </span>
+                                        <span>
+                                            <span class="block font-serif text-lg font-bold text-unmsm-azul">{modo.etiqueta}</span>
+                                            <span class="block text-xs text-slate-500">{modo.bajada}</span>
+                                        </span>
+                                    </div>
+                                ))}
+
+                                {CANALES.map((canal) => (
+                                    <>
+                                        <div class="hidden flex-col justify-center lg:flex" aria-hidden="true">
+                                            <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Lengua</span>
+                                            <span class="font-serif text-lg font-bold text-unmsm-azul">{canal.etiqueta}</span>
+                                        </div>
+                                        {MODOS.map((modo) => {
+                                            const h = matrizHabilidades[`${modo.clave}-${canal.clave}`];
+                                            return (
+                                                <article class="tarjeta-habilidad group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-7">
+                                                    <span aria-hidden="true" class="absolute inset-x-0 top-0 h-1 bg-linear-to-r from-unmsm-azul to-unmsm-dorado opacity-0 transition group-hover:opacity-100"></span>
+                                                    <div class="flex items-start justify-between gap-4">
+                                                        <span aria-hidden="true" class="flex h-14 w-14 flex-none items-center justify-center rounded-2xl bg-unmsm-azul/10 text-unmsm-azul transition duration-300 group-hover:bg-unmsm-azul group-hover:text-white">
+                                                            <Icono icono={icono(h.icono) ?? faBookOpen} clase="h-6 w-6" />
+                                                        </span>
+                                                        <span class="rounded-full bg-slate-100 px-3 py-1 text-[0.7rem] font-semibold uppercase tracking-wider text-slate-600">
+                                                            {modo.etiqueta} · {canal.corta}
+                                                        </span>
+                                                    </div>
+                                                    <h3 class="mt-5 font-serif text-xl font-bold text-unmsm-azul">{h.titulo}</h3>
+                                                    <p class="texto-oesi mt-2">{h.descripcion}</p>
+                                                </article>
+                                            );
+                                        })}
+                                    </>
+                                ))}
+                            </div>
+                        ) : (
+                            <div class="mt-12 grid gap-6 sm:grid-cols-2">
+                                {oesi.habilidades.items.map((h) => (
+                                    <TarjetaOesi titulo={h.titulo} icono={icono(h.icono)}>
+                                        <p class="texto-oesi">{h.descripcion}</p>
+                                    </TarjetaOesi>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </section>
+            </div>
+
+            {/* ══ Después del examen ══ */}
+            <div id="despues" class="panel-oesi">
+                <section aria-labelledby="t-despues" class="relative isolate overflow-hidden bg-white py-20">
+                    <div class="mx-auto max-w-6xl px-6">
+                        <TituloSeccion id="t-despues" titulo="Calificación, resultados y certificado" kicker="Después del examen" centrado />
+
+                        <div class="mt-12 grid gap-8 lg:grid-cols-2">
+                            <TarjetaOesi titulo="Escala de calificación" icono={faChartColumn}>
+                                {examen.escala_intro && <p class="texto-oesi mb-4">{examen.escala_intro}</p>}
+                                <div class:list={[marcoTabla, 'overflow-x-auto shadow-none']}>
+                                    <table class="w-full min-w-[20rem] text-sm">
+                                        <caption class="sr-only">Escala de calificación: nivel, rango, subnivel y nota</caption>
+                                        <thead class="bg-slate-50">
+                                            <tr>
+                                                <th scope="col" class={cabeceraTabla}>Nivel</th>
+                                                <th scope="col" class={`${cabeceraTabla} text-center`}>Rango</th>
+                                                <th scope="col" class={`${cabeceraTabla} text-center`}>Subnivel</th>
+                                                <th scope="col" class={`${cabeceraTabla} text-center`}>Nota</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-slate-100">
+                                            {examen.escala.map((nivel) =>
+                                                nivel.subniveles.map((sub, j) => (
+                                                    <tr>
+                                                        {j === 0 && (
+                                                            <th scope="rowgroup" rowspan={nivel.subniveles.length} class="bg-slate-50/60 px-4 py-3 text-left align-middle font-semibold">
+                                                                <span class="font-serif text-lg text-unmsm-azul">{nivel.letra}</span>{' '}
+                                                                <span class="text-xs font-normal text-slate-500">{nivel.nivel}</span>
+                                                            </th>
+                                                        )}
+                                                        {j === 0 && (
+                                                            <td rowspan={nivel.subniveles.length} class="px-4 py-3 text-center align-middle font-semibold text-slate-700">{nivel.rango}</td>
+                                                        )}
+                                                        <td class="px-4 py-3 text-center">
+                                                            <span class="font-semibold text-slate-800">{sub.codigo}</span>
+                                                            {sub.descripcion && <span class="block text-[11px] text-slate-500">{sub.descripcion}</span>}
+                                                        </td>
+                                                        <td class="px-4 py-3 text-center text-slate-700">{sub.nota}</td>
+                                                    </tr>
+                                                ))
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </TarjetaOesi>
+
+                            <TarjetaOesi titulo="Vigencia del certificado" icono={faClock}>
+                                {examen.vigencia_intro && <p class="texto-oesi mb-4">{examen.vigencia_intro}</p>}
+                                <div class:list={[marcoTabla, 'shadow-none']}>
+                                    <table class="w-full text-sm">
+                                        <caption class="sr-only">Vigencia del certificado según el nivel alcanzado</caption>
+                                        <thead class="bg-slate-50">
+                                            <tr>
+                                                <th scope="col" class={cabeceraTabla}>Nivel</th>
+                                                <th scope="col" class={`${cabeceraTabla} text-center`}>Vigencia</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-slate-100">
+                                            {examen.vigencia.map((v) => (
+                                                <tr>
+                                                    <th scope="row" class="px-4 py-3 text-left font-semibold text-slate-800">{v.nivel}</th>
+                                                    <td class="px-4 py-3 text-center text-slate-700">{v.vigencia}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                {examen.vigencia_nota && <p class="mt-4 text-sm text-slate-500">{examen.vigencia_nota}</p>}
+                            </TarjetaOesi>
+                        </div>
+
+                        <div class="mt-8">
+                                <TarjetaOesi titulo="Resultados" icono={faCircleCheck}>
+                                    <div class="space-y-4">
+                                        {examen.resultados.aprobados && <p class="texto-oesi"><Negritas texto={examen.resultados.aprobados} /></p>}
+                                        {examen.resultados.desaprobados && <p class="texto-oesi"><Negritas texto={examen.resultados.desaprobados} /></p>}
+                                        {examen.resultados.virtual && (
+                                            <p class="flex gap-2.5 rounded-xl bg-amber-50 px-4 py-3 text-sm leading-relaxed text-amber-950">
+                                                <Icono icono={faTriangleExclamation} clase="mt-0.5 h-4 w-4 flex-none" />
+                                                <span><Negritas texto={examen.resultados.virtual} /></span>
+                                            </p>
+                                        )}
+                                    </div>
+                                </TarjetaOesi>
+                        </div>
+                    </div>
+                </section>
+            </div>
+            </Fragment>
+        )}
+
+        {pagina === 'modalidades' && (
+            <Fragment>
+            {/* ══ Modalidades ══ */}
+            {/*
+             * Dos bloques y no cuatro tarjetas iguales: una era presencial y tres
+             * virtuales, y en la rejilla de dos por dos pesaban lo mismo, así que la
+             * división que importa —presencial o virtual— no se veía. Además, las
+             * tres virtuales son una secuencia (el equipo, antes, durante) y ahora se
+             * leen como tal, numeradas.
+             *
+             * Se arma desde los datos, agrupando por `modalidad`: un bloque nuevo
+             * que la oficina añada en el panel cae en su sitio.
+             */}
+            <div id="modalidades" class="panel-oesi">
+                <section class="relative isolate overflow-clip bg-slate-50 py-12">
+                    <FondoSeccion />
+                    <div class="mx-auto max-w-6xl px-6">
+                        <ul class="mx-auto grid max-w-4xl gap-4 sm:grid-cols-2">
+                            {modalidadesIndice.map((m) => (
+                                <li>
+                                    <a href={`#modalidad-${m.clave}`} class="tarjeta-recurso group flex h-full items-start gap-4 rounded-2xl bg-white p-5 shadow-sm">
+                                        <span aria-hidden="true" class="flex h-12 w-12 flex-none items-center justify-center rounded-xl bg-slate-100 text-unmsm-dorado transition duration-300 group-hover:bg-unmsm-azul group-hover:text-white">
+                                            <Icono icono={m.icono} clase="h-5 w-5" />
+                                        </span>
+                                        <span>
+                                            <span class="block font-serif text-lg font-bold leading-snug text-unmsm-azul">{m.etiqueta}</span>
+                                            <span class="mt-1 block text-sm leading-relaxed text-slate-600">{m.resumen}</span>
+                                        </span>
+                                    </a>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                </section>
+
+                {/* ── Presencial ── */}
+                {presenciales.length > 0 && (
+                    <section id="modalidad-presencial" aria-labelledby="t-mod-presencial" class="relative isolate scroll-mt-28 bg-white py-20">
+                        <div class="mx-auto max-w-6xl px-6">
+                            <header class="flex items-start gap-4 border-b border-slate-200 pb-8">
+                                <span aria-hidden="true" class="marca-degradado flex h-12 w-12 flex-none items-center justify-center rounded-full text-white shadow">
+                                    <Icono icono={faBuildingColumns} clase="h-5 w-5" />
+                                </span>
+                                <div>
+                                    <p class="text-xs font-semibold uppercase tracking-[0.18em] text-unmsm-dorado">Modalidad</p>
+                                    <h2 id="t-mod-presencial" class="font-serif text-2xl font-bold text-unmsm-azul sm:text-3xl">Presencial</h2>
+                                </div>
+                            </header>
+
+                            {presenciales.map((m) => (
+                                <div class="mt-10 grid items-start gap-8 lg:grid-cols-12">
+                                    <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8 lg:col-span-7">
+                                        <h3 class="font-serif text-xl font-bold text-unmsm-azul">{tituloBloque(m)}</h3>
+                                        {m.introduccion && <p class="texto-oesi mt-2">{m.introduccion}</p>}
+                                        <ul class="mt-5 space-y-4">
+                                            {m.reglas.map((r) => (
+                                                <li class="flex gap-3">
+                                                    <span aria-hidden="true" class="mt-0.5 flex h-6 w-6 flex-none items-center justify-center rounded-full bg-unmsm-azul/10 text-unmsm-azul">
+                                                        <Icono icono={faCheck} clase="h-3 w-3" />
+                                                    </span>
+                                                    <span class="texto-oesi"><Negritas texto={r} /></span>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+
+                                    {m.nota && (
+                                        <aside class="relative overflow-hidden rounded-2xl bg-linear-to-br from-unmsm-azul to-unmsm-azul-dark p-6 text-white shadow-sm sm:p-8 lg:col-span-5">
+                                            <div aria-hidden="true" class="marca-regla absolute inset-x-0 top-0 h-px opacity-70"></div>
+                                            <div class="flex items-center gap-3">
+                                                <span aria-hidden="true" class="flex h-11 w-11 items-center justify-center rounded-xl bg-white/10 text-unmsm-dorado-light">
+                                                    <Icono icono={faLocationDot} clase="h-5 w-5" />
+                                                </span>
+                                                <p class="font-serif text-lg font-bold">Aula y local</p>
+                                            </div>
+                                            <p class="mt-4 leading-relaxed text-slate-200"><Negritas texto={m.nota} /></p>
+                                        </aside>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    </section>
+                )}
+
+                {/* ── Virtual: la secuencia, en la banda oscura de pasos ── */}
+                {virtuales.length > 0 && (
+                    <section
+                        id="modalidad-virtual"
+                        aria-labelledby="t-mod-virtual"
+                        class="relative isolate scroll-mt-28 overflow-hidden bg-linear-to-b from-[#111827] to-[#0C1217] py-20 text-white"
+                    >
+                        <div
+                            aria-hidden="true"
+                            class="absolute inset-0 -z-10 opacity-[0.06]"
+                            style="background-image: radial-gradient(circle at 1px 1px, #fff 1.5px, transparent 0); background-size: 34px 34px;"
+                        />
+                        <div aria-hidden="true" class="absolute -top-40 left-1/2 -z-10 h-[40rem] w-[40rem] -translate-x-1/2 rounded-full bg-unmsm-azul/40 blur-3xl" />
+
+                        <div class="mx-auto max-w-6xl px-6">
+                            <header class="flex items-start gap-4 border-b border-white/10 pb-8">
+                                <span aria-hidden="true" class="marca-degradado flex h-12 w-12 flex-none items-center justify-center rounded-full text-white shadow">
+                                    <Icono icono={faLaptop} clase="h-5 w-5" />
+                                </span>
+                                <div>
+                                    <p class="text-xs font-semibold uppercase tracking-[0.18em] text-unmsm-dorado-light">Modalidad</p>
+                                    <h2 id="t-mod-virtual" class="font-serif text-2xl font-bold sm:text-3xl">Virtual</h2>
+                                    <p class="mt-2 max-w-2xl text-slate-300">Las indicaciones, en el orden en que se cumplen: el equipo, la entrada y el desarrollo del examen.</p>
+                                </div>
+                            </header>
+
+                            <ol class="mt-10 grid gap-5 lg:grid-cols-3">
+                                {virtuales.map((m, i) => {
+                                    const sancion = m.icono === 'durante';
+                                    return (
+                                        <li class="paso relative flex flex-col rounded-xl bg-white/[0.06] p-6 ring-1 ring-white/10">
+                                            <div class="flex items-center gap-3">
+                                                <span aria-hidden="true" class="flex h-11 w-11 flex-none items-center justify-center rounded-full bg-unmsm-dorado/20 font-serif text-lg font-bold text-unmsm-dorado-light ring-1 ring-unmsm-dorado/30">
+                                                    {i + 1}
+                                                </span>
+                                                <span aria-hidden="true" class="text-unmsm-dorado-light/80">
+                                                    <Icono icono={icono(m.icono) ?? faLaptop} clase="h-4 w-4" />
+                                                </span>
+                                            </div>
+                                            <p class="mt-4 text-xs font-semibold uppercase tracking-wider opacity-60">Paso {i + 1}</p>
+                                            <h3 class="mt-1 font-serif text-xl font-bold leading-snug">{tituloBloque(m)}</h3>
+                                            {m.introduccion && <p class="mt-2 text-sm text-slate-300">{m.introduccion}</p>}
+                                            <ul class="mt-4 space-y-3">
+                                                {m.reglas.map((r) => (
+                                                    <li class="flex gap-2.5 text-sm leading-relaxed text-slate-200">
+                                                        <Icono
+                                                            icono={sancion ? faBan : faCheck}
+                                                            clase={`mt-1 h-3.5 w-3.5 flex-none ${sancion ? 'text-amber-300' : 'text-unmsm-dorado-light'}`}
+                                                        />
+                                                        <span><Negritas texto={r} /></span>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                            {m.nota && (
+                                                <p
+                                                    class:list={[
+                                                        'mt-5 flex gap-2.5 rounded-lg px-4 py-3 text-sm leading-relaxed',
+                                                        m.nota_tipo === 'aviso'
+                                                            ? 'bg-amber-400/10 text-amber-100 ring-1 ring-amber-300/30'
+                                                            : 'bg-white/[0.06] text-slate-300',
+                                                    ]}
+                                                >
+                                                    <Icono
+                                                        icono={m.nota_tipo === 'aviso' ? faTriangleExclamation : faCircleInfo}
+                                                        clase="mt-0.5 h-4 w-4 flex-none"
+                                                        etiqueta={m.nota_tipo === 'aviso' ? 'Advertencia' : 'Información'}
+                                                    />
+                                                    <span><Negritas texto={m.nota} /></span>
+                                                </p>
+                                            )}
+                                        </li>
+                                    );
+                                })}
+                            </ol>
+                        </div>
+                    </section>
+                )}
+            </div>
+            </Fragment>
+        )}
+
+        {pagina === 'cronograma' && (
+            <Fragment>
+            {/* ══ Cronograma ══ */}
+            <div id="cronograma" class="panel-oesi">
+                {/* `overflow-clip` y no `overflow-hidden`: recorta el fondo igual,
+                    pero no crea un contenedor de desplazamiento, que es lo que
+                    anulaba el `sticky` de la tarjeta lateral. */}
+                <section class="relative isolate overflow-clip bg-slate-50 py-12">
+                    <FondoSeccion />
+                    <div class="mx-auto max-w-6xl px-6">
+                        <PasosInscripcion actuales={['fecha']} />
+
+                        {/* El cronograma cambia cada mes y la página no guarda sus
+                            fechas: las dice la publicación vigente. El aviso va
+                            delante de ella, que es donde se leen. */}
+                        {oesi.cronograma.aviso && (
+                            <p class="mx-auto mt-8 flex max-w-3xl gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-relaxed text-amber-950" role="note">
+                                <Icono icono={faTriangleExclamation} clase="mt-0.5 h-4 w-4 flex-none" />
+                                <span>{oesi.cronograma.aviso}</span>
+                            </p>
+                        )}
+
+                        {/*
+                         * La publicación del mes, que es la fuente de las fechas, y
+                         * a su lado lo que se hace después: pagar, o preguntar si
+                         * hay dudas. La tarjeta acompaña a la imagen al bajar
+                         * (`sticky`): la imagen es muy alta, y una columna lateral
+                         * corta dejaba un hueco a media página.
+                         */}
+                        <div class="mt-8 grid items-start gap-8 lg:grid-cols-12">
+                            {oesi.cronograma.imagen && (
+                                <article
+                                    aria-labelledby="t-publicacion"
+                                    class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm lg:col-span-7"
+                                >
+                                    <header class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-6 py-4">
+                                        <div class="flex items-center gap-3">
+                                            <span aria-hidden="true" class="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-unmsm-dorado">
+                                                <Icono icono={faCalendarDays} clase="h-4 w-4" />
+                                            </span>
+                                            <div>
+                                                <p class="text-[0.7rem] font-semibold uppercase tracking-wider text-slate-500">Publicación vigente</p>
+                                                <h2 id="t-publicacion" class="font-serif text-lg font-bold leading-snug text-unmsm-azul">
+                                                    {oesi.cronograma.imagen.alt || 'Cronograma de exámenes'}
+                                                </h2>
+                                            </div>
+                                        </div>
+                                        <a
+                                            href={oesi.cronograma.imagen.url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            class="inline-flex items-center gap-1.5 text-sm font-semibold text-unmsm-azul hover:underline"
+                                        >
+                                            <Icono icono={faUpRightFromSquare} clase="h-3.5 w-3.5" />
+                                            Ver en tamaño completo
+                                            <span class="sr-only">(se abre en una pestaña nueva)</span>
+                                        </a>
+                                    </header>
+
+                                    <div class="p-4 sm:p-6">
+                                        <ImagenConRespaldo
+                                            imagen={oesi.cronograma.imagen}
+                                            queEs="el cronograma"
+                                            whatsapp={wa?.enlace}
+                                            pie={oesi.cronograma.intro}
+                                            clase="mx-auto max-w-xl"
+                                        />
+                                    </div>
+                                </article>
+                            )}
+                            <aside
+                                aria-labelledby="t-inscribete-fecha"
+                                class="relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm lg:sticky lg:top-28 lg:col-span-5"
+                            >
+                                <div aria-hidden="true" class="marca-degradado h-1 w-full"></div>
+
+                                <div class="p-6 sm:p-7">
+                                    <p class="text-[0.7rem] font-semibold uppercase tracking-wider text-slate-500">Cuando tengas tu fecha</p>
+                                    <h2 id="t-inscribete-fecha" class="mt-1 font-serif text-xl font-bold text-unmsm-azul">
+                                        Paga el derecho de examen
+                                    </h2>
+                                    <p class="mt-2 text-sm leading-relaxed text-slate-600">
+                                        Con tu fecha elegida, paga en San Market el concepto que te corresponde y luego envía el formulario de la convocatoria.
+                                    </p>
+
+
+                                    <div class="mt-6">
+                                        <Boton href="/inscripcion#paso-pago" variante="azul" icono={faArrowRight} ancho>
+                                            Siguiente: pagar
+                                        </Boton>
+                                    </div>
+
+                                    <div class="mt-7 border-t border-slate-100 pt-5">
+                                        <p class="text-sm font-semibold text-slate-700">¿Dudas con las fechas?</p>
+                                        <div class="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm">
+                                            {wa && (
+                                                <a href={wa.enlace} target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 font-semibold text-unmsm-azul hover:underline">
+                                                    <Icono icono={faWhatsapp} clase="h-4 w-4" />
+                                                    {wa.visible}
+                                                </a>
+                                            )}
+                                            {contacto.email && (
+                                                <a href={`mailto:${contacto.email}`} class="inline-flex items-center gap-1.5 font-semibold text-unmsm-azul hover:underline">
+                                                    <Icono icono={faEnvelope} clase="h-4 w-4" />
+                                                    Escribir al correo
+                                                </a>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </aside>
+                        </div>
+                    </div>
+                </section>
+            </div>
+            </Fragment>
+        )}
+
+        {pagina === 'inscripcion' && (
+            <Fragment>
+            {/* ══ Inscripción ══ */}
+            {/*
+             * Los dos pasos de la fuente —«Paso N° 1: Pago por el derecho de examen»
+             * y «Paso N° 2: Completar el formulario»—, cada uno con todo lo suyo
+             * junto. Antes los precios, los botones de pago, los documentos y la
+             * imagen del segundo paso salían intercalados, y el botón de pagar —que
+             * es la acción principal— quedaba al fondo, debajo de una segunda tabla
+             * de precios.
+             */}
+            <div id="inscripcion" class="panel-oesi">
+                <section class="relative isolate overflow-clip bg-slate-50 py-12">
+                    <FondoSeccion />
+                    <div class="mx-auto max-w-6xl px-6">
+                        <PasosInscripcion actuales={['pago', 'formulario']} />
+
+                        {/* El requisito, aquí también: es la última ocasión de verlo
+                            antes de pagar. Es el mismo dato del panel. */}
+                        {examen.requisitos && (
+                            <p class="mx-auto mt-8 flex max-w-3xl gap-3 rounded-xl border border-unmsm-dorado/30 bg-white px-5 py-4 text-sm leading-relaxed text-slate-700">
+                                <Icono icono={faListCheck} clase="mt-0.5 h-4 w-4 flex-none text-unmsm-dorado" />
+                                <span>
+                                    <strong class="font-semibold text-slate-800">Requisito:</strong> <Negritas texto={examen.requisitos} />
+                                </span>
+                            </p>
+                        )}
+                    </div>
+                </section>
+
+                {/* ── Paso 1: el pago ── */}
+                <section id="paso-pago" aria-labelledby="t-paso-pago" class="relative isolate scroll-mt-28 overflow-clip bg-white py-20">
+                    <div class="mx-auto max-w-6xl px-6">
+                        <header class="flex flex-col gap-6 border-b border-slate-200 pb-8 md:flex-row md:items-center md:justify-between">
+                            <div class="flex items-start gap-4">
+                                <span aria-hidden="true" class="marca-degradado flex h-12 w-12 flex-none items-center justify-center rounded-full font-serif text-xl font-bold text-white shadow">1</span>
+                                <div>
+                                    <p class="text-xs font-semibold uppercase tracking-[0.18em] text-unmsm-dorado">Paso 1</p>
+                                    <h2 id="t-paso-pago" class="font-serif text-2xl font-bold text-unmsm-azul sm:text-3xl">Paga el derecho de examen</h2>
+                                    {inscripcion.costos_intro && <p class="mt-2 max-w-2xl text-slate-600">{inscripcion.costos_intro}</p>}
+                                </div>
+                            </div>
+                            {inscripcion.imagenes.proceso_1 && (
+                                <ImagenConRespaldo imagen={inscripcion.imagenes.proceso_1} queEs="el resumen del paso 1" whatsapp={wa?.enlace} clase="w-full max-w-xs flex-none" />
+                            )}
+                        </header>
+
+                        <div class="mt-10 grid items-start gap-8 lg:grid-cols-12">
+                            <div class="space-y-10 lg:col-span-7">
+                                {/* Lo que se hace: elegir el concepto y pagar. */}
+                                {inscripcion.tarifario.length > 0 && (
+                                    <div>
+                                        <h3 class="font-serif text-xl font-bold text-unmsm-azul">Elige tu concepto y paga en San Market</h3>
+                                        <p class="mt-1 text-sm text-slate-500">Cada botón abre el pago de ese concepto en la plataforma de la UNMSM.</p>
+                                        <ul class="mt-5 space-y-3">
+                                            {inscripcion.tarifario.map((t) => (
+                                                <li class="flex flex-wrap items-center gap-x-4 gap-y-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-unmsm-dorado/50 hover:shadow-md sm:flex-nowrap sm:p-5">
+                                                    {/* En móvil el concepto ocupa su línea y precio y
+                                                        botón van debajo: compartiendo fila, el concepto
+                                                        se partía en cuatro renglones. */}
+                                                    <div class="min-w-0 basis-full sm:flex-1 sm:basis-auto">
+                                                        <p class="font-medium text-slate-800">
+                                                            {t.concepto}
+                                                            {t.distintivo && (
+                                                                <span class="marca-degradado ml-2 inline-block whitespace-nowrap rounded-full px-2.5 py-0.5 align-middle text-[10px] font-semibold text-white">
+                                                                    {t.distintivo}
+                                                                </span>
+                                                            )}
+                                                        </p>
+                                                    </div>
+                                                    <p class="mr-auto whitespace-nowrap font-serif text-xl font-bold text-unmsm-azul sm:mr-0">{soles(t.monto)}</p>
+                                                    {t.url_pago ? (
+                                                        <a
+                                                            href={t.url_pago}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg bg-unmsm-azul px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-unmsm-azul-light"
+                                                        >
+                                                            Pagar
+                                                            <span class="sr-only"> {t.concepto} en San Market (se abre en una pestaña nueva)</span>
+                                                            <Icono icono={faUpRightFromSquare} clase="h-3 w-3" />
+                                                        </a>
+                                                    ) : (
+                                                        <span class="text-xs text-slate-500">Enlace no disponible</span>
+                                                    )}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                        {inscripcion.tarifario_nota && <p class="mt-4 text-sm text-slate-500">{inscripcion.tarifario_nota}</p>}
+                                    </div>
+                                )}
+
+                                {/* Lo que cuesta cada modalidad, para saber qué concepto
+                                    pagar. Es la tabla de la fuente, con sus cinco filas. */}
+                                {inscripcion.costos.length > 0 && (
+                                    <div>
+                                        <h3 class="font-serif text-xl font-bold text-unmsm-azul">Costos por modalidad y grado</h3>
+                                        <div class:list={[marcoTabla, 'tabla-apilable mt-5 shadow-none']}>
+                                            <table class="w-full text-sm">
+                                                <caption class="sr-only">Costos de inscripción por modalidad y grado</caption>
+                                                <thead class="bg-slate-50">
+                                                    <tr>
+                                                        <th scope="col" class={cabeceraTabla}>Concepto</th>
+                                                        <th scope="col" class={`${cabeceraTabla} text-right`}>Costo</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody class="divide-y divide-slate-100">
+                                                    {inscripcion.costos.map((c) => (
+                                                        <tr>
+                                                            <td class="px-4 py-3 text-slate-700" data-etiqueta="Concepto">{c.concepto}</td>
+                                                            <td class="whitespace-nowrap px-4 py-3 text-right font-serif text-base font-bold text-unmsm-azul" data-etiqueta="Costo">{soles(c.monto)}</td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Cómo se paga: la guía de San Market, el banco y lo que
+                                no se acepta. Acompaña a la lista al bajar. */}
+                            <aside aria-labelledby="t-como-pagar" class="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50/70 shadow-sm lg:sticky lg:top-28 lg:col-span-5">
+                                <div aria-hidden="true" class="marca-degradado h-1 w-full"></div>
+                                <div class="p-6 sm:p-7">
+                                    <div class="flex items-center gap-3">
+                                        <span aria-hidden="true" class="flex h-11 w-11 items-center justify-center rounded-xl bg-white text-unmsm-dorado shadow-sm">
+                                            <Icono icono={faReceipt} clase="h-5 w-5" />
+                                        </span>
+                                        <h3 id="t-como-pagar" class="font-serif text-xl font-bold text-unmsm-azul">Cómo pagar</h3>
+                                    </div>
+
+                                    {inscripcion.imagenes.medio_pago && (
+                                        <ImagenConRespaldo imagen={inscripcion.imagenes.medio_pago} queEs="la guía del medio de pago" whatsapp={wa?.enlace} clase="mt-5" />
+                                    )}
+
+                                    {(inscripcion.pago.banco || inscripcion.pago.codigo) && (
+                                        <dl class="mt-6 divide-y divide-slate-200 rounded-xl border border-slate-200 bg-white text-sm">
+                                            {inscripcion.pago.banco && (
+                                                <div class="flex flex-wrap justify-between gap-x-4 gap-y-1 px-4 py-3">
+                                                    <dt class="text-slate-500">Banco</dt>
+                                                    <dd class="font-semibold text-slate-800">{inscripcion.pago.banco}</dd>
+                                                </div>
+                                            )}
+                                            {inscripcion.pago.codigo && (
+                                                <div class="flex flex-wrap justify-between gap-x-4 gap-y-1 px-4 py-3">
+                                                    <dt class="text-slate-500">Código de pago</dt>
+                                                    <dd class="text-slate-800"><Negritas texto={inscripcion.pago.codigo} /></dd>
+                                                </div>
+                                            )}
+                                        </dl>
+                                    )}
+
+                                    {inscripcion.pago.advertencias.length > 0 && (
+                                        <ul class="mt-5 space-y-3">
+                                            {inscripcion.pago.advertencias.map((a, i) => (
+                                                <li
+                                                    class:list={[
+                                                        'flex gap-2.5 rounded-xl px-4 py-3 text-sm leading-relaxed',
+                                                        i === 0 ? 'border border-amber-200 bg-amber-50 text-amber-950' : 'bg-white text-slate-600',
+                                                    ]}
+                                                >
+                                                    <Icono icono={i === 0 ? faTriangleExclamation : faCircleInfo} clase="mt-0.5 h-4 w-4 flex-none" />
+                                                    <span><Negritas texto={a} /></span>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    )}
+
+                                    <p class="mt-5 text-xs leading-relaxed text-slate-500">
+                                        Los botones llevan a San Market, la plataforma de pagos de la UNMSM: esta página no procesa pagos ni pide datos bancarios.
+                                    </p>
+                                </div>
+                            </aside>
+                        </div>
+                    </div>
+                </section>
+
+                {/* ── Paso 2: el formulario, en la banda oscura de pasos ── */}
+                <section
+                    id="paso-formulario"
+                    aria-labelledby="t-paso-formulario"
+                    class="relative isolate scroll-mt-28 overflow-hidden bg-linear-to-b from-[#111827] to-[#0C1217] py-20 text-white"
+                >
+                    <div
+                        aria-hidden="true"
+                        class="absolute inset-0 -z-10 opacity-[0.06]"
+                        style="background-image: radial-gradient(circle at 1px 1px, #fff 1.5px, transparent 0); background-size: 34px 34px;"
+                    />
+                    <div aria-hidden="true" class="absolute -top-40 left-1/2 -z-10 h-[40rem] w-[40rem] -translate-x-1/2 rounded-full bg-unmsm-azul/40 blur-3xl" />
+
+                    <div class="mx-auto max-w-6xl px-6">
+                        <header class="flex flex-col gap-6 border-b border-white/10 pb-8 md:flex-row md:items-center md:justify-between">
+                            <div class="flex items-start gap-4">
+                                <span aria-hidden="true" class="marca-degradado flex h-12 w-12 flex-none items-center justify-center rounded-full font-serif text-xl font-bold text-white shadow">2</span>
+                                <div>
+                                    <p class="text-xs font-semibold uppercase tracking-[0.18em] text-unmsm-dorado-light">Paso 2</p>
+                                    <h2 id="t-paso-formulario" class="font-serif text-2xl font-bold sm:text-3xl">Envía el formulario</h2>
+                                    {inscripcion.cierre && <p class="mt-2 max-w-2xl text-slate-300">{inscripcion.cierre}</p>}
+                                </div>
+                            </div>
+                            {inscripcion.imagenes.proceso_2 && (
+                                <ImagenConRespaldo imagen={inscripcion.imagenes.proceso_2} queEs="el resumen del paso 2" whatsapp={wa?.enlace} clase="w-full max-w-xs flex-none" />
+                            )}
+                        </header>
+
+                        {inscripcion.documentos.length > 0 && (
+                            <>
+                                <h3 class="mt-10 text-xs font-semibold uppercase tracking-[0.18em] text-unmsm-dorado-light">Ten listos estos documentos, en PDF</h3>
+                                <ol class="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                                    {inscripcion.documentos.map((d, i) => (
+                                        <li class="paso relative rounded-xl bg-white/[0.06] p-6 ring-1 ring-white/10 transition hover:bg-white/[0.1]">
+                                            <div class="flex h-12 w-12 items-center justify-center rounded-full bg-unmsm-dorado/20 text-unmsm-dorado-light ring-1 ring-unmsm-dorado/30">
+                                                <Icono icono={ICONOS_DOCUMENTO[i] ?? faFilePdf} clase="h-5 w-5" />
+                                            </div>
+                                            <p class="mt-4 text-xs font-semibold uppercase tracking-wider opacity-60">Documento {LETRAS[i]}.</p>
+                                            <p class="mt-1 leading-relaxed text-slate-200"><Negritas texto={d} /></p>
+                                        </li>
+                                    ))}
+                                </ol>
+                            </>
+                        )}
+
+                        {/*
+                         * Dos grupos con dos finalidades. Antes se titulaban igual
+                         * («Elige tu formulario») y en páginas distintas, y quien
+                         * venía de posgrado encontraba «Posgrado» en uno y
+                         * «Formulario para posgrado» en el otro sin saber cuál era
+                         * el suyo. La descripción de cada uno la escribe la oficina
+                         * en el panel.
+                         */}
+                        {oesi.cronograma.formularios.length > 0 && (
+                            <>
+                                <h3 class="mt-12 text-xs font-semibold uppercase tracking-[0.18em] text-unmsm-dorado-light">Formulario de la convocatoria del mes</h3>
+                                <p class="mt-2 text-sm text-slate-400">Para rendir el examen en una fecha del <a href="/cronograma" class="font-semibold text-unmsm-dorado-light hover:underline">cronograma</a>.</p>
+                                <ul class="mt-5 grid gap-4 sm:grid-cols-2">
+                                    {oesi.cronograma.formularios.map((f) => (
+                                        <li>
+                                            <a href={f.url} target="_blank" rel="noopener noreferrer" class={claseFormulario}>
+                                                <span aria-hidden="true" class={claseIconoFormulario}>
+                                                    <Icono icono={faPenToSquare} clase="h-4 w-4" />
+                                                </span>
+                                                <span class="min-w-0 flex-1">
+                                                    <span class="block font-serif text-lg font-bold leading-snug">{f.nombre}</span>
+                                                    <span class="block text-xs text-slate-400">{f.descripcion ?? 'Google Forms'}</span>
+                                                </span>
+                                                <Icono icono={faUpRightFromSquare} clase="h-3.5 w-3.5 flex-none text-unmsm-dorado-light" />
+                                                <span class="sr-only">(se abre en una pestaña nueva)</span>
+                                            </a>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </>
+                        )}
+
+                        {inscripcion.formularios.length > 0 && (
+                            <>
+                                <h3 class="mt-12 text-xs font-semibold uppercase tracking-[0.18em] text-unmsm-dorado-light">Otros trámites</h3>
+                                <p class="mt-2 text-sm text-slate-400">Solo si tu caso es uno de estos; si no, usa el de la convocatoria.</p>
+                                <ul class="mt-5 grid gap-4 sm:grid-cols-3">
+                                    {inscripcion.formularios.map((f) => (
+                                        <li>
+                                            <a href={f.url} target="_blank" rel="noopener noreferrer" class={claseFormulario}>
+                                                <span aria-hidden="true" class={claseIconoFormulario}>
+                                                    <Icono icono={faFileSignature} clase="h-4 w-4" />
+                                                </span>
+                                                <span class="min-w-0 flex-1">
+                                                    <span class="block font-serif text-lg font-bold leading-snug">{f.nombre}</span>
+                                                    <span class="block text-xs text-slate-400">{f.descripcion ?? 'Google Forms'}</span>
+                                                </span>
+                                                <Icono icono={faUpRightFromSquare} clase="h-3.5 w-3.5 flex-none text-unmsm-dorado-light" />
+                                                <span class="sr-only">(se abre en una pestaña nueva)</span>
+                                            </a>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </>
+                        )}
+                    </div>
+                </section>
+            </div>
+            </Fragment>
+        )}
+
+        {pagina === 'preguntas' && (
+            <Fragment>
+            {/* ══ Preguntas frecuentes ══ */}
+            {/*
+             * Doce preguntas en una sola columna eran una pared de títulos iguales.
+             * Se reparten por tema —el tema lo elige la oficina en el panel— y se
+             * acompañan de lo que hace falta para encontrar la propia: un buscador,
+             * el índice de temas y, si no está, a quién escribir.
+             *
+             * <details> y no un acordeón con script: abre con teclado y con lector de
+             * pantalla sin nada que mantener, y el buscador del navegador encuentra
+             * el texto de las respuestas cerradas.
+             */}
+            <div id="preguntas" class="panel-oesi">
+                <section class="relative isolate overflow-clip bg-slate-50 py-12">
+                    <FondoSeccion />
+                    <div class="mx-auto max-w-6xl px-6">
+                        <div class="grid items-start gap-8 lg:grid-cols-12" data-faq>
+                            <aside class="space-y-5 lg:sticky lg:top-28 lg:col-span-4" aria-label="Buscar y recorrer las preguntas">
+                                {/* El buscador aparece con JavaScript: sin él no
+                                    filtraría nada, y las preguntas se ven todas. */}
+                                <div hidden data-faq-buscador class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                                    <label for="faq-buscar" class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                                        Busca tu pregunta
+                                    </label>
+                                    <div class="relative mt-3">
+                                        <Icono icono={faMagnifyingGlass} clase="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                                        <input
+                                            id="faq-buscar"
+                                            type="search"
+                                            autocomplete="off"
+                                            placeholder="voucher, reprogramar, devolución…"
+                                            class="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-unmsm-azul focus:bg-white focus:outline-none focus:ring-2 focus:ring-unmsm-azul/20"
+                                        />
+                                    </div>
+                                    <p class="mt-2 text-xs text-slate-500" data-faq-cuenta aria-live="polite"></p>
+                                </div>
+
+                                <nav aria-label="Temas" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                                    <p class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Temas</p>
+                                    <ul class="mt-3 space-y-1">
+                                        {gruposFaq.map((g) => (
+                                            <li data-faq-indice={g.clave}>
+                                                <a
+                                                    href={`#faq-${g.clave}`}
+                                                    class="group flex items-center gap-3 rounded-lg px-2 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 hover:text-unmsm-azul"
+                                                >
+                                                    <span aria-hidden="true" class="flex h-8 w-8 flex-none items-center justify-center rounded-lg bg-slate-100 text-unmsm-dorado transition group-hover:bg-unmsm-azul group-hover:text-white">
+                                                        <Icono icono={iconoTema(g.clave)} clase="h-3.5 w-3.5" />
+                                                    </span>
+                                                    <span class="flex-1">{g.etiqueta}</span>
+                                                    <span class="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-500" data-faq-cuenta-tema>
+                                                        {g.items.length}
+                                                    </span>
+                                                </a>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </nav>
+
+                                <ContactoDudas whatsapp={wa} email={contacto.email} horario={contacto.horario} clase="hidden lg:block" />
+                            </aside>
+
+                            <div class="space-y-12 lg:col-span-8">
+                                {gruposFaq.map((g) => (
+                                    <section id={`faq-${g.clave}`} aria-labelledby={`t-faq-${g.clave}`} class="scroll-mt-28" data-faq-grupo>
+                                        <h2 id={`t-faq-${g.clave}`} class="flex items-center gap-3 font-serif text-xl font-bold text-unmsm-azul">
+                                            <span aria-hidden="true" class="flex h-9 w-9 items-center justify-center rounded-xl bg-white text-unmsm-dorado shadow-sm">
+                                                <Icono icono={iconoTema(g.clave)} clase="h-4 w-4" />
+                                            </span>
+                                            {g.etiqueta}
+                                        </h2>
+
+                                        <div class="mt-5 space-y-3">
+                                            {g.items.map((f) => (
+                                                <details
+                                                    name="preguntas-oesi"
+                                                    class="pregunta-oesi group relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition open:border-unmsm-dorado/50 open:shadow-md"
+                                                    data-buscar={normalizar([sinMarcas(f.pregunta), sinMarcas(f.respuesta), ...f.lista].join(' '))}
+                                                >
+                                                    <span aria-hidden="true" class="absolute inset-y-0 left-0 w-1 bg-unmsm-dorado opacity-0 transition group-open:opacity-100"></span>
+                                                    <summary class="flex cursor-pointer list-none items-center justify-between gap-4 px-6 py-5 font-serif text-base font-bold leading-snug text-unmsm-azul">
+                                                        <span>{f.pregunta}</span>
+                                                        <span aria-hidden="true" class="flex h-8 w-8 flex-none items-center justify-center rounded-full bg-slate-100 text-unmsm-dorado transition duration-300 group-open:rotate-45 group-open:bg-unmsm-azul group-open:text-white">
+                                                            <Icono icono={faPlus} clase="h-3 w-3" />
+                                                        </span>
+                                                    </summary>
+                                                    <div class="border-t border-slate-100 px-6 pb-6 pt-4 leading-relaxed text-slate-600">
+                                                        <p><Negritas texto={f.respuesta} /></p>
+                                                        {f.lista.length > 0 && (
+                                                            <ul class="mt-3 space-y-1.5">
+                                                                {f.lista.map((l) => <li class="vineta-oesi">{l}</li>)}
+                                                            </ul>
+                                                        )}
+                                                    </div>
+                                                </details>
+                                            ))}
+                                        </div>
+                                    </section>
+                                ))}
+
+                                <div hidden data-faq-vacio class="rounded-2xl border border-dashed border-slate-300 bg-white/60 px-6 py-12 text-center">
+                                    <p class="font-serif text-lg font-bold text-slate-700">Ninguna pregunta coincide con tu búsqueda</p>
+                                    <p class="mx-auto mt-2 max-w-md text-sm text-slate-500">
+                                        Prueba con otra palabra, o escríbenos: te respondemos en el horario de atención.
+                                    </p>
+                                </div>
+
+                                <ContactoDudas whatsapp={wa} email={contacto.email} horario={contacto.horario} clase="lg:hidden" />
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+            </Fragment>
+        )}
+    </div>
+
+    {/* Cierre: la banda de marca en degradado de la portada del CERSEU, con el
+        contacto de la oficina. Solo en el inicio: en el resto el contacto ya
+        está donde hace falta —las fechas, las preguntas—, en el pie y en el
+        botón flotante, y una banda más era repetirlo por repetir. */}
+    {
+        pagina === 'inicio' && (wa || contacto.email) && (
+            <section data-banda-degradado data-sigue-raton class="banda-marca relative isolate overflow-hidden py-16 text-white">
+                <FondoSeccion tono="oscuro" deriva={80} />
+                <div aria-hidden="true" class="luz-raton" />
+                <div class="relative mx-auto flex max-w-6xl flex-col gap-6 px-6 md:flex-row md:items-center md:justify-between">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-unmsm-dorado-light">{oesi.institucion}</p>
+                        <h2 class="mt-2 font-serif text-2xl font-bold sm:text-3xl">¿Tienes alguna duda sobre el examen?</h2>
+                        {contacto.horario && <p class="mt-3 max-w-2xl text-slate-200">Atención: {contacto.horario}</p>}
+                    </div>
+                    <div class="flex flex-wrap gap-3">
+                        {wa && (
+                            <Boton href={wa.enlace} icono={faWhatsapp} nuevaPestana>
+                                Escríbenos por WhatsApp
+                            </Boton>
+                        )}
+                        {contacto.email && (
+                            <Boton href={`mailto:${contacto.email}`} variante="contorno-claro" icono={faEnvelope}>
+                                Escribir al correo
+                            </Boton>
+                        )}
+                    </div>
+                </div>
+            </section>
+        )
+    }
+
+    {/*
+     * Anclas.
+     *
+     * El navegador solo no basta: al cargar con #preguntas el
+     * `scroll-behavior: smooth` global convertía el salto en una animación que
+     * cortaba la propia carga —la foto del hero, las fuentes— y la página se
+     * quedaba arriba. Y un clic en el menú («/#inscripcion») lo intercepta el
+     * ClientRouter de Astro, que cambia la URL con `pushState` y no se mueve.
+     *
+     * En línea y síncrono, para colocar la sección antes del primer pintado.
+     */}
+    <script is:inline>
+        (function () {
+            var sinMovimiento = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+            function seccion(hash) {
+                var id = '';
+                try {
+                    id = decodeURIComponent(hash.slice(1));
+                } catch (e) {}
+                var el = id && document.getElementById(id);
+                return el && el.closest('[data-oesi]') ? el : null;
+            }
+
+            function iniciar() {
+                var raiz = document.querySelector('[data-oesi]');
+                if (!raiz || raiz.dataset.listo === '1') return;
+                raiz.dataset.listo = '1';
+
+                var inicial = seccion(location.hash);
+                if (!inicial) return;
+
+                // Instantáneo, y otra vez al terminar la carga, porque lo que
+                // entra después cambia las alturas; salvo que la persona ya haya
+                // movido la página.
+                var colocar = function () {
+                    inicial.scrollIntoView({ block: 'start', behavior: 'instant' });
+                };
+                var movida = false;
+                var alMover = function () {
+                    movida = true;
+                };
+                window.addEventListener('wheel', alMover, { once: true, passive: true });
+                window.addEventListener('touchstart', alMover, { once: true, passive: true });
+                window.addEventListener('keydown', alMover, { once: true });
+
+                requestAnimationFrame(colocar);
+                var trasCarga = function () {
+                    if (!movida) requestAnimationFrame(colocar);
+                };
+                if (document.readyState === 'complete') setTimeout(trasCarga, 300);
+                else window.addEventListener('load', trasCarga, { once: true });
+            }
+
+            // Un solo oyente por documento: con las transiciones de vista este
+            // script vuelve a ejecutarse en cada visita a la portada. En captura,
+            // para llegar antes que el ClientRouter.
+            if (!window.__anclasOesi) {
+                window.__anclasOesi = true;
+                document.addEventListener(
+                    'click',
+                    function (e) {
+                        if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey) return;
+                        var enlace = e.target.closest && e.target.closest('a[href*="#"]');
+                        if (!enlace || enlace.target === '_blank') return;
+
+                        var destino = new URL(enlace.href, location.href);
+                        if (destino.origin !== location.origin || destino.pathname !== location.pathname) return;
+
+                        var el = seccion(destino.hash);
+                        if (!el) return;
+                        e.preventDefault();
+                        try {
+                            history.pushState(history.state, '', destino.hash);
+                        } catch (err) {}
+                        el.scrollIntoView({ block: 'start', behavior: sinMovimiento ? 'auto' : 'smooth' });
+
+                        // Las imágenes vienen de la web de Letras sin medidas:
+                        // las perezosas que se cargan al pasar empujan la
+                        // sección hacia abajo y el desplazamiento se quedaba
+                        // corto. Al terminar, si ya no está arriba, se recoloca.
+                        window.addEventListener(
+                            'scrollend',
+                            function () {
+                                var margen = parseFloat(getComputedStyle(el).scrollMarginTop) || 0;
+                                if (Math.abs(el.getBoundingClientRect().top - margen) > 8) {
+                                    el.scrollIntoView({ block: 'start', behavior: 'instant' });
+                                }
+                            },
+                            { once: true }
+                        );
+                    },
+                    true
+                );
+            }
+
+            iniciar();
+            document.addEventListener('astro:page-load', iniciar);
+        })();
+    </script>
+
+    <script>
+        /*
+         * Copiar el correo o el número.
+         *
+         * La API del portapapeles primero; si no existe o el navegador la
+         * niega —fuera de HTTPS, o sin permiso—, la vía antigua con un
+         * <textarea>. Si las dos fallan se dice, con el dato a la vista para
+         * copiarlo a mano: la landing anterior fallaba en silencio.
+         */
+        function copiarALaAntigua(valor: string): boolean {
+            const campo = document.createElement('textarea');
+            campo.value = valor;
+            campo.setAttribute('readonly', '');
+            campo.style.position = 'fixed';
+            campo.style.opacity = '0';
+            document.body.appendChild(campo);
+            campo.select();
+
+            let hecho = false;
+            try {
+                hecho = document.execCommand('copy');
+            } catch {
+                hecho = false;
+            }
+
+            campo.remove();
+            return hecho;
+        }
+
+        async function copiar(boton: HTMLButtonElement) {
+            const valor = boton.dataset.copiar ?? '';
+            const que = boton.dataset.copiarQue ?? 'el dato';
+            const aviso = document.getElementById('oesi-aviso-copia');
+
+            let hecho = false;
+            try {
+                if (navigator.clipboard?.writeText) {
+                    await navigator.clipboard.writeText(valor);
+                    hecho = true;
+                }
+            } catch {
+                hecho = false;
+            }
+            if (!hecho) hecho = copiarALaAntigua(valor);
+
+            const mensaje = hecho ? `Copiado ${que}: ${valor}` : `No se pudo copiar ${que}. Es ${valor}`;
+            if (aviso) aviso.textContent = mensaje;
+            boton.dataset.copiado = hecho ? 'si' : 'no';
+            boton.title = hecho ? 'Copiado' : 'No se pudo copiar';
+
+            window.setTimeout(() => {
+                delete boton.dataset.copiado;
+                boton.title = `Copiar ${que}`;
+            }, 2000);
+        }
+
+        function iniciarCopia() {
+            document.querySelectorAll<HTMLButtonElement>('[data-copiar]').forEach((boton) => {
+                if (boton.dataset.listo === '1') return;
+                boton.dataset.listo = '1';
+                boton.hidden = false;
+                boton.addEventListener('click', () => copiar(boton));
+            });
+        }
+
+        document.addEventListener('astro:page-load', iniciarCopia);
+    </script>
+
+    <script>
+        /*
+         * Buscador de las preguntas frecuentes.
+         *
+         * Filtra mientras se escribe, sin tildes ni mayúsculas: cada pregunta
+         * lleva en `data-buscar` su texto ya normalizado en el build. Solo
+         * oculta con `hidden`, y solo con el buscador visible —que lo destapa
+         * este mismo script—: sin JavaScript se ven todas.
+         */
+        import { normalizar } from '../../lib/oesi';
+
+        function iniciarBuscador() {
+            const raiz = document.querySelector<HTMLElement>('[data-faq]');
+            if (!raiz || raiz.dataset.buscadorListo === '1') return;
+            raiz.dataset.buscadorListo = '1';
+
+            const caja = raiz.querySelector<HTMLElement>('[data-faq-buscador]');
+            const campo = raiz.querySelector<HTMLInputElement>('#faq-buscar');
+            const cuenta = raiz.querySelector<HTMLElement>('[data-faq-cuenta]');
+            const vacio = raiz.querySelector<HTMLElement>('[data-faq-vacio]');
+            const grupos = [...raiz.querySelectorAll<HTMLElement>('[data-faq-grupo]')];
+            if (!caja || !campo) return;
+
+            caja.hidden = false;
+
+            const filtrar = () => {
+                const consulta = normalizar(campo.value);
+                const palabras = consulta.split(' ').filter(Boolean);
+                let visibles = 0;
+
+                for (const grupo of grupos) {
+                    let enGrupo = 0;
+                    for (const pregunta of grupo.querySelectorAll<HTMLDetailsElement>('details')) {
+                        const texto = pregunta.dataset.buscar ?? '';
+                        const coincide = palabras.every((p) => texto.includes(p));
+                        pregunta.hidden = !coincide;
+                        if (coincide) enGrupo++;
+                    }
+                    grupo.hidden = enGrupo === 0;
+                    visibles += enGrupo;
+
+                    // El índice de temas dice cuántas quedan en cada uno.
+                    const indice = raiz.querySelector<HTMLElement>(`[data-faq-indice="${grupo.id.replace('faq-', '')}"]`);
+                    if (indice) {
+                        indice.hidden = enGrupo === 0;
+                        const n = indice.querySelector('[data-faq-cuenta-tema]');
+                        if (n) n.textContent = String(enGrupo);
+                    }
+                }
+
+                if (vacio) vacio.hidden = visibles > 0;
+                if (cuenta) {
+                    cuenta.textContent = palabras.length
+                        ? visibles === 1
+                            ? '1 pregunta coincide'
+                            : `${visibles} preguntas coinciden`
+                        : '';
+                }
+            };
+
+            campo.addEventListener('input', filtrar);
+        }
+
+        iniciarBuscador();
+        document.addEventListener('astro:page-load', iniciarBuscador);
+    </script>
+</Base>
+
+<style>
+    /* El ancla queda por debajo de la cápsula de la cabecera, que es fija. */
+    .panel-oesi {
+        scroll-margin-top: 6rem;
+    }
+
+    /* Las secciones van seguidas y varias abren y cierran sobre el mismo gris:
+       sin este filo, dos de ellas se leían como una sola. */
+    .panel-oesi + .panel-oesi {
+        border-top: 1px solid rgb(226 232 240);
+    }
+
+    .texto-oesi {
+        font-size: 0.95rem;
+        line-height: 1.7;
+        color: rgb(51 65 85);
+    }
+
+    /* Viñeta en dorado, la del listado de requisitos de admisión del CERSEU. */
+    .vineta-oesi {
+        position: relative;
+        padding-left: 1.15rem;
+    }
+
+    .vineta-oesi::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0.62em;
+        width: 6px;
+        height: 6px;
+        border-radius: 9999px;
+        background: var(--color-unmsm-dorado);
+    }
+
+    .tarjeta-habilidad {
+        transition:
+            transform 300ms ease,
+            box-shadow 300ms ease,
+            border-color 300ms ease;
+    }
+
+    .tarjeta-habilidad:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 16px 32px -20px rgb(15 43 72 / 0.45);
+        border-color: color-mix(in oklab, var(--color-unmsm-dorado) 55%, transparent);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .tarjeta-habilidad,
+        .tarjeta-habilidad * {
+            transition: none;
+        }
+
+        .tarjeta-habilidad:hover {
+            transform: none;
+        }
+    }
+
+    .pregunta-oesi summary::-webkit-details-marker {
+        display: none;
+    }
+
+    /* Las tarjetas de recurso de la portada del CERSEU. */
+    .tarjeta-recurso {
+        border: 1px solid transparent;
+        transition:
+            transform 300ms ease,
+            box-shadow 300ms ease,
+            border-color 300ms ease;
+    }
+
+    .tarjeta-recurso:hover,
+    .tarjeta-recurso:focus-visible {
+        transform: translateY(-4px);
+        box-shadow: 0 16px 32px -20px rgb(15 43 72 / 0.45);
+        border-color: color-mix(in oklab, var(--color-unmsm-dorado) 55%, transparent);
+    }
+
+    /* La línea dorada que une los pasos de la banda oscura, como en «Cómo
+       inscribirte»: cuelga de cada tarjeta y solo aparece entre ellas. */
+    @media (min-width: 64rem) {
+        .paso::after {
+            content: '';
+            position: absolute;
+            top: 3rem;
+            left: 100%;
+            width: 1.25rem;
+            height: 1px;
+            background: linear-gradient(
+                90deg,
+                var(--color-unmsm-dorado),
+                color-mix(in oklab, var(--color-unmsm-dorado) 30%, transparent)
+            );
+        }
+
+        .paso:last-child::after {
+            display: none;
+        }
+    }
+
+    /* La banda de marca y su luz, de la portada del CERSEU. */
+    .banda-marca {
+        background-image: var(--degradado-banda);
+        background-size: 200% 100%;
+        background-position: 0% 50%;
+    }
+
+    .luz-raton {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        mix-blend-mode: screen;
+        background: radial-gradient(
+            38rem 22rem at calc(50% + var(--raton-h, 0) * 42%) calc(50% + var(--raton-v, 0) * 70%),
+            color-mix(in oklab, var(--color-unmsm-dorado) 26%, transparent) 0%,
+            transparent 70%
+        );
+    }
+
+    /*
+     * Tablas que en móvil se apilan: cada fila pasa a ser una ficha con sus
+     * datos rotulados. Con conceptos de línea y media, una tabla deslizable
+     * obligaba a ir y volver para leer a qué precio corresponde cada uno.
+     */
+    @media (max-width: 39.99rem) {
+        .tabla-apilable thead {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            overflow: hidden;
+            clip: rect(0 0 0 0);
+        }
+
+        .tabla-apilable tr {
+            display: block;
+            padding: 0.75rem 0;
+        }
+
+        .tabla-apilable td {
+            display: flex;
+            justify-content: space-between;
+            gap: 1rem;
+            padding: 0.25rem 1rem;
+            text-align: left;
+        }
+
+        .tabla-apilable td::before {
+            content: attr(data-etiqueta);
+            flex: none;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: rgb(100 116 139);
+        }
+
+        .tabla-apilable td:first-child {
+            display: block;
+        }
+
+        .tabla-apilable td:first-child::before {
+            display: block;
+            margin-bottom: 0.15rem;
+        }
+    }
+
+    /* Global: el botón vive en CopiarDato, fuera del ámbito de esta hoja. */
+    :global([data-copiado='si']) {
+        color: #86efac;
+    }
+
+    :global([data-copiado='no']) {
+        color: #fca5a5;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .tarjeta-recurso,
+        .tarjeta-recurso * {
+            transition: none;
+        }
+
+        .tarjeta-recurso:hover {
+            transform: none;
+        }
+    }
+</style>

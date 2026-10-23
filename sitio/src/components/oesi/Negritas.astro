@@ -1,0 +1,16 @@
+---
+import { trozos } from '../../lib/oesi';
+
+interface Props {
+    texto: string | null | undefined;
+}
+
+// Texto del panel con sus `**negritas**`, pintado sin `set:html`: cada trozo
+// sale escapado y la negrita es un <strong> de la plantilla, no del texto.
+//
+// Sin color propio: hereda el del párrafo. Fijaba un gris casi negro y, sobre
+// las bandas oscuras, la negrita desaparecía justo donde había que leerla.
+const partes = trozos(Astro.props.texto);
+---
+
+{partes.map((t) => (t.negrita ? <strong class="font-semibold">{t.texto}</strong> : t.texto))}

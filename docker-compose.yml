@@ -1,0 +1,205 @@
+# Compose v2 ya no lee `version`: estaba declarado como '3.8' y lo unico que
+# hacia era imprimir un aviso en cada comando, en el servidor tambien.
+services:
+  # PHP-FPM Application
+  app:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+      args:
+        # En Linux el bind mount conserva el propietario real: si el usuario
+        # del host no coincide con el del contenedor, este no puede escribir
+        # en storage/. Se ponen en el .env de la raiz, o al vuelo con
+        # UID=$(id -u) GID=$(id -g) docker compose build
+        UID: ${UID:-1000}
+        GID: ${GID:-1000}
+    container_name: oesiletras_app
+    # Como los otros cinco. Era el unico servicio sin politica, y resulta que el
+    # peor para no tenerla: tras un reinicio de la maquina volvian nginx, la
+    # base, redis, las colas y el build —y no PHP—, de modo que el sitio
+    # parecia levantado y cada peticion al panel y a la API daba 502. Un fallo
+    # que no da la cara hasta que alguien intenta entrar.
+    #
+    # `unless-stopped` y no `always`, igual que el resto: si alguien lo para a
+    # mano para operar, no quiere que vuelva solo en el proximo arranque.
+    restart: unless-stopped
+    working_dir: /var/www/html
+    # Los bind mounts llevan `:z` por SELinux. En Rocky, RHEL y Fedora —y la VM
+    # de produccion es Rocky 9— SELinux esta en Enforcing y un contenedor no
+    # puede leer ficheros del host que no esten etiquetados para contenedores:
+    # el fallo es «Permission denied» sobre ficheros con permisos
+    # aparentemente correctos, y desconcierta. `:z` hace que Docker los
+    # etiquete al arrancar y los mantenga etiquetados; en minuscula porque
+    # `./oesiletras` lo COMPARTEN `app`, `web` y `queue` —`:Z` lo marcaria
+    # como privado de un contenedor y los otros dos se quedarian fuera—. En
+    # Docker Desktop (Windows, macOS) la bandera se ignora, asi que no hay dos
+    # configuraciones que mantener.
+    volumes:
+      - ./oesiletras:/var/www/html:z
+    depends_on:
+      - db
+    networks:
+      - laravel-network
+    environment:
+      # Solo la URL. APP_ENV y APP_DEBUG viven en oesiletras/.env, no aquí:
+      # una variable de entorno del contenedor gana sobre el .env y además se
+      # cuela en $_SERVER, donde PHPUnit no puede pisarla —con APP_ENV clavado,
+      # la suite entera corría fuera del entorno de pruebas.
+      - APP_URL=https://oesiletras.unmsm.edu.pe
+
+  # Nginx Web Server
+  web:
+    image: nginx:stable-alpine
+    container_name: oesiletras_nginx
+    restart: unless-stopped
+    ports:
+      # Parametrizados para poder convivir con otro sitio en la misma maquina:
+      # el del CERSEU usa estos mismos por defecto. En un servidor propio, 80
+      # y 443; si comparten maquina, uno de los dos tiene que moverse (ver
+      # WEB_PORT en .env.example).
+      - "${WEB_PORT:-80}:80"
+      - "${WEB_SSL_PORT:-443}:443"
+    volumes:
+      - ./oesiletras:/var/www/html:z
+      # La conf va como PLANTILLA: el entrypoint de nginx sustituye las
+      # variables y escribe el resultado en /etc/nginx/conf.d/. Antes el
+      # dominio estaba escrito a mano dentro del .conf, de modo que
+      # levantar el sistema en otro dominio exigia editar codigo.
+      - ./docker/nginx/templates/default-ssl.conf.template:/etc/nginx/templates/default.conf.template:z
+      - ./docker/nginx/ssl_sectigo:/etc/nginx/ssl_sectigo:z
+      - ./docker/nginx/compression.conf:/etc/nginx/compression.conf:z
+      # El reparto entre el sitio estatico y Laravel, compartido por las dos
+      # plantillas. No va como plantilla porque no lleva variables: envsubst
+      # solo procesa /etc/nginx/templates/.
+      - ./docker/nginx/sitio.conf:/etc/nginx/sitio.conf:z
+      # El sitio publico: el `dist/` que genera Astro. Nginx lo sirve tal cual,
+      # sin pasar por PHP.
+      - ./sitio/dist:/var/www/sitio:ro,z
+    depends_on:
+      - app
+    networks:
+      - laravel-network
+    environment:
+      # Lista completa de server_name, separada por espacios.
+      - NGINX_SERVER_NAMES=${NGINX_SERVER_NAMES:-oesiletras.unmsm.edu.pe www.oesiletras.unmsm.edu.pe}
+      # Solo se sustituyen las variables cuyo NOMBRE empieza por NGINX_.
+      # Sin este filtro, envsubst se comeria tambien $$server_name,
+      # $$request_uri y $$fastcgi_script_name, y nginx no arrancaria.
+      - NGINX_ENVSUBST_FILTER=^NGINX_
+
+  # Redis: cache, sesiones y colas.
+  #
+  # Las colas son el motivo principal. El aviso de una solicitud se enviaba
+  # en la misma peticion y con un solo intento: si el SMTP estaba caido un
+  # minuto, el aviso se perdia hasta que alguien mirara `leads.aviso_error` y
+  # reenviara a mano.
+  redis:
+    image: redis:7-alpine
+    container_name: oesiletras_redis
+    restart: unless-stopped
+    # `appendonly` para que la cola sobreviva a un reinicio del contenedor:
+    # sin persistencia, un `docker compose restart` tira los trabajos que
+    # estuvieran esperando.
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+    networks:
+      - laravel-network
+
+  # Trabajador de la cola. Vive aparte de `app` a proposito: si el proceso
+  # muere, lo reinicia Docker sin arrastrar al servidor web.
+  queue:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+      args:
+        UID: ${UID:-1000}
+        GID: ${GID:-1000}
+    container_name: oesiletras_queue
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - ./oesiletras:/var/www/html:z
+    depends_on:
+      - db
+      - redis
+    networks:
+      - laravel-network
+    # --tries y --backoff se declaran en el Job; aqui solo el ciclo de vida.
+    # `--max-time` recicla el proceso cada hora: PHP de larga duracion acumula
+    # memoria y estado, y un trabajador eterno acaba sirviendo codigo viejo.
+    command: php artisan queue:work redis --sleep=3 --max-time=3600
+
+  # MySQL Database
+  # Base de Datos
+  # Construccion del sitio publico.
+  #
+  # Dos oficios en un solo contenedor, y por eso vive aqui y no en la capa de
+  # desarrollo:
+  #
+  #   - Escucha en /reconstruir. Publicar desde el panel encola un trabajo que
+  #     pide una reconstruccion, y este servicio la ejecuta: sin el, el sitio
+  #     se queda con el contenido de la ultima construccion manual.
+  #   - Es donde se lanza el build a mano:
+  #       docker compose run --rm build npm run build
+  #
+  # `OESI_API` apunta al nombre del servicio de Nginx dentro de la red. No
+  # sirve localhost: ahi dentro seria este mismo contenedor.
+  build:
+    image: node:22-alpine
+    container_name: oesiletras_build
+    restart: unless-stopped
+    working_dir: /app
+    environment:
+      - OESI_API=http://web/api/v1
+      - OESI_SITE=${OESI_SITE:-https://oesiletras.unmsm.edu.pe}
+      - OESI_BUILD_TOKEN=${OESI_BUILD_TOKEN:-token-de-desarrollo}
+      # Vista previa: sin este token el servicio la rechaza. Vacio la
+      # desactiva, que es lo que debe pasar en una instalacion sin configurar.
+      - OESI_VISTA_PREVIA_TOKEN=${OESI_VISTA_PREVIA_TOKEN:-}
+      - PUERTO_BUILD=4322
+    volumes:
+      - ./sitio:/app:z
+      # node_modules en volumen nombrado, por lo mismo que vendor/ en la app.
+      - node-modules-build:/app/node_modules
+    depends_on:
+      - web
+    networks:
+      - laravel-network
+    command: sh -c "npm install && node herramientas/servidor-de-build.mjs"
+
+  db:
+    build:
+      context: ./docker/mysql
+      dockerfile: Dockerfile
+    container_name: oesiletras_db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root_password}
+      MYSQL_DATABASE: ${DB_DATABASE:-oesiletras}
+      MYSQL_USER: ${DB_USERNAME:-oesi_user}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-user_password}
+    ports:
+      # Al bucle local y no a todas las interfaces. Publicar un puerto en
+      # Docker abre un agujero en el cortafuegos del sistema —las reglas de
+      # ufw se evaluan DESPUES de las de Docker y no lo tapan—, asi que
+      # "3307:3306" dejaba MySQL escuchando en la IP publica de la maquina
+      # con la contrasenia del .env como unica defensa. Desde el host sigue
+      # siendo 127.0.0.1:3307 para un cliente de base de datos o un volcado,
+      # y dentro de la red de Docker nada de esto hace falta: los servicios
+      # hablan con `db:3306`.
+      - "127.0.0.1:${DB_PORT:-3308}:3306"
+    volumes:
+      - db-data:/var/lib/mysql
+    networks:
+      - laravel-network
+    command: --default-authentication-plugin=mysql_native_password
+
+volumes:
+  redis-data:
+  node-modules-build:
+  db-data:
+
+networks:
+  laravel-network:
+    driver: bridge

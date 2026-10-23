@@ -1,0 +1,10 @@
+server {
+    listen 80;
+    listen [::]:80;
+    server_name ${NGINX_SERVER_NAMES};
+
+    # El reparto entre el sitio estático y Laravel vive en un solo fichero,
+    # compartido con la configuración de HTTPS. Aquí queda únicamente lo que de
+    # verdad distingue a un servidor del otro.
+    include /etc/nginx/sitio.conf;
+}

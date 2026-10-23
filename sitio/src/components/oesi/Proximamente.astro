@@ -1,0 +1,27 @@
+---
+/**
+ * Lo que ve cualquier página de la oficina mientras su contenido está en
+ * borrador.
+ *
+ * La API devuelve `null` hasta que la oficina publique desde el panel. Una
+ * página no puede salir en blanco ni dar 404 —sus enlaces ya circulan—, así que
+ * dice «próximamente» con el contacto, que sí se sirve siempre.
+ */
+import Base from '../../layouts/Base.astro';
+import HeroPagina from '../HeroPagina.astro';
+import EstadoVacio from '../EstadoVacio.astro';
+import { obtenerConfiguracion } from '../../lib/api';
+
+const sitio = await obtenerConfiguracion();
+---
+
+<Base titulo={sitio.nombre} descripcion={sitio.descripcion ?? undefined} sinIndexar>
+    <HeroPagina titulo={sitio.nombre} kicker="Facultad de Letras y Ciencias Humanas · UNMSM" />
+    <div class="mx-auto max-w-4xl px-6 py-14 pb-24">
+        <EstadoVacio
+            titulo="Próximamente"
+            texto="La información sobre los exámenes de suficiencia se publicará en breve. Mientras tanto, puedes escribirnos."
+            accion={sitio.contacto.email ? { texto: 'Escribir a la oficina', url: `mailto:${sitio.contacto.email}` } : undefined}
+        />
+    </div>
+</Base>

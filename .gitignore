@@ -1,0 +1,66 @@
+/node_modules
+/public/build
+/public/hot
+/public/storage
+/storage/*.key
+/vendor
+.env
+.env.backup
+.env.production
+.phpactor.json
+.phpunit.result.cache
+Homestead.json
+Homestead.yaml
+auth.json
+npm-debug.log
+yarn-error.log
+/.fleet
+/.idea
+/.vscode
+
+# SSL Certificates and private keys (sensitive data)
+docker/nginx/ssl/privkey.pem
+docker/nginx/ssl/*.key
+docker/nginx/ssl/_.unmsm.edu.pe.privkey.*
+docker/nginx/ssl/STAR_unmsm_edu_pe_full.crt
+
+# Database backups
+*.sql
+backup_*.sql
+
+# Environment files (sensitive)
+.env
+.env.*
+oesiletras/.env*
+# …salvo las plantillas, que no llevan secretos y hacen falta para arrancar.
+!.env.example
+!oesiletras/.env.example
+!oesiletras/.env.docker
+
+# Temporary files
+*.tmp
+*.log
+ssl_renewal.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+
+# SSL Certificates - DO NOT COMMIT PRIVATE KEYS
+docker/nginx/ssl/
+*.key
+*.pem
+*.crt
+
+# Ajustes locales de Claude Code: son de cada maquina y llevan rutas
+# absolutas del equipo de quien las genero.
+.claude/settings.local.json
+
+# Playwright
+sitio/test-results/
+sitio/playwright-report/

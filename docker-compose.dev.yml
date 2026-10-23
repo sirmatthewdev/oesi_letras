@@ -1,0 +1,143 @@
+# Capa de desarrollo. Se aplica encima de docker-compose.yml:
+#
+#     docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+#
+# Deliberadamente NO se llama docker-compose.override.yml. Con ese nombre
+# Compose lo aplicaría solo, sin que nadie lo pida, y el servidor lo recogería
+# al hacer git pull: quedaría en producción con APP_DEBUG=true, escupiendo
+# trazas con credenciales en cada error. El nombre explícito obliga a pedirlo.
+services:
+  app:
+    environment:
+      # Solo la URL. APP_ENV y APP_DEBUG se ponen en oesiletras/.env
+      # (APP_ENV=local, APP_DEBUG=true): exportarlas aquí las mete en $_SERVER,
+      # donde PHPUnit no puede sobrescribirlas ni con force="true", y la suite
+      # acaba corriendo contra la base de desarrollo en vez de la de pruebas.
+      - APP_URL=http://localhost:${WEB_PORT:-80}
+    ports:
+      # Servidor de Vite, para `npm run dev` con recarga en caliente. En el
+      # host, 5174 y no 5173: así no choca con el del CERSEU si corren a la vez.
+      - "${VITE_PORT:-5174}:5173"
+    volumes:
+      # vendor/ y node_modules/ salen del bind mount y viven en volúmenes
+      # dentro del contenedor.
+      #
+      # No es por rendimiento: sobre el bind mount de Docker Desktop en Windows,
+      # readdir() TRUNCA los directorios grandes. En vendor/owenvoke/blade-
+      # fontawesome/resources/svg/solid, scandir() ve los 1758 SVG pero
+      # FilesystemIterator —el que usan Symfony Finder y, por debajo, blade-icons—
+      # devuelve solo 926, siempre los mismos. El resultado es que la mitad de
+      # los iconos no existe para la aplicación y cualquier página que use uno de
+      # ellos revienta con «Unable to locate a class or view for component».
+      #
+      # Con volúmenes nombrados los ficheros están en el sistema de archivos de
+      # Linux y se listan enteros. A cambio, `composer install` y `npm install`
+      # hay que correrlos DENTRO del contenedor —que es justo lo que dice el
+      # README— y el editor del host no ve esas carpetas.
+      - vendor-data:/var/www/html/vendor
+      - node-modules:/var/www/html/node_modules
+
+  # El trabajador de colas corre el MISMO codigo que la aplicacion, asi que
+  # necesita el mismo vendor/. Sin esta linea leia el del bind mount —donde no
+  # esta Filament, porque `composer install` se corre dentro del contenedor— y
+  # moria al arrancar con «Class Filament\PanelProvider not found», en bucle de
+  # reinicio. Un trabajador caido no da error: simplemente los avisos por correo
+  # de las solicitudes se quedan en la cola sin que nadie lo note.
+  queue:
+    volumes:
+      - ./oesiletras:/var/www/html:z
+      - vendor-data:/var/www/html/vendor
+
+  web:
+    environment:
+      # En desarrollo el sitio se sirve por localhost, no por el dominio.
+      - NGINX_SERVER_NAMES=localhost 127.0.0.1
+    volumes:
+      # La conf de producción pide los certificados de /etc/nginx/ssl_sectigo,
+      # que no están en el repositorio. Sin ellos nginx ni siquiera arranca, así
+      # que en desarrollo se sirve la variante sin TLS por el puerto 80.
+      # Compose fusiona los volúmenes por ruta de destino, de modo que esta
+      # línea sustituye a la del compose base en lugar de sumarse.
+      - ./docker/nginx/templates/default.conf.template:/etc/nginx/templates/default.conf.template:z
+
+
+  # Sitio publico en Astro. Vive aparte del monolito: consume la API de
+  # contenido de Laravel por HTTP y no toca la base de datos.
+  #
+  # Solo esta en la capa de desarrollo. En produccion un sitio estatico no
+  # necesita un contenedor corriendo: se construye en CI y se sirven los
+  # ficheros. Ese pipeline esta por montar.
+  astro:
+    image: node:22-alpine
+    container_name: oesiletras_astro
+    working_dir: /app
+    environment:
+      # `web` es el servicio de Nginx dentro de la red de Docker. No sirve
+      # localhost: dentro de este contenedor seria el propio contenedor.
+      - OESI_API=http://web/api/v1
+      # La que va en el HTML, para el formulario. En produccion Nginx sirve el
+      # sitio y la API bajo el mismo dominio y basta con la ruta relativa; el
+      # servidor de desarrollo corre en otro puerto, asi que aqui si hace falta
+      # decir donde esta la API.
+      - OESI_API_PUBLICA=http://localhost:${WEB_PORT:-80}/api/v1
+    ports:
+      # 4331 en el host, apartado del 4321 del CERSEU.
+      - "${ASTRO_PORT:-4331}:4321"
+    volumes:
+      - ./sitio:/app:z
+      # node_modules en volumen nombrado, por lo mismo que vendor/ en la app:
+      # sobre el bind mount de Docker Desktop readdir() trunca los
+      # directorios grandes.
+      - astro-node-modules:/app/node_modules
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+    depends_on:
+      - web
+    networks:
+      - laravel-network
+
+
+  # Servicio de reconstruccion. Escucha a Laravel y ejecuta `astro build`.
+  #
+  # Comparte el volumen del sitio con `astro`, asi que lo que construye queda
+  # en el mismo dist/. Aparte del servidor de desarrollo a proposito: un build
+  # no debe poder tumbar la vista previa.
+  # En desarrollo el servicio de construccion se asoma al host, para poder
+  # comprobar su estado con `curl localhost:4332/estado` (4332 en el host,
+  # apartado del 4322 del CERSEU).
+  build:
+    ports:
+      - "${BUILD_PORT:-4332}:4322"
+
+  # Pruebas de navegador. Imagen oficial de Playwright: el contenedor de
+  # desarrollo es Alpine y Playwright no soporta Alpine —sus navegadores
+  # necesitan glibc—, y engordar la imagen de desarrollo para esto seria
+  # pagarlo en cada arranque.
+  #
+  # Bajo perfil: no arranca con `up -d`. Se pide cuando se quiere:
+  #
+  #   docker compose -f docker-compose.yml -f docker-compose.dev.yml \
+  #     --profile e2e run --rm e2e
+  e2e:
+    image: mcr.microsoft.com/playwright:v1.62.1-noble
+    profiles: [e2e]
+    working_dir: /app
+    environment:
+      # Contra Nginx y no contra el servidor de desarrollo: lo que se publica
+      # es el `dist/` que sirve Nginx, y hay comportamiento que solo existe
+      # ahi —los 301 heredados, la pagina 404, las cabeceras de cache—. El
+      # sitio tiene que estar construido antes de lanzar las pruebas.
+      - OESI_E2E=http://web
+    volumes:
+      - ./sitio:/app:z
+      - e2e-node-modules:/app/node_modules
+    depends_on:
+      - astro
+    networks:
+      - laravel-network
+    command: sh -c "npm install && npx playwright test"
+
+volumes:
+  vendor-data:
+  node-modules:
+  astro-node-modules:
+  e2e-node-modules:

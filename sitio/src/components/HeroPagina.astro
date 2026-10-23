@@ -1,0 +1,81 @@
+---
+import { Image } from 'astro:assets';
+import { paraDescargar } from '../lib/api';
+
+interface Props {
+    titulo: string;
+    bajada?: string | null;
+    kicker?: string | null;
+    imagen?: string | null;
+    /** Migas: pares [texto, url]; el último sin url es la página actual. */
+    migas?: { texto: string; url?: string }[];
+}
+
+const { titulo, bajada, kicker, imagen, migas = [] } = Astro.props;
+---
+
+<section class="hero-pagina relative isolate overflow-hidden text-white">
+    {
+        imagen && (
+            <Image
+                src={paraDescargar(imagen)}
+                alt=""
+                width={1600}
+                height={600}
+                fetchpriority="high"
+                decoding="async"
+                class="absolute inset-0 -z-10 h-full w-full object-cover"
+            />
+        )
+    }
+
+    {/* Sin foto, el degradado solo. Con foto, el mismo degradado por encima:
+        el texto blanco necesita ese velo para mantener el contraste AA sobre
+        las zonas claras. */}
+    <div
+        aria-hidden="true"
+        class="absolute inset-0 -z-10 bg-linear-to-r from-unmsm-azul-dark via-unmsm-azul/95 to-unmsm-azul/70"
+    >
+    </div>
+
+    <div class="mx-auto max-w-6xl px-6 py-16 sm:py-20">
+        {
+            migas.length > 0 && (
+                <nav aria-label="Ruta de navegación">
+                    <ol class="flex flex-wrap items-center gap-2 text-sm text-unmsm-azul-soft">
+                        {migas.map((miga, i) => (
+                            <li class="flex items-center gap-2">
+                                {i > 0 && <span aria-hidden="true">/</span>}
+                                {miga.url ? (
+                                    <a href={miga.url} class="hover:text-white">
+                                        {miga.texto}
+                                    </a>
+                                ) : (
+                                    <span class="text-white" aria-current="page">
+                                        {miga.texto}
+                                    </span>
+                                )}
+                            </li>
+                        ))}
+                    </ol>
+                </nav>
+            )
+        }
+
+        {
+            kicker && (
+                <p class="mt-6 text-xs font-semibold uppercase tracking-[0.18em] text-unmsm-dorado-light">
+                    {kicker}
+                </p>
+            )
+        }
+
+        <h1 class="mt-3 max-w-3xl font-serif text-4xl font-bold leading-tight sm:text-5xl">
+            {titulo}
+        </h1>
+
+        {bajada && <p class="mt-5 max-w-2xl text-lg text-slate-100">{bajada}</p>}
+
+        <slot />
+    </div>
+</section>

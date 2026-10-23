@@ -1,0 +1,82 @@
+---
+import type { IconDefinition } from '@fortawesome/fontawesome-svg-core';
+import Icono from '../Icono.astro';
+
+interface Props {
+    titulo: string;
+    icono?: IconDefinition;
+    /** Nivel del encabezado: h3 dentro de una sección con su propio h2. */
+    nivel?: 'h2' | 'h3';
+    /** Un rótulo pequeño sobre el título («Modalidad virtual»…). */
+    antetitulo?: string | null;
+    clase?: string;
+}
+
+const { titulo, icono, nivel = 'h3', antetitulo, clase = '' } = Astro.props;
+const Encabezado = nivel;
+---
+
+{/* La tarjeta del CERSEU: blanca, filo dorado a la izquierda —el de misión y
+    visión en /nosotros— y la insignia del icono que pasa a azul al pasar, como
+    las de documentos de la portada. Sustituye a la de cabecera azul de la
+    landing anterior, que era la única pieza que no hablaba el idioma del sitio. */}
+{/* Un <div> y no un <section> con su <header>: una tarjeta con título no es
+    una región, y como región cada una sumaba un hito más al árbol de
+    accesibilidad —veinticinco en una sola página—. */}
+{/* Sin `data-revelar`: con un ancla la página aterriza a mitad de camino y las
+    tarjetas de encima se quedaban esperando a un scroll que no llega. */}
+<div
+    class:list={[
+        'tarjeta-oesi group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8',
+        clase,
+    ]}
+>
+    <span aria-hidden="true" class="absolute inset-y-0 left-0 w-1 bg-unmsm-dorado"></span>
+
+    <div class="flex items-start gap-4">
+        {
+            icono && (
+                <span
+                    aria-hidden="true"
+                    class="flex h-12 w-12 flex-none items-center justify-center rounded-xl bg-slate-100 text-unmsm-dorado shadow-sm transition duration-300 group-hover:bg-unmsm-azul group-hover:text-white"
+                >
+                    <Icono icono={icono} clase="h-5 w-5" />
+                </span>
+            )
+        }
+        <div class="min-w-0">
+            {antetitulo && <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">{antetitulo}</p>}
+            <Encabezado class="font-serif text-xl font-bold leading-snug text-unmsm-azul">{titulo}</Encabezado>
+        </div>
+    </div>
+
+    <div class="mt-5">
+        <slot />
+    </div>
+</div>
+
+<style>
+    .tarjeta-oesi {
+        transition:
+            transform 300ms ease,
+            box-shadow 300ms ease,
+            border-color 300ms ease;
+    }
+
+    .tarjeta-oesi:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 16px 32px -20px rgb(15 43 72 / 0.45);
+        border-color: color-mix(in oklab, var(--color-unmsm-dorado) 55%, transparent);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .tarjeta-oesi,
+        .tarjeta-oesi * {
+            transition: none;
+        }
+
+        .tarjeta-oesi:hover {
+            transform: none;
+        }
+    }
+</style>

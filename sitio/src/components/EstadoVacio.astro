@@ -1,0 +1,32 @@
+---
+import Boton from './Boton.astro';
+import { iconoDeAccion } from '../lib/iconos';
+
+interface Props {
+    titulo: string;
+    texto: string;
+    accion?: { texto: string; url: string };
+}
+
+const { titulo, texto, accion } = Astro.props;
+---
+
+{/* Un estado vacío que dice qué falta y ofrece a dónde ir. Una página en
+    blanco parece rota; esta dice que aún no hay contenido y no deja al
+    visitante sin salida. */}
+<div class="rounded-2xl border border-dashed border-slate-300 bg-slate-50/60 px-6 py-20 text-center">
+    <p class="font-serif text-xl font-bold text-slate-700">{titulo}</p>
+    <p class="mx-auto mt-3 max-w-md text-slate-500">{texto}</p>
+    {
+        accion && (
+            <div class="mt-8 flex justify-center">
+                {/* La salida de un estado vacio no siempre es otra pagina:
+                    en trámites es una direccion de correo. El icono lo decide
+                    el enlace. */}
+                <Boton href={accion.url} variante="contorno" icono={iconoDeAccion(accion.url)}>
+                    {accion.texto}
+                </Boton>
+            </div>
+        )
+    }
+</div>

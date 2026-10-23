@@ -1,0 +1,36 @@
+---
+import Icono from '../Icono.astro';
+import { faCopy } from '@fortawesome/free-solid-svg-icons';
+
+interface Props {
+    /** Lo que se copia. Si falta, el botón no se pinta: no hay nada que copiar. */
+    valor: string | null | undefined;
+    /** Qué es, para el nombre del botón: «el correo», «el número de WhatsApp». */
+    que: string;
+    clase?: string;
+}
+
+const { valor, que, clase = '' } = Astro.props;
+---
+
+{/* El botón aparece con JavaScript: sin él no copiaría nada, y un botón que
+    no hace nada es peor que no tenerlo. El dato al lado se lee y se selecciona
+    igual. */}
+{
+    valor && (
+        <button
+            type="button"
+            hidden
+            data-copiar={valor}
+            data-copiar-que={que}
+            aria-label={`Copiar ${que}`}
+            title={`Copiar ${que}`}
+            class:list={[
+                'inline-flex h-8 w-8 flex-none items-center justify-center rounded-full transition hover:bg-white/15',
+                clase,
+            ]}
+        >
+            <Icono icono={faCopy} clase="h-3.5 w-3.5" />
+        </button>
+    )
+}

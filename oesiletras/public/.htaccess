@@ -1,0 +1,80 @@
+<IfModule mod_rewrite.c>
+    <IfModule mod_negotiation.c>
+        Options -MultiViews -Indexes
+    </IfModule>
+
+    RewriteEngine On
+
+    # Handle Authorization Header
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+    # Handle X-XSRF-Token Header
+    RewriteCond %{HTTP:x-xsrf-token} .
+    RewriteRule .* - [E=HTTP_X_XSRF_TOKEN:%{HTTP:X-XSRF-Token}]
+
+    # Redirect Trailing Slashes If Not A Folder...
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_URI} (.+)/$
+    RewriteRule ^ %1 [L,R=301]
+
+    # Send Requests To Front Controller...
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^ index.php [L]
+</IfModule>
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  Compresión
+#
+#  Es la mejora de carga más grande del sitio y no cuesta nada: el HTML de la
+#  portada pasa de 276 KB a 43 KB (−84 %). Si el servidor no tiene mod_deflate
+#  el bloque se ignora sin romper nada.
+# ─────────────────────────────────────────────────────────────────────────────
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css
+    AddOutputFilterByType DEFLATE application/javascript application/x-javascript
+    AddOutputFilterByType DEFLATE application/json application/xml
+    AddOutputFilterByType DEFLATE image/svg+xml
+    # Las fuentes woff2 y las imágenes ya vienen comprimidas: volver a
+    # comprimirlas gasta CPU y no gana bytes.
+</IfModule>
+
+<IfModule mod_brotli.c>
+    AddOutputFilterByType BROTLI_COMPRESS text/html text/plain text/xml text/css
+    AddOutputFilterByType BROTLI_COMPRESS application/javascript application/json
+    AddOutputFilterByType BROTLI_COMPRESS image/svg+xml
+</IfModule>
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  Caché de estáticos
+#
+#  Vite pone un hash en el nombre de cada archivo del build, así que se pueden
+#  cachear un año sin riesgo: al cambiar el contenido cambia el nombre.
+# ─────────────────────────────────────────────────────────────────────────────
+<IfModule mod_expires.c>
+    ExpiresActive On
+
+    <FilesMatch "\.(?:css|js)$">
+        ExpiresDefault "access plus 1 year"
+        Header set Cache-Control "public, immutable"
+    </FilesMatch>
+
+    <FilesMatch "\.(?:woff2?|ttf|otf)$">
+        ExpiresDefault "access plus 1 year"
+        Header set Cache-Control "public, immutable"
+    </FilesMatch>
+
+    # Las imágenes sí conservan el nombre al reemplazarlas (el logo, las fotos
+    # del campus), así que se les da un plazo corto para poder actualizarlas.
+    <FilesMatch "\.(?:jpg|jpeg|png|webp|gif|svg|ico)$">
+        ExpiresDefault "access plus 1 month"
+        Header set Cache-Control "public"
+    </FilesMatch>
+
+    # El HTML siempre se revalida: si no, un cambio de contenido tardaría en
+    # verse.
+    <FilesMatch "\.(?:html|php)$">
+        ExpiresDefault "access plus 0 seconds"
+    </FilesMatch>
+</IfModule>
