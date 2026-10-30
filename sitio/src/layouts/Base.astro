@@ -130,7 +130,12 @@ const enlacesDelPie = [
         <script type="application/ld+json" set:html={JSON.stringify(organizacion)} />
         {datos && <script type="application/ld+json" set:html={JSON.stringify(datos)} />}
     </head>
-    <body class="flex min-h-screen flex-col bg-white text-slate-800 antialiased">
+    {/* `data-ruta` es lo que cuenta el aviso de visita (lib/visitas.ts). La
+        vista previa no la lleva: quien revisa borradores no es una visita. */}
+    <body
+        class="flex min-h-screen flex-col bg-white text-slate-800 antialiased"
+        data-ruta={enVistaPrevia ? undefined : Astro.url.pathname}
+    >
         {/* Primer tabulador de la página: permite saltarse el menú entero, que
             son 20 enlaces antes de llegar al contenido. */}
         <a href="#contenido" class="saltar-al-contenido rounded-lg bg-unmsm-azul px-4 py-2 font-semibold text-white">
@@ -166,11 +171,16 @@ const enlacesDelPie = [
 
         <script>
             import { iniciarAnimaciones } from '../lib/animacion';
+            import { registrarVisita } from '../lib/visitas';
 
             // `astro:page-load` cubre tambien la primera carga, asi que basta
             // con escucharlo. GSAP no se descarga hasta que alguna pagina
             // tiene algo que animar, y nunca si se pidio menos movimiento.
             document.addEventListener('astro:page-load', iniciarAnimaciones);
+
+            // Tambien con cada navegacion de ClientRouter, que no recarga la
+            // pagina: con `load` solo contaria la primera.
+            document.addEventListener('astro:page-load', registrarVisita);
         </script>
 
         {contacto.whatsapp && (
