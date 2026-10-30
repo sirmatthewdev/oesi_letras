@@ -70,6 +70,13 @@ services:
   astro:
     image: node:22-alpine
     container_name: oesiletras_astro
+    # Mismo tope que los servicios de docker-compose.yml: las anclas YAML no
+    # cruzan de un fichero a otro, por eso se repite aqui.
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     working_dir: /app
     environment:
       # `web` es el servicio de Nginx dentro de la red de Docker. No sirve

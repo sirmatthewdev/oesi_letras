@@ -713,7 +713,7 @@ Van en el cron del usuario (`crontab -l`), con los logs en `~/logs/oesiletras/`:
 | Diario 02:30 | `scripts/respaldo.sh` | Base + archivos, 14 días |
 | Cada 5 min | `scripts/vigilar.sh` | Levanta `db redis app queue web build` si están caídos; avisa si `/` o `/login` no dan 200 |
 | Lunes 08:00 | `scripts/check_ssl_expiry.sh` | Días que le quedan al certificado |
-| Domingo 03:30 | `scripts/limpieza.sh` | Caché de build e imágenes huérfanas de Docker; rota `laravel.log` |
+| Domingo 03:30 | `scripts/limpieza.sh` | Caché de build e imágenes huérfanas de Docker |
 
 `vigilar.sh` no toca `astro` a propósito: es el servidor de desarrollo.
 
@@ -752,8 +752,12 @@ docker compose run --rm app php artisan usuario:admin correo@unmsm.edu.pe
 ```bash
 docker compose logs -f app
 docker compose exec app bash
-tail -f oesiletras/storage/logs/laravel.log
+tail -f oesiletras/storage/logs/laravel-$(date +%F).log
 ```
+
+Laravel escribe un archivo por día y borra los de más de 14 (`LOG_STACK=daily`,
+`LOG_DAILY_DAYS`). Los de los contenedores tienen tope de 3 × 10 MB por
+servicio (`x-logging` en el compose): el driver de Docker no rota por defecto.
 
 ---
 

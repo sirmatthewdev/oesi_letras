@@ -8,6 +8,15 @@
 # de base de datos que «desaparece» al mover la carpeta.
 name: oesiletras
 
+# Logs de los contenedores con tope. El driver json-file de Docker no rota por
+# defecto: cada servicio escribe en un unico fichero que crece hasta llenar el
+# disco. 3 x 10 MB por servicio son de sobra para `docker compose logs`.
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   # PHP-FPM Application
   app:
@@ -22,6 +31,7 @@ services:
         UID: ${UID:-1000}
         GID: ${GID:-1000}
     container_name: oesiletras_app
+    logging: *logging
     # Como los otros cinco. Era el unico servicio sin politica, y resulta que el
     # peor para no tenerla: tras un reinicio de la maquina volvian nginx, la
     # base, redis, las colas y el build —y no PHP—, de modo que el sitio
@@ -59,6 +69,7 @@ services:
   web:
     image: nginx:stable-alpine
     container_name: oesiletras_nginx
+    logging: *logging
     restart: unless-stopped
     ports:
       # Parametrizados para poder convivir con otro sitio en la misma maquina:
@@ -104,6 +115,7 @@ services:
   redis:
     image: redis:7-alpine
     container_name: oesiletras_redis
+    logging: *logging
     restart: unless-stopped
     # `appendonly` para que la cola sobreviva a un reinicio del contenedor:
     # sin persistencia, un `docker compose restart` tira los trabajos que
@@ -124,6 +136,7 @@ services:
         UID: ${UID:-1000}
         GID: ${GID:-1000}
     container_name: oesiletras_queue
+    logging: *logging
     restart: unless-stopped
     working_dir: /var/www/html
     volumes:
@@ -156,6 +169,7 @@ services:
   build:
     image: node:22-alpine
     container_name: oesiletras_build
+    logging: *logging
     restart: unless-stopped
     working_dir: /app
     environment:
@@ -181,6 +195,7 @@ services:
       context: ./docker/mysql
       dockerfile: Dockerfile
     container_name: oesiletras_db
+    logging: *logging
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root_password}
