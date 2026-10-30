@@ -559,7 +559,11 @@ El servicio se llama **`build`**. `astro` solo existe en la capa de desarrollo:
 en el servidor, un `docker compose run --rm astro …` contesta `no such service:
 astro`. El sitio se construye contra `http://web/api/v1` —el nombre del servicio
 de nginx dentro de la red de Docker—, que ya viene puesto en el compose; no
-sirve `localhost`, porque ahí dentro sería este mismo contenedor.
+sirve `localhost`, porque ahí dentro sería este mismo contenedor. Esa petición
+va por HTTP y **no** se redirige a HTTPS: nginx tiene una puerta interna que
+solo atiende al nombre `web` y a redes privadas (ver
+`docker/nginx/templates/default-ssl.conf.template`). Por eso el sitio se puede
+construir antes de mover el DNS al servidor.
 
 La construcción tarda un par de minutos y son 80 páginas. Si falla pidiendo
 contenido, la causa casi siempre es que el paso 5 no llegó a sembrar.

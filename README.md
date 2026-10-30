@@ -174,9 +174,9 @@ cp .env.example .env
 cp oesiletras/.env.docker oesiletras/.env
 ```
 
-Haz que coincidan `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD`,
-`OESI_BUILD_TOKEN` y `OESI_VISTA_PREVIA_TOKEN` en los dos. En
-`oesiletras/.env`, para desarrollo:
+Las dos plantillas ya traen los mismos `DB_DATABASE`, `DB_USERNAME`,
+`DB_PASSWORD`, `OESI_BUILD_TOKEN` y `OESI_VISTA_PREVIA_TOKEN`: si cambias uno,
+cámbialo en los dos. En `oesiletras/.env`, para desarrollo:
 
 ```env
 APP_ENV=local

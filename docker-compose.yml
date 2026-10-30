@@ -1,5 +1,13 @@
 # Compose v2 ya no lee `version`: estaba declarado como '3.8' y lo unico que
 # hacia era imprimir un aviso en cada comando, en el servidor tambien.
+
+# El nombre del proyecto, fijo. Sin el, Compose lo deduce de la carpeta: el
+# repositorio se clona como `oesi_letras/` y los volumenes salian como
+# `oesi_letras_db-data`, mientras que en la copia de trabajo y en la guia se
+# llaman `oesiletras_*`. Un nombre que depende de donde se clono es un volumen
+# de base de datos que «desaparece» al mover la carpeta.
+name: oesiletras
+
 services:
   # PHP-FPM Application
   app:

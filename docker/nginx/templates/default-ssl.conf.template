@@ -13,6 +13,32 @@ server {
     return 301 https://$server_name$request_uri;
 }
 
+# La puerta interna, para el servicio `build`.
+#
+# Astro construye el sitio pidiendo la API a `http://web/api/v1`, por la red de
+# Docker. Sin este bloque esa petición caía en el de arriba y recibía un 301 a
+# `https://<dominio>/…`: construir el sitio pasaba a depender de que el DNS
+# público ya apuntara a esta máquina y de que la máquina pudiera llegar a su
+# propia IP pública —lo que muchas redes no permiten—. En el primer despliegue,
+# antes de mover el DNS, el paso 6 de la guía fallaba con «fetch failed».
+#
+# Solo responde al nombre `web`, que nadie de fuera manda, y solo a redes
+# privadas, que es de donde vienen los contenedores. El público sigue entrando
+# por el bloque de arriba y por HTTPS.
+server {
+    listen 80;
+    listen [::]:80;
+    server_name web;
+
+    allow 10.0.0.0/8;
+    allow 172.16.0.0/12;
+    allow 192.168.0.0/16;
+    allow 127.0.0.1;
+    deny all;
+
+    include /etc/nginx/sitio.conf;
+}
+
 server {
     listen 443 ssl;
     listen [::]:443 ssl;
