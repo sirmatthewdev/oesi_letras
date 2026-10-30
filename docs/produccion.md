@@ -288,7 +288,7 @@ DB_PASSWORD=<la misma de arriba>
 MAIL_MAILER=smtp
 MAIL_HOST=smtp.gmail.com
 MAIL_PORT=587
-MAIL_SCHEME=tls
+MAIL_SCHEME=smtp                # STARTTLS en 587; con `tls` Laravel 12 falla (ver correo.md)
 MAIL_USERNAME=<el buzón>
 MAIL_PASSWORD=<la contraseña de aplicación>
 
