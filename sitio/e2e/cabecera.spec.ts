@@ -49,6 +49,29 @@ test.describe('Desplegables de la cabecera', () => {
         await expect(lista).toBeHidden();
     });
 
+    test('pulsar despues de pasar el raton no lo cierra bajo el cursor', async ({ page }) => {
+        await page.goto('/');
+
+        const grupo = primerDesplegable(page);
+        const boton = grupo.getByRole('button');
+        const lista = grupo.getByRole('list');
+
+        // El paso del ratón lo abre; el clic que sigue alternaba y lo cerraba.
+        await boton.hover();
+        await expect(lista).toBeVisible();
+        await boton.click();
+        await expect(lista).toBeVisible();
+
+        // Con teclado, en cambio, Enter sigue alternando.
+        await page.locator('header a[href="/"]').first().hover();
+        await expect(lista).toBeHidden();
+        await boton.focus();
+        await page.keyboard.press('Enter');
+        await expect(lista).toBeVisible();
+        await page.keyboard.press('Enter');
+        await expect(lista).toBeHidden();
+    });
+
     test('funciona con teclado, sin depender del raton', async ({ page }) => {
         await page.goto('/');
 

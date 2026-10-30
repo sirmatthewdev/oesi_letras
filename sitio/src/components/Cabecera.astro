@@ -101,7 +101,7 @@ const activo = (item: ItemMenu) =>
                                 <button
                                     type="button"
                                     x-ref="boton"
-                                    x-on:click="alternar()"
+                                    x-on:click="alternar($event)"
                                     x-on:keydown.arrow-down.prevent="abierto = true"
                                     x-bind:aria-expanded="abierto ? 'true' : 'false'"
                                     x-bind:class="abierto ? 'esta-abierto' : ''"

@@ -53,7 +53,20 @@ export default (Alpine: Alpine) => {
             if (this.conRaton) this.abierto = false;
         },
 
-        alternar() {
+        /**
+         * El clic del botón.
+         *
+         * Con ratón, el cursor ya abrió el menú al llegar (`entra`), así que un
+         * clic que alternara lo cerraría bajo el propio cursor: quien pulsaba
+         * veía el menú abrirse y desaparecer. Ahí el clic solo abre; cerrar es
+         * cosa de irse. Un clic de teclado —Enter o Espacio, `detail` 0— sigue
+         * alternando, que es lo que espera quien navega con el tabulador.
+         */
+        alternar(evento?: MouseEvent) {
+            if (this.conRaton && evento && evento.detail > 0) {
+                this.abierto = true;
+                return;
+            }
             this.abierto = !this.abierto;
         },
 
