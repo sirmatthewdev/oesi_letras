@@ -684,13 +684,38 @@ ya vive en la base, editado desde el panel.
 ### Copias de seguridad
 
 ```bash
-docker compose run --rm app php artisan db:respaldar
+scripts/respaldo.sh
 ```
 
-Deja el volcado en `storage/app/` (o donde diga `--destino`). **Guárdalo fuera
-del servidor**: una copia que vive en la máquina que se puede perder no es una
-copia. Una entrada diaria en el cron del usuario, y el fichero sincronizado a
-otro sitio.
+Vuelca la base desde el contenedor `db` y empaqueta `storage/app/public` (lo
+subido desde el panel) en `~/respaldos/oesiletras/`, y borra lo de más de 14
+días. `php artisan db:respaldar` **no sirve aquí**: la imagen de `app` no trae
+`mysqldump`.
+
+**Guárdalo fuera del servidor**: una copia que vive en la máquina que se puede
+perder no es una copia. Con `RESPALDO_REMOTO=usuario@host:/ruta` el script
+termina con un `rsync` a ese destino.
+
+Restaurar:
+
+```bash
+zcat ~/respaldos/oesiletras/db_FECHA.sql.gz \
+  | docker exec -i oesiletras_db sh -c 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" mysql -uroot "$MYSQL_DATABASE"'
+tar -xzf ~/respaldos/oesiletras/storage_FECHA.tar.gz -C oesiletras/storage/app
+```
+
+### Tareas programadas
+
+Van en el cron del usuario (`crontab -l`), con los logs en `~/logs/oesiletras/`:
+
+| Cuándo | Script | Qué hace |
+|---|---|---|
+| Diario 02:30 | `scripts/respaldo.sh` | Base + archivos, 14 días |
+| Cada 5 min | `scripts/vigilar.sh` | Levanta `db redis app queue web build` si están caídos; avisa si `/` o `/login` no dan 200 |
+| Lunes 08:00 | `scripts/check_ssl_expiry.sh` | Días que le quedan al certificado |
+| Domingo 03:30 | `scripts/limpieza.sh` | Caché de build e imágenes huérfanas de Docker; rota `laravel.log` |
+
+`vigilar.sh` no toca `astro` a propósito: es el servidor de desarrollo.
 
 ### El certificado
 
