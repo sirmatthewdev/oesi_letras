@@ -12,7 +12,7 @@ export default defineConfig({
     // Dominio publico del sitio. Hace falta para el sitemap y para las URLs
     // canonicas: sin el, Astro no puede componerlas. Se toma del entorno para
     // que un despliegue de otra unidad no exija tocar este fichero.
-    site: process.env.OESI_SITE ?? 'https://oesiletras.unmsm.edu.pe',
+    site: process.env.OESI_SITE ?? 'https://suficiencialetras.unmsm.edu.pe',
     integrations: [
         // Alpine para la interactividad pequena y declarativa —desplegables,
         // filtros, estados de un formulario—. Se declara en el marcado, junto
@@ -29,7 +29,7 @@ export default defineConfig({
     // en el build, genera varios anchos y las convierte a AVIF/WebP. Hace
     // falta autorizar el origen: por seguridad no procesa cualquier URL remota.
     image: {
-        domains: ['localhost', 'web', 'oesiletras.unmsm.edu.pe'],
+        domains: ['localhost', 'web', 'suficiencialetras.unmsm.edu.pe'],
     },
     output: 'static',
     server: { host: true, port: 4321 },

@@ -1,6 +1,6 @@
 # Puesta en producción desde cero
 
-De una VM Linux recién entregada a `https://oesiletras.unmsm.edu.pe` sirviendo,
+De una VM Linux recién entregada a `https://suficiencialetras.unmsm.edu.pe` sirviendo,
 con los servicios levantándose solos en cada arranque de la máquina.
 
 Hay dos documentos de instalación y conviene no confundirlos:
@@ -223,7 +223,7 @@ bash scripts/preparar-entorno.sh
 
 Pone contraseñas de base de datos, `OESI_BUILD_TOKEN`, `OESI_VISTA_PREVIA_TOKEN`
 y la contraseña del administrador —aleatorias e iguales donde tienen que serlo—,
-el dominio `oesiletras.unmsm.edu.pe`, el UID/GID del usuario que lo ejecuta, los
+el dominio `suficiencialetras.unmsm.edu.pe`, el UID/GID del usuario que lo ejecuta, los
 puertos 80/443 (la OESI tiene su propia VM) y el modo de producción. **Imprime
 la contraseña del administrador: anótala.** No pisa nada: si alguno de los dos
 `.env` ya existe, se detiene. Deja ambos con permisos 600.
@@ -252,8 +252,8 @@ DB_ROOT_PASSWORD=<otra distinta>
 UID=1000                 # el id -u de arriba
 GID=1000                 # el id -g de arriba
 
-NGINX_SERVER_NAMES=oesiletras.unmsm.edu.pe
-OESI_SITE=https://oesiletras.unmsm.edu.pe
+NGINX_SERVER_NAMES=suficiencialetras.unmsm.edu.pe
+OESI_SITE=https://suficiencialetras.unmsm.edu.pe
 OESI_BUILD_TOKEN=<un secreto largo, el mismo que en el otro .env>
 OESI_VISTA_PREVIA_TOKEN=<otro secreto, el mismo que en el otro .env>
 ```
@@ -264,8 +264,8 @@ nginx rellena al arrancar—, así que cambiar de dominio es cambiar esta variab
 
 **Sin `www.`**, y por dos razones que es mejor no descubrir en producción: no hay
 registro DNS para ese nombre, y el certificado de la universidad es un comodín
-`*.unmsm.edu.pe`, que cubre `oesiletras.unmsm.edu.pe` pero **no**
-`www.oesiletras.unmsm.edu.pe` —un comodín vale para un solo nivel—. Ponerlo no
+`*.unmsm.edu.pe`, que cubre `suficiencialetras.unmsm.edu.pe` pero **no**
+`www.suficiencialetras.unmsm.edu.pe` —un comodín vale para un solo nivel—. Ponerlo no
 impide que nginx arranque: lo que hace es que quien entre por ese nombre reciba
 una advertencia de seguridad del navegador, que es bastante peor que un nombre
 que simplemente no responde.
@@ -278,7 +278,7 @@ canónicas que Astro escribe al construir. Sin barra final.
 ```env
 APP_ENV=production
 APP_DEBUG=false
-APP_URL=https://oesiletras.unmsm.edu.pe
+APP_URL=https://suficiencialetras.unmsm.edu.pe
 LOG_LEVEL=warning
 
 DB_DATABASE=oesiletras          # los tres, IDÉNTICOS
@@ -355,8 +355,8 @@ sudo openssl pkey -in <la.key> -pubout | openssl md5
 
 El `subjectAltName` tiene que cubrir **todos** los nombres de
 `NGINX_SERVER_NAMES` (paso 2). El de la universidad es un comodín
-`*.unmsm.edu.pe`: cubre `oesiletras.unmsm.edu.pe` y **no**
-`www.oesiletras.unmsm.edu.pe`, porque un comodín vale para un solo nivel. Lo
+`*.unmsm.edu.pe`: cubre `suficiencialetras.unmsm.edu.pe` y **no**
+`www.suficiencialetras.unmsm.edu.pe`, porque un comodín vale para un solo nivel. Lo
 que se quita entonces es el nombre de la variable —nginx arrancará igual con él,
 y lo que se lleva quien entre por ahí es una advertencia del navegador.
 
@@ -440,9 +440,9 @@ nginx no arranca sin el certificado que se va a validar. Se rompe el círculo
 emitiendo el primero en modo autónomo, con nginx todavía parado:
 
 ```bash
-sudo certbot certonly --standalone -d oesiletras.unmsm.edu.pe
-sudo cp /etc/letsencrypt/live/oesiletras.unmsm.edu.pe/fullchain.pem docker/nginx/ssl_sectigo/
-sudo cp /etc/letsencrypt/live/oesiletras.unmsm.edu.pe/privkey.pem   docker/nginx/ssl_sectigo/
+sudo certbot certonly --standalone -d suficiencialetras.unmsm.edu.pe
+sudo cp /etc/letsencrypt/live/suficiencialetras.unmsm.edu.pe/fullchain.pem docker/nginx/ssl_sectigo/
+sudo cp /etc/letsencrypt/live/suficiencialetras.unmsm.edu.pe/privkey.pem   docker/nginx/ssl_sectigo/
 ```
 
 Las renovaciones posteriores ya pueden ir por `--webroot`: la plantilla deja
@@ -616,7 +616,7 @@ comprobación que dice algo sobre el próximo corte de luz.
 ```bash
 for r in / /login /panel /api/v1/sitio; do
   printf '%-16s ' "$r"
-  curl -s -o /dev/null -w '%{http_code}\n' "https://oesiletras.unmsm.edu.pe$r"
+  curl -s -o /dev/null -w '%{http_code}\n' "https://suficiencialetras.unmsm.edu.pe$r"
 done
 ```
 
@@ -661,6 +661,31 @@ Lo que se sube ahí manda sobre lo que trae el repositorio.
 ---
 
 ## 10. Operación
+
+### Pasar de la IP al dominio
+
+Mientras el DNS no apunta a la VM, el sitio se sirve en modo IP: capas
+`docker-compose.dev.yml` y `docker-compose.ip.yml`, `http://172.16.40.17:8090`.
+Las capas activas las fija `COMPOSE_FILE` en el `.env` de la raíz, y de ahí las
+toman `docker compose` y `scripts/vigilar.sh`.
+
+Cuando `suficiencialetras.unmsm.edu.pe` resuelva:
+
+```bash
+scripts/pasar-a-dominio.sh            # revisa DNS, certificado y puertos; no cambia nada
+scripts/pasar-a-dominio.sh --aplicar  # si todo está en verde
+```
+
+`--aplicar` respalda la base y los dos `.env`, cambia **solo** dominio, puertos,
+`APP_ENV`/`APP_DEBUG`/`LOG_LEVEL` y `COMPOSE_FILE` —ningún secreto: la base ya
+existe con sus contraseñas—, recrea los contenedores, instala `vendor/` sin
+dependencias de desarrollo, reconstruye el sitio y lo comprueba por HTTPS.
+Termina imprimiendo cómo volver atrás. No sirve `preparar-entorno.sh` para
+esto: generaría contraseñas de base de datos nuevas que MySQL ignoraría.
+
+El certificado `*.unmsm.edu.pe` ya instalado cubre el dominio. Fuera de la VM
+falta que la red de la universidad lleve los puertos 80 y 443 de la IP pública
+del dominio a `172.16.40.17`.
 
 ### Actualizar
 

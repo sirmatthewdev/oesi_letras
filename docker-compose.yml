@@ -63,7 +63,7 @@ services:
       # una variable de entorno del contenedor gana sobre el .env y además se
       # cuela en $_SERVER, donde PHPUnit no puede pisarla —con APP_ENV clavado,
       # la suite entera corría fuera del entorno de pruebas.
-      - APP_URL=https://oesiletras.unmsm.edu.pe
+      - APP_URL=https://suficiencialetras.unmsm.edu.pe
 
   # Nginx Web Server
   web:
@@ -100,7 +100,7 @@ services:
       - laravel-network
     environment:
       # Lista completa de server_name, separada por espacios.
-      - NGINX_SERVER_NAMES=${NGINX_SERVER_NAMES:-oesiletras.unmsm.edu.pe www.oesiletras.unmsm.edu.pe}
+      - NGINX_SERVER_NAMES=${NGINX_SERVER_NAMES:-suficiencialetras.unmsm.edu.pe www.suficiencialetras.unmsm.edu.pe}
       # Solo se sustituyen las variables cuyo NOMBRE empieza por NGINX_.
       # Sin este filtro, envsubst se comeria tambien $$server_name,
       # $$request_uri y $$fastcgi_script_name, y nginx no arrancaria.
@@ -174,7 +174,7 @@ services:
     working_dir: /app
     environment:
       - OESI_API=http://web/api/v1
-      - OESI_SITE=${OESI_SITE:-https://oesiletras.unmsm.edu.pe}
+      - OESI_SITE=${OESI_SITE:-https://suficiencialetras.unmsm.edu.pe}
       - OESI_BUILD_TOKEN=${OESI_BUILD_TOKEN:-token-de-desarrollo}
       # Vista previa: sin este token el servicio la rechaza. Vacio la
       # desactiva, que es lo que debe pasar en una instalacion sin configurar.

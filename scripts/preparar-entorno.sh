@@ -19,7 +19,7 @@ set -euo pipefail
 RAIZ=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 cd "$RAIZ"
 
-DOMINIO="${1:-oesiletras.unmsm.edu.pe}"
+DOMINIO="${1:-suficiencialetras.unmsm.edu.pe}"
 RAIZ_ENV=".env"
 APP_ENV_F="oesiletras/.env"
 
