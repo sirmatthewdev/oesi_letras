@@ -15,4 +15,10 @@ class Inicio extends Dashboard
     protected static ?string $title = 'Inicio';
 
     protected ?string $subheading = 'Visitas al sitio público. Se cuentan sin cookies ni direcciones IP, y sin robots.';
+
+    /** Tres columnas en pantalla ancha: páginas, procedencia y dispositivos en una fila. */
+    public function getColumns(): int | array
+    {
+        return ['md' => 2, 'xl' => 3];
+    }
 }
