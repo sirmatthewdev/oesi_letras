@@ -57,6 +57,13 @@ class VisitasPorDia extends ChartWidget
         ];
     }
 
+    protected function getOptions(): array
+    {
+        return [
+            'scales' => ['y' => ['beginAtZero' => true, 'ticks' => ['precision' => 0]]],
+        ];
+    }
+
     protected function getType(): string
     {
         return 'line';

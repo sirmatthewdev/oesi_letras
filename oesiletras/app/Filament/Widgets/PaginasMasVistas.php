@@ -36,6 +36,7 @@ class PaginasMasVistas extends ChartWidget
                 'data' => $ranking->values()->all(),
                 'backgroundColor' => '#143B63',
                 'borderRadius' => 4,
+                'maxBarThickness' => 28,
             ]],
             'labels' => $ranking->keys()->map(fn ($ruta) => self::NOMBRES[$ruta] ?? $ruta)->all(),
         ];
@@ -46,6 +47,8 @@ class PaginasMasVistas extends ChartWidget
         return [
             'indexAxis' => 'y',
             'plugins' => ['legend' => ['display' => false]],
+            // Las visitas son enteras: sin esto, con pocos datos el eje marca 0,2 / 0,4…
+            'scales' => ['x' => ['beginAtZero' => true, 'ticks' => ['precision' => 0]]],
         ];
     }
 

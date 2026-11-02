@@ -11,7 +11,7 @@ editando HTML.
 
 > **Estado: listo para producción.** La oficina validó el contenido, las cifras
 > y los enlaces de San Market el 20-10-2026: entra **publicado**. Va en su propia
-> VM, en `https://oesiletras.unmsm.edu.pe`. Lo que queda está en
+> VM, en `https://suficiencialetras.unmsm.edu.pe`. Lo que queda está en
 > [Pendiente](#pendiente).
 
 El sitio son **dos piezas**:
@@ -135,8 +135,10 @@ Las cifras tienen su propio interruptor en la misma pestaña: desmarcar
 
 **Del despliegue** (ver [docs/produccion.md](docs/produccion.md)):
 
-- El **certificado TLS** de `oesiletras.unmsm.edu.pe` en
-  `docker/nginx/ssl_sectigo/`.
+- El **DNS** de `suficiencialetras.unmsm.edu.pe` hacia la VM. Mientras tanto
+  el sitio va por IP; cuando resuelva, `scripts/pasar-a-dominio.sh --aplicar`
+  (ver «Pasar de la IP al dominio» en docs/produccion.md). El certificado
+  `*.unmsm.edu.pe` de `docker/nginx/ssl_sectigo/` ya lo cubre.
 - Las **credenciales SMTP** del buzón de la oficina (`MAIL_*`). Sin ellas no
   llega el enlace de «olvidé mi contraseña».
 

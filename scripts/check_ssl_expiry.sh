@@ -7,7 +7,7 @@
 # Se puede forzar otra con la variable CERT_PATH.
 RAIZ=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 CERT_PATH="${CERT_PATH:-$RAIZ/docker/nginx/ssl_sectigo/fullchain.pem}"
-DOMINIO="${DOMINIO:-oesiletras.unmsm.edu.pe}"
+DOMINIO="${DOMINIO:-suficiencialetras.unmsm.edu.pe}"
 
 if [ ! -f "$CERT_PATH" ]; then
     echo "❌ No se encontró el certificado en: $CERT_PATH"

@@ -26,6 +26,7 @@ class Procedencia extends ChartWidget
                 'data' => $ranking->values()->all(),
                 'backgroundColor' => '#B6A350',
                 'borderRadius' => 4,
+                'maxBarThickness' => 28,
             ]],
             // WhatsApp no manda procedencia, así que sus enlaces caen en «Directo».
             'labels' => $ranking->keys()->map(fn ($v) => $v === 'directo' ? 'Directo o WhatsApp' : $v)->all(),
@@ -37,6 +38,7 @@ class Procedencia extends ChartWidget
         return [
             'indexAxis' => 'y',
             'plugins' => ['legend' => ['display' => false]],
+            'scales' => ['x' => ['beginAtZero' => true, 'ticks' => ['precision' => 0]]],
         ];
     }
 
