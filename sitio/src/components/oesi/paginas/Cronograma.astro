@@ -7,12 +7,13 @@
  */
 import type { Oesi } from '../../../lib/api';
 import Boton from '../../Boton.astro';
+import Flecha from '../../Flecha.astro';
 import Icono from '../../Icono.astro';
 import FondoSeccion from '../../FondoSeccion.astro';
 import PasosInscripcion from '../PasosInscripcion.astro';
 import FechasCronograma from '../FechasCronograma.astro';
 import { faWhatsapp } from '@fortawesome/free-brands-svg-icons';
-import { faEnvelope, faTriangleExclamation, faArrowRight } from '@fortawesome/free-solid-svg-icons';
+import { faEnvelope, faTriangleExclamation } from '@fortawesome/free-solid-svg-icons';
 
 interface Props {
     oesi: Oesi;
@@ -50,7 +51,10 @@ const wa = contacto.whatsapp;
                 <div class="lg:col-span-8">
                     <FechasCronograma
                         fechas={oesi.cronograma.fechas}
+                        ordenIdiomas={oesi.idiomas.map((i) => i.nombre)}
                         intro={oesi.cronograma.intro}
+                        requisitos={oesi.examen.requisitos}
+                        institucion={oesi.institucion}
                         whatsapp={wa}
                         email={contacto.email}
                     />
@@ -72,8 +76,9 @@ const wa = contacto.whatsapp;
 
 
                         <div class="mt-6">
-                            <Boton href="/inscripcion#paso-pago" variante="azul" icono={faArrowRight} ancho>
+                            <Boton href="/inscripcion#paso-pago" variante="azul" ancho>
                                 Siguiente: pagar
+                                <Flecha clase="h-4 w-4" />
                             </Boton>
                         </div>
 

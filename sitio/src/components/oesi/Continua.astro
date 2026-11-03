@@ -8,8 +8,9 @@
  * El orden lo fija `PaginaOesi`; aquí solo se pinta. Sin anterior, la tarjeta
  * de la izquierda lleva al inicio; sin siguiente, la de la derecha también.
  */
+import Flecha from '../Flecha.astro';
 import Icono from '../Icono.astro';
-import { faArrowLeft, faArrowRight, faHouse } from '@fortawesome/free-solid-svg-icons';
+import { faHouse } from '@fortawesome/free-solid-svg-icons';
 
 type Vecina = { titulo: string; texto: string; enlace: string } | null;
 
@@ -26,7 +27,7 @@ const inicio = { titulo: 'Inicio', texto: 'Volver a la portada de la oficina', e
     <div class="mx-auto grid max-w-6xl gap-4 px-6 py-10 sm:grid-cols-2">
         <a href={(anterior ?? inicio).enlace} class="continua group flex items-center gap-4 rounded-2xl p-5 ring-1 ring-slate-200">
             <span aria-hidden="true" class="flex h-11 w-11 flex-none items-center justify-center rounded-full bg-slate-100 text-unmsm-azul transition group-hover:-translate-x-0.5 group-hover:bg-unmsm-azul group-hover:text-white motion-reduce:group-hover:translate-x-0">
-                <Icono icono={anterior ? faArrowLeft : faHouse} clase="h-4 w-4" />
+                {anterior ? <Flecha direccion="atras" clase="h-5 w-5" /> : <Icono icono={faHouse} clase="h-4 w-4" />}
             </span>
             <span class="min-w-0">
                 <span class="block text-[0.7rem] font-semibold uppercase tracking-wider text-slate-500">{anterior ? 'Anterior' : 'Volver'}</span>
@@ -37,7 +38,7 @@ const inicio = { titulo: 'Inicio', texto: 'Volver a la portada de la oficina', e
 
         <a href={(siguiente ?? inicio).enlace} class="continua group flex flex-row-reverse items-center gap-4 rounded-2xl p-5 text-right ring-1 ring-slate-200">
             <span aria-hidden="true" class="flex h-11 w-11 flex-none items-center justify-center rounded-full bg-unmsm-azul text-white transition group-hover:translate-x-0.5 group-hover:bg-unmsm-azul-dark motion-reduce:group-hover:translate-x-0">
-                <Icono icono={siguiente ? faArrowRight : faHouse} clase="h-4 w-4" />
+                {siguiente ? <Flecha clase="h-5 w-5" /> : <Icono icono={faHouse} clase="h-4 w-4" />}
             </span>
             <span class="min-w-0 flex-1">
                 <span class="block text-[0.7rem] font-semibold uppercase tracking-wider text-slate-500">{siguiente ? 'Siguiente' : 'Volver'}</span>

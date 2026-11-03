@@ -6,9 +6,10 @@
  * examen empieza por la fecha; quien ya lo rindió busca resultados,
  * certificado o un duplicado. Las dos tarjetas llevan a páginas que ya existen.
  */
+import Flecha from '../Flecha.astro';
 import Icono from '../Icono.astro';
 import type { Oesi } from '../../lib/api';
-import { faArrowRight, faAward, faCalendarDays } from '@fortawesome/free-solid-svg-icons';
+import { faAward, faCalendarDays } from '@fortawesome/free-solid-svg-icons';
 
 interface Props {
     idiomas: Oesi['idiomas'];
@@ -70,7 +71,7 @@ const CAMINOS = [
                                 e.principal ? (
                                     <a href={e.href} class="inline-flex items-center gap-2 rounded-full bg-unmsm-azul px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-unmsm-azul-dark">
                                         {e.texto}
-                                        <Icono icono={faArrowRight} clase="h-3.5 w-3.5" />
+                                        <Flecha clase="h-4 w-4" />
                                     </a>
                                 ) : (
                                     <a href={e.href} class="text-sm font-semibold text-unmsm-azul hover:underline">

@@ -8,6 +8,7 @@
 import type { Oesi } from '../../../lib/api';
 import { corta, vigentes } from '../../../lib/fechas';
 import Boton from '../../Boton.astro';
+import Flecha from '../../Flecha.astro';
 import Icono from '../../Icono.astro';
 import FondoSeccion from '../../FondoSeccion.astro';
 import TituloSeccion from '../../TituloSeccion.astro';
@@ -24,7 +25,7 @@ import ilAccesoExamen from '../../../assets/ilustraciones/acceso-examen.webp';
 import ilAccesoModalidades from '../../../assets/ilustraciones/acceso-modalidades.webp';
 import ilAccesoPreguntas from '../../../assets/ilustraciones/acceso-preguntas.webp';
 import { faWhatsapp } from '@fortawesome/free-brands-svg-icons';
-import { faCalendarDays, faCircleInfo, faGraduationCap, faLaptop, faListCheck, faAward, faCircleQuestion, faArrowRight } from '@fortawesome/free-solid-svg-icons';
+import { faCalendarDays, faCircleInfo, faGraduationCap, faLaptop, faListCheck, faAward, faCircleQuestion } from '@fortawesome/free-solid-svg-icons';
 import { icono } from '../../../lib/oesi-vista';
 
 interface Props {
@@ -147,7 +148,7 @@ const PASOS_INICIO = [
                                 )}
                                 <span class="mt-auto inline-flex items-center gap-1.5 pt-5 text-sm font-semibold text-unmsm-azul">
                                     {paso.accion}
-                                    <Icono icono={faArrowRight} clase="h-3.5 w-3.5 transition group-hover:translate-x-0.5" />
+                                    <Flecha clase="h-4 w-4 transition group-hover:rotate-45" />
                                 </span>
                             </a>
                         </li>
@@ -190,7 +191,7 @@ const PASOS_INICIO = [
                                 />
                                 <span class="mt-5 flex items-center gap-1.5 font-serif text-lg font-bold leading-snug text-unmsm-azul">
                                     {a.titulo}
-                                    <Icono icono={faArrowRight} clase="h-3.5 w-3.5 opacity-0 transition group-hover:translate-x-0.5 group-hover:opacity-100" />
+                                    <Flecha clase="h-4 w-4 opacity-0 transition group-hover:translate-x-0.5 group-hover:opacity-100" />
                                 </span>
                                 <span class="mt-1 block text-sm leading-relaxed text-slate-600">{a.texto}</span>
                             </a>
