@@ -10,13 +10,14 @@ import Icono from '../components/Icono.astro';
 import { faWhatsapp } from '@fortawesome/free-brands-svg-icons';
 import { faBookOpen, faEnvelope } from '@fortawesome/free-solid-svg-icons';
 import { ClientRouter } from 'astro:transitions';
+import type { FechaExamen } from '../lib/fechas';
 
 interface Props {
     titulo: string;
     descripcion?: string;
     imagen?: string;
     /** Objeto schema.org que se inyecta como JSON-LD en esta página. */
-    datos?: Record<string, unknown>;
+    datos?: Record<string, unknown> | Record<string, unknown>[];
     /**
      * Deja la página fuera de los buscadores. Para las que no son contenido
      * sino herramienta: una página de resultados indexada compite con el
@@ -34,6 +35,8 @@ interface Props {
      * frecuentes): tres avisos de contacto seguidos sobran.
      */
     cierreContacto?: boolean;
+    /** Las fechas de examen, para el aviso del próximo en la barra superior. */
+    fechas?: FechaExamen[];
 }
 
 const {
@@ -44,6 +47,7 @@ const {
     sinIndexar = false,
     sobreHero = false,
     cierreContacto = true,
+    fechas = [],
 } = Astro.props;
 
 // Nada de esto está escrito en la plantilla a propósito: el nombre, el menú y
@@ -168,7 +172,7 @@ const enlacesDelPie = [
                 </span>
             </div>
         )}
-        <Cabecera sitio={sitio} menu={menu} sobreHero={sobreHero} />
+        <Cabecera sitio={sitio} menu={menu} sobreHero={sobreHero} fechas={fechas} />
 
         {/* La cabecera es una capsula flotante y no ocupa sitio en el flujo, asi
             que sin este separador el contenido de la pagina arrancaria por
@@ -192,6 +196,31 @@ const enlacesDelPie = [
             // Tambien con cada navegacion de ClientRouter, que no recarga la
             // pagina: con `load` solo contaria la primera.
             document.addEventListener('astro:page-load', registrarVisita);
+
+            // Las fechas de examen van en el HTML del build, y el build no se
+            // repite cada día: lo que ya empezó se oculta aquí, al cargar.
+            // `data-vence` lleva el momento en ISO. En un `data-solo-primera`
+            // se deja solo la primera vigente (el «próximo examen»); un
+            // `data-si-hay` sin ninguna vigente dentro se oculta entero.
+            function ocultarVencidas() {
+                const ahora = Date.now();
+                const vencida = (e: HTMLElement) => Date.parse(e.dataset.vence!) <= ahora;
+                document.querySelectorAll<HTMLElement>('[data-vence]').forEach((e) => {
+                    if (vencida(e)) e.hidden = true;
+                });
+                // Se decide por la fecha y no por `hidden`: el build ya oculta
+                // todas menos la primera, y al vencer esa hay que mostrar la
+                // siguiente, que llega oculta.
+                document.querySelectorAll<HTMLElement>('[data-solo-primera]').forEach((g) => {
+                    const items = [...g.querySelectorAll<HTMLElement>(':scope > [data-vence]')];
+                    const primera = items.find((e) => !vencida(e));
+                    items.forEach((e) => (e.hidden = e !== primera));
+                });
+                document.querySelectorAll<HTMLElement>('[data-si-hay]').forEach((g) => {
+                    g.hidden = !g.querySelector('[data-vence]:not([hidden])');
+                });
+            }
+            document.addEventListener('astro:page-load', ocultarVencidas);
         </script>
 
         {contacto.whatsapp && (

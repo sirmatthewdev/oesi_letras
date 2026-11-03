@@ -7,6 +7,7 @@ use App\Models\OesiSetting;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\CheckboxList;
+use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Radio;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
@@ -426,7 +427,7 @@ class OficinaDeSuficiencia extends Page
     {
         return [
             Section::make('Cronograma del mes')
-                ->description('Cambia cada mes. La página no guarda fechas: muestra la imagen vigente y pide confirmarlas. Los formularios de la convocatoria salen en la página de Inscripción, en el paso 2.')
+                ->description('Cambia cada mes: las fechas, una fila por examen, y la imagen vigente como respaldo. Con las fechas cargadas, el sitio anuncia el próximo examen y lo muestra en cada idioma. Los formularios de la convocatoria salen en la página de Inscripción, en el paso 2.')
                 ->columns(2)
                 ->schema([
                     Textarea::make('cronograma_intro')->label('Introducción')->rows(2)->columnSpanFull(),
@@ -437,6 +438,32 @@ class OficinaDeSuficiencia extends Page
                         ->requiredWith('cronograma_imagen')
                         ->maxLength(255),
                     Textarea::make('cronograma_aviso')->label('Aviso sobre las fechas')->rows(2)->columnSpanFull(),
+                    Repeater::make('cronograma_fechas')
+                        ->label('Fechas de examen')
+                        ->helperText('Hora de Lima. La inscripción se da por cerrada dos días antes, como dice la convocatoria. Las fechas pasadas dejan de mostrarse solas.')
+                        ->addActionLabel('Añadir fecha')
+                        ->defaultItems(0)
+                        ->collapsible()
+                        ->itemLabel(fn (array $state): ?string => trim(($state['idioma'] ?? '') . ' · ' . ($state['fecha'] ?? ''), ' ·') ?: null)
+                        ->columns(5)
+                        ->columnSpanFull()
+                        ->schema([
+                            TextInput::make('idioma')
+                                ->required()
+                                ->maxLength(40)
+                                ->helperText('Igual que en la pestaña Idiomas.'),
+                            DatePicker::make('fecha')->required()->native(false)->displayFormat('d/m/Y'),
+                            TextInput::make('hora')
+                                ->required()
+                                ->placeholder('18:00')
+                                ->regex('/^([01]\d|2[0-3]):[0-5]\d$/')
+                                ->helperText('24 horas: 18:00.'),
+                            Select::make('modalidad')
+                                ->options(['presencial' => 'Presencial', 'virtual' => 'Virtual'])
+                                ->required()
+                                ->native(false),
+                            TextInput::make('publico')->label('Para quién')->placeholder('Pregrado y posgrado')->maxLength(60),
+                        ]),
                     Repeater::make('cronograma_formularios')
                         ->label('Formularios de esta convocatoria')
                         ->addActionLabel('Añadir formulario')

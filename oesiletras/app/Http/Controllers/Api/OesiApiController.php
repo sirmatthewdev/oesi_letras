@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\OesiSetting;
 use App\Support\VistaPrevia;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 
 /**
@@ -149,6 +150,7 @@ class OesiApiController extends Controller
                 'intro' => $o->cronograma_intro ?: null,
                 'imagen' => $this->imagen($o->cronograma_imagen, $o->cronograma_imagen_alt),
                 'aviso' => $o->cronograma_aviso ?: null,
+                'fechas' => $this->fechas($o->cronograma_fechas),
                 'formularios' => $this->enlaces($o->cronograma_formularios),
             ],
 
@@ -252,6 +254,50 @@ class OesiApiController extends Controller
     private function imagen(?string $url, ?string $alt): ?array
     {
         return filled($url) ? ['url' => $url, 'alt' => (string) $alt] : null;
+    }
+
+    /**
+     * Las fechas de examen, en orden y con su momento en ISO (hora de Lima),
+     * para que el sitio decida cuáles siguen vigentes sin interpretar textos.
+     * Una fila incompleta o con una fecha que no existe se omite.
+     *
+     * @return list<array<string, string|null>>
+     */
+    private function fechas(mixed $valor): array
+    {
+        return collect($this->lista($valor))
+            ->map(function (array $f) {
+                $fecha = $f['fecha'] ?? null;
+                $hora = $f['hora'] ?? null;
+                if (! filled($f['idioma'] ?? null) || ! is_string($fecha) || ! is_string($hora)
+                    || ! preg_match('/^\d{4}-\d{2}-\d{2}/', $fecha) || ! preg_match('/^([01]\d|2[0-3]):[0-5]\d/', $hora)) {
+                    return null;
+                }
+
+                try {
+                    $inicio = CarbonImmutable::createFromFormat('Y-m-d H:i', substr($fecha, 0, 10) . ' ' . substr($hora, 0, 5), 'America/Lima');
+                } catch (\Throwable) {
+                    return null;
+                }
+                // createFromFormat acepta el 31 de febrero y lo pasa a marzo:
+                // una fecha que no existe se omite en vez de moverse.
+                if (! $inicio || $inicio->format('Y-m-d') !== substr($fecha, 0, 10)) {
+                    return null;
+                }
+
+                return [
+                    'idioma' => (string) $f['idioma'],
+                    'inicio' => $inicio->toIso8601String(),
+                    // «Las inscripciones estarán abiertas hasta 2 días antes del examen».
+                    'cierre_inscripcion' => $inicio->subDays(2)->endOfDay()->toIso8601String(),
+                    'modalidad' => ($f['modalidad'] ?? null) === 'presencial' ? 'presencial' : 'virtual',
+                    'publico' => ($f['publico'] ?? null) ?: null,
+                ];
+            })
+            ->filter()
+            ->sortBy('inicio')
+            ->values()
+            ->all();
     }
 
     private function monto(mixed $valor): ?float

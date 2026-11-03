@@ -293,6 +293,41 @@ class OesiTest extends TestCase
             ->assertJsonPath('data.idiomas.0.imagen', ['url' => 'https://ejemplo.pe/q.jpg', 'alt' => 'Cusco']);
     }
 
+    public function test_las_fechas_del_cronograma_salen_en_orden_con_su_cierre_de_inscripcion(): void
+    {
+        $this->publicar();
+
+        $this->getJson('/api/v1/oesi')
+            ->assertJsonCount(7, 'data.cronograma.fechas')
+            ->assertJsonPath('data.cronograma.fechas.0', [
+                'idioma' => 'Alemán',
+                'inicio' => '2026-09-21T18:00:00-05:00',
+                'cierre_inscripcion' => '2026-09-19T23:59:59-05:00',
+                'modalidad' => 'virtual',
+                'publico' => 'Pregrado y posgrado',
+            ])
+            // Italiano (17:00) va antes que Francés (18:00) aunque el mismo día.
+            ->assertJsonPath('data.cronograma.fechas.3.idioma', 'Italiano')
+            ->assertJsonPath('data.cronograma.fechas.6.idioma', 'Quechua');
+    }
+
+    public function test_una_fecha_incompleta_o_que_no_existe_se_omite(): void
+    {
+        $this->publicar([
+            'cronograma_fechas' => [
+                'a' => ['idioma' => 'Inglés', 'fecha' => '2026-12-05', 'hora' => '11:00', 'modalidad' => 'presencial'],
+                'b' => ['idioma' => 'Francés', 'fecha' => '2026-02-31', 'hora' => '11:00'],
+                'c' => ['idioma' => '', 'fecha' => '2026-12-06', 'hora' => '11:00'],
+                'd' => ['idioma' => 'Alemán', 'fecha' => '2026-12-07', 'hora' => '25:00'],
+            ],
+        ]);
+
+        $this->getJson('/api/v1/oesi')
+            ->assertJsonCount(1, 'data.cronograma.fechas')
+            ->assertJsonPath('data.cronograma.fechas.0.idioma', 'Inglés')
+            ->assertJsonPath('data.cronograma.fechas.0.publico', null);
+    }
+
     public function test_las_redes_salen_como_clave_y_enlace(): void
     {
         $this->publicar();

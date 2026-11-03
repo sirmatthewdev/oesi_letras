@@ -1,3 +1,4 @@
+import type { FechaExamen } from './fechas';
 /**
  * Cliente de la API de contenido de Laravel.
  *
@@ -183,6 +184,8 @@ export type Oesi = {
         intro: string | null;
         imagen: ImagenOesi;
         aviso: string | null;
+        /** Una por examen, en orden, con su momento en ISO (hora de Lima). */
+        fechas: FechaExamen[];
         formularios: EnlaceOesi[];
     };
     inscripcion: {

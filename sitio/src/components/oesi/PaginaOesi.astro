@@ -40,6 +40,8 @@ import ImagenConRespaldo from '../../components/oesi/ImagenConRespaldo.astro';
 import ContactoDudas from '../../components/oesi/ContactoDudas.astro';
 import Continua from '../../components/oesi/Continua.astro';
 import IndiceFijo from '../../components/oesi/IndiceFijo.astro';
+import FechasCronograma from '../../components/oesi/FechasCronograma.astro';
+import { vigentes } from '../../lib/fechas';
 import type { Oesi } from '../../lib/api';
 import { Image } from 'astro:assets';
 import type { ImageMetadata } from 'astro';
@@ -299,6 +301,23 @@ const INDICES: Partial<Record<PaginaOesiClave, { etiqueta: string; items: { text
     inscripcion: { etiqueta: 'Pasos de la inscripción', items: PASOS_INDICE },
 };
 const indice = INDICES[pagina];
+
+// Los exámenes que vienen, para buscadores: un `Event` por fecha en
+// /cronograma, con su modalidad. Solo los vigentes al construir el sitio.
+const eventos = vigentes(oesi.cronograma.fechas).map((f) => ({
+    '@context': 'https://schema.org',
+    '@type': 'Event',
+    name: `Examen de suficiencia en ${f.idioma.toLowerCase()}`,
+    startDate: f.inicio,
+    eventAttendanceMode:
+        f.modalidad === 'presencial' ? 'https://schema.org/OfflineEventAttendanceMode' : 'https://schema.org/OnlineEventAttendanceMode',
+    eventStatus: 'https://schema.org/EventScheduled',
+    location:
+        f.modalidad === 'presencial'
+            ? { '@type': 'Place', name: oesi.institucion || 'Facultad de Letras y Ciencias Humanas · UNMSM', address: 'Ciudad Universitaria, Lima' }
+            : { '@type': 'VirtualLocation', url: Astro.site ? new URL('/cronograma', Astro.site).href : undefined },
+    organizer: { '@type': 'Organization', name: oesi.nombre },
+}));
 const vecina = (i: number) =>
     RECORRIDO[i] ? { titulo: PAGINAS[RECORRIDO[i].clave].titulo, texto: RECORRIDO[i].resumen, enlace: `/${RECORRIDO[i].clave}` } : null;
 
@@ -371,9 +390,10 @@ const PASOS_INICIO = [
     titulo={meta?.titulo ?? oesi.nombre}
     descripcion={meta?.descripcion ??
         'Exámenes de suficiencia en idiomas de la Facultad de Letras y Ciencias Humanas de la UNMSM: requisitos, modalidades, cronograma, pagos e inscripción.'}
-    datos={pagina === 'preguntas' ? datosFaq : undefined}
+    datos={pagina === 'preguntas' ? datosFaq : pagina === 'cronograma' && eventos.length ? eventos : undefined}
     sobreHero={pagina === 'inicio'}
     cierreContacto={pagina !== 'preguntas'}
+    fechas={oesi.cronograma.fechas}
 >
     {meta ? (
         <HeroPagina
@@ -1041,6 +1061,8 @@ const PASOS_INICIO = [
                                 <span>{oesi.cronograma.aviso}</span>
                             </p>
                         )}
+
+                        <FechasCronograma fechas={oesi.cronograma.fechas} />
 
                         {/*
                          * La publicación del mes, que es la fuente de las fechas, y

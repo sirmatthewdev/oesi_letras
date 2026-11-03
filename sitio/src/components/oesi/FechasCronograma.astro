@@ -1,0 +1,63 @@
+---
+/**
+ * Las fechas del mes en /cronograma, como datos y no solo dentro de la imagen:
+ * una tarjeta por examen con el día, la hora, el idioma, para quién es, la
+ * modalidad y hasta cuándo hay inscripción. La imagen de la publicación sigue
+ * debajo, como respaldo y para compartirla.
+ *
+ * Solo pinta las que aún no han empezado al construir el sitio, y cada tarjeta
+ * lleva `data-vence`: si el examen pasa antes del siguiente build, el script de
+ * `Base` la oculta. Sin ninguna vigente, la sección no sale y la página queda
+ * como antes, con la imagen.
+ */
+import Icono from '../Icono.astro';
+import { larga, piezas, vigentes, type FechaExamen } from '../../lib/fechas';
+import { faBuildingColumns, faLaptop } from '@fortawesome/free-solid-svg-icons';
+
+interface Props {
+    fechas: FechaExamen[];
+}
+
+const lista = vigentes(Astro.props.fechas);
+---
+
+{
+    lista.length > 0 && (
+        <section aria-labelledby="t-fechas" class="mt-8" data-si-hay>
+            <h2 id="t-fechas" class="font-serif text-2xl font-extrabold text-unmsm-azul">
+                Fechas de <span class="text-unmsm-acento">examen</span>
+            </h2>
+            <p class="mt-1 text-sm text-slate-600">Hora de Lima. La inscripción cierra dos días antes de cada examen.</p>
+
+            <ol class="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {lista.map((f) => {
+                    const p = piezas(f.inicio);
+                    return (
+                        <li data-vence={f.inicio} class="flex items-center gap-4 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
+                            <time datetime={f.inicio} class="flex h-16 w-16 flex-none flex-col items-center justify-center rounded-2xl bg-unmsm-azul text-white">
+                                <span class="font-serif text-2xl font-extrabold leading-none">{p.dia}</span>
+                                <span class="mt-1 text-[0.65rem] font-semibold uppercase tracking-wider text-unmsm-dorado-light">{p.semanaCorta}</span>
+                            </time>
+                            <div class="min-w-0">
+                                <p class="font-serif text-lg font-bold leading-tight text-unmsm-azul">{f.idioma}</p>
+                                <p class="text-sm text-slate-600">
+                                    {p.hora}
+                                    {f.publico && <span> · {f.publico}</span>}
+                                </p>
+                                <p class="mt-1.5 flex flex-wrap items-center gap-2 text-xs">
+                                    <span class="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 font-semibold text-slate-700">
+                                        <Icono icono={f.modalidad === 'presencial' ? faBuildingColumns : faLaptop} clase="h-3 w-3" />
+                                        {f.modalidad === 'presencial' ? 'Presencial' : 'Virtual'}
+                                    </span>
+                                    <span class="text-slate-500">
+                                        Inscripción hasta el <time datetime={f.cierre_inscripcion}>{larga(f.cierre_inscripcion)}</time>
+                                    </span>
+                                </p>
+                            </div>
+                        </li>
+                    );
+                })}
+            </ol>
+        </section>
+    )
+}

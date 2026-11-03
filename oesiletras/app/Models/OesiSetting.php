@@ -52,6 +52,7 @@ class OesiSetting extends Model
         'idiomas' => 'array',
         'habilidades' => 'array',
         'modalidades' => 'array',
+        'cronograma_fechas' => 'array',
         'cronograma_formularios' => 'array',
         'costos' => 'array',
         'pago_advertencias' => 'array',

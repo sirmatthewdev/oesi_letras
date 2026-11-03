@@ -13,9 +13,10 @@ interface Props {
      * cápsula. El resto recibe el separador que se pinta en Base.
      */
     sobreHero?: boolean;
+    fechas?: import('../lib/fechas').FechaExamen[];
 }
 
-const { sitio, menu, sobreHero = false } = Astro.props;
+const { sitio, menu, sobreHero = false, fechas = [] } = Astro.props;
 
 // Para marcar el apartado en el que se está. Se compara la primera parte de la
 // ruta y no la ruta entera: dentro de `/cursos/redaccion-juridica` el apartado
@@ -44,7 +45,7 @@ const activo = (item: ItemMenu) =>
     de modo que las dos cosas se leen como un único movimiento.
 */}
 <header class="cabecera fixed inset-x-0 top-0 z-50" data-sobre-hero={sobreHero ? '1' : undefined}>
-    <BarraSuperior sitio={sitio} />
+    <BarraSuperior sitio={sitio} fechas={fechas} />
 
     <div class="contenedor-capsula px-4">
         <div
