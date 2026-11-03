@@ -28,6 +28,12 @@ interface Props {
      * Lo usa la portada; el resto lleva la cabecera como banda sólida.
      */
     sobreHero?: boolean;
+    /**
+     * El cierre «¿Tienes alguna duda?» que abre el pie. Lo apaga la página
+     * que ya trae ese mismo contacto en su contenido (las preguntas
+     * frecuentes): tres avisos de contacto seguidos sobran.
+     */
+    cierreContacto?: boolean;
 }
 
 const {
@@ -37,6 +43,7 @@ const {
     datos,
     sinIndexar = false,
     sobreHero = false,
+    cierreContacto = true,
 } = Astro.props;
 
 // Nada de esto está escrito en la plantilla a propósito: el nombre, el menú y
@@ -185,31 +192,6 @@ const enlacesDelPie = [
             // Tambien con cada navegacion de ClientRouter, que no recarga la
             // pagina: con `load` solo contaria la primera.
             document.addEventListener('astro:page-load', registrarVisita);
-
-            // Los botones flotantes (WhatsApp, volver arriba) se apartan
-            // mientras se baja, que es cuando se está leyendo y tapaban texto
-            // en el móvil, y vuelven en cuanto se sube o se llega al final.
-            // Un solo oyente, pasivo, y la decisión en un rAF.
-            let ultimoY = window.scrollY;
-            let pendiente = false;
-            window.addEventListener(
-                'scroll',
-                () => {
-                    if (pendiente) return;
-                    pendiente = true;
-                    requestAnimationFrame(() => {
-                        const y = window.scrollY;
-                        const alFinal = y + innerHeight >= document.documentElement.scrollHeight - 80;
-                        const bajando = y > ultimoY + 4 && y > 400 && !alFinal;
-                        if (Math.abs(y - ultimoY) > 4) {
-                            document.documentElement.toggleAttribute('data-flotantes-ocultos', bajando);
-                            ultimoY = y;
-                        }
-                        pendiente = false;
-                    });
-                },
-                { passive: true }
-            );
         </script>
 
         {contacto.whatsapp && (
@@ -244,7 +226,7 @@ const enlacesDelPie = [
                     el pie en todas las páginas, como el de la referencia (Idiomas
                     PUCP): la misma Facultad, la misma pregunta, el horario y los
                     dos canales. */}
-                {(contacto.whatsapp || contacto.email) && (
+                {cierreContacto && (contacto.whatsapp || contacto.email) && (
                     <div class="mb-14 flex flex-col gap-6 border-b border-white/10 pb-12 md:flex-row md:items-center md:justify-between">
                         <div>
                             {sitio.institucion && (

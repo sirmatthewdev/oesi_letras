@@ -262,29 +262,6 @@ export async function fondos(selector = '[data-fondo-deriva]'): Promise<void> {
         );
     });
 
-    // Y el degradado de la banda, que se desplaza en sentido contrario: como su
-    // color va en diagonal, mover la posición del fondo hace que el dorado
-    // recorra la banda en vez de quedarse clavado en la esquina.
-    const bandas = [...document.querySelectorAll<HTMLElement>('[data-banda-degradado]')];
-
-    bandas.forEach((banda) => {
-        gsap.fromTo(
-            banda,
-            { backgroundPosition: '0% 50%' },
-            {
-                backgroundPosition: '100% 50%',
-                ease: 'none',
-                scrollTrigger: {
-                    trigger: banda,
-                    start: 'top bottom',
-                    end: 'bottom top',
-                    scrub: 0.6,
-                    invalidateOnRefresh: true,
-                },
-            }
-        );
-    });
-
     ScrollTrigger.refresh();
 }
 

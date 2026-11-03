@@ -283,7 +283,7 @@ const vecina = (i: number) =>
 // Facultad, que es la que da el panel—, no por coordenadas escritas a mano. La
 // referencia de la puerta va en la nota de la oficina, justo encima.
 const lugar = encodeURIComponent(
-    `${(oesi.institucion ?? 'Facultad de Letras y Ciencias Humanas UNMSM').replace(/\s*·\s*/g, ' ')}, Ciudad Universitaria, Lima`
+    `${(oesi.institucion || 'Facultad de Letras y Ciencias Humanas UNMSM').replace(/\s*·\s*/g, ' ')}, Ciudad Universitaria, Lima`
 );
 const comoLlegar = {
     maps: `https://www.google.com/maps/search/?api=1&query=${lugar}`,
@@ -350,6 +350,7 @@ const PASOS_INICIO = [
         'Exámenes de suficiencia en idiomas de la Facultad de Letras y Ciencias Humanas de la UNMSM: requisitos, modalidades, cronograma, pagos e inscripción.'}
     datos={pagina === 'preguntas' ? datosFaq : undefined}
     sobreHero={pagina === 'inicio'}
+    cierreContacto={pagina !== 'preguntas'}
 >
     {meta ? (
         <HeroPagina
@@ -1514,7 +1515,7 @@ const PASOS_INICIO = [
         )}
     </div>
 
-    {meta && posicion >= 0 && <Continua anterior={vecina(posicion - 1)} siguiente={vecina(posicion + 1)} />}
+    {posicion >= 0 && <Continua anterior={vecina(posicion - 1)} siguiente={vecina(posicion + 1)} />}
 
     {/* La banda de cierre «¿Tienes alguna duda sobre el examen?» que iba aquí
         ahora abre el pie (`layouts/Base.astro`), en todas las páginas: antes
