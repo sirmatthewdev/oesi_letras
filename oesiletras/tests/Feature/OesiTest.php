@@ -423,14 +423,14 @@ class OesiTest extends TestCase
         Livewire::test(OficinaDeSuficiencia::class)
             ->fillForm([
                 'estado' => OesiSetting::ESTADO_PUBLICADO,
-                'cronograma_imagen' => 'https://letras.unmsm.edu.pe/wp-content/uploads/2026/10/CRONOGRAMA-OESI-OCT.png',
-                'cronograma_imagen_alt' => 'Cronograma de exámenes de octubre',
+                'curso_imagen' => 'https://letras.unmsm.edu.pe/wp-content/uploads/2026/10/curso-octubre.png',
+                'curso_imagen_alt' => 'Flyer del curso de octubre',
             ])
             ->call('guardar')
             ->assertHasNoFormErrors();
 
         $this->getJson('/api/v1/oesi')
-            ->assertJsonPath('data.cronograma.imagen.url', 'https://letras.unmsm.edu.pe/wp-content/uploads/2026/10/CRONOGRAMA-OESI-OCT.png')
+            ->assertJsonPath('data.curso.imagen.url', 'https://letras.unmsm.edu.pe/wp-content/uploads/2026/10/curso-octubre.png')
             // Lo que no se tocó sigue como estaba.
             ->assertJsonCount(12, 'data.faqs.items')
             ->assertJsonPath('data.inscripcion.tarifario.4.monto', 100);
@@ -442,9 +442,9 @@ class OesiTest extends TestCase
         $this->actingAs(User::factory()->create(['role' => 'admin']));
 
         Livewire::test(OficinaDeSuficiencia::class)
-            ->fillForm(['cronograma_imagen_alt' => ''])
+            ->fillForm(['curso_imagen_alt' => ''])
             ->call('guardar')
-            ->assertHasFormErrors(['cronograma_imagen_alt']);
+            ->assertHasFormErrors(['curso_imagen_alt']);
     }
 
     public function test_todo_campo_del_panel_es_una_columna(): void

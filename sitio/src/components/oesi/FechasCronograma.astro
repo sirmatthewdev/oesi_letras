@@ -1,63 +1,289 @@
 ---
 /**
- * Las fechas del mes en /cronograma, como datos y no solo dentro de la imagen:
- * una tarjeta por examen con el día, la hora, el idioma, para quién es, la
- * modalidad y hasta cuándo hay inscripción. La imagen de la publicación sigue
- * debajo, como respaldo y para compartirla.
+ * El cronograma de /cronograma, entero desde el panel (pestaña Cronograma →
+ * Fechas de examen). Ya no hay imagen: las fechas son datos.
  *
- * Solo pinta las que aún no han empezado al construir el sitio, y cada tarjeta
- * lleva `data-vence`: si el examen pasa antes del siguiente build, el script de
- * `Base` la oculta. Sin ninguna vigente, la sección no sale y la página queda
- * como antes, con la imagen.
+ * Con la forma de la referencia (Idiomas PUCP): filtros en pastillas por
+ * idioma y modalidad, los exámenes agrupados por mes y, en cada uno, el día,
+ * la hora, para quién es, la modalidad y el estado de la inscripción
+ * —abierta hasta tal día, o cerrada—, con su botón para inscribirse.
+ *
+ * Todo lo que depende de la hora se resuelve al construir el sitio y se
+ * corrige al cargar la página (el build no se repite cada día): un examen que
+ * ya empezó se oculta (`data-vence`, ver Base) y una inscripción que cerró
+ * cambia de estado (`data-cierre`, aquí abajo).
+ *
+ * Sin exámenes por venir, un estado vacío que lo dice y da el contacto, y los
+ * del último cronograma como «ya realizados», para que se vea cómo son.
  */
 import Icono from '../Icono.astro';
 import { larga, piezas, vigentes, type FechaExamen } from '../../lib/fechas';
-import { faBuildingColumns, faLaptop } from '@fortawesome/free-solid-svg-icons';
+import { normalizar } from '../../lib/oesi';
+import { faArrowRight, faBuildingColumns, faCalendarXmark, faEnvelope, faLaptop } from '@fortawesome/free-solid-svg-icons';
+import { faWhatsapp } from '@fortawesome/free-brands-svg-icons';
 
 interface Props {
     fechas: FechaExamen[];
+    intro: string | null;
+    whatsapp: { enlace: string; visible: string } | null;
+    email: string | null;
 }
 
-const lista = vigentes(Astro.props.fechas);
+const { fechas, intro, whatsapp, email } = Astro.props;
+const ahora = new Date();
+const proximas = vigentes(fechas, ahora);
+const pasadas = fechas.filter((f) => new Date(f.inicio) <= ahora).sort((a, b) => a.inicio.localeCompare(b.inicio));
+
+// Por mes, en orden: «noviembre de 2026».
+const meses = [...new Set(proximas.map((f) => f.inicio.slice(0, 7)))].map((clave) => {
+    const de = proximas.filter((f) => f.inicio.startsWith(clave));
+    const p = piezas(de[0].inicio);
+    return { clave, titulo: `${p.mes} ${clave.slice(0, 4)}`, fechas: de };
+});
+const idiomas = [...new Set(proximas.map((f) => f.idioma))];
+const modalidades = [...new Set(proximas.map((f) => f.modalidad))];
+const abierta = (f: FechaExamen) => new Date(f.cierre_inscripcion) > ahora;
 ---
 
-{
-    lista.length > 0 && (
-        <section aria-labelledby="t-fechas" class="mt-8" data-si-hay>
-            <h2 id="t-fechas" class="font-serif text-2xl font-extrabold text-unmsm-azul">
+<section aria-labelledby="t-fechas" class="mt-10">
+    <header class="flex flex-wrap items-end justify-between gap-4">
+        <div>
+            <h2 id="t-fechas" class="font-serif text-3xl font-extrabold text-unmsm-azul">
                 Fechas de <span class="text-unmsm-acento">examen</span>
             </h2>
-            <p class="mt-1 text-sm text-slate-600">Hora de Lima. La inscripción cierra dos días antes de cada examen.</p>
+            <p class="mt-2 max-w-2xl text-slate-600">{intro || 'Hora de Lima. La inscripción cierra dos días antes de cada examen.'}</p>
+        </div>
+    </header>
 
-            <ol class="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {lista.map((f) => {
-                    const p = piezas(f.inicio);
-                    return (
-                        <li data-vence={f.inicio} class="flex items-center gap-4 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
-                            <time datetime={f.inicio} class="flex h-16 w-16 flex-none flex-col items-center justify-center rounded-2xl bg-unmsm-azul text-white">
-                                <span class="font-serif text-2xl font-extrabold leading-none">{p.dia}</span>
-                                <span class="mt-1 text-[0.65rem] font-semibold uppercase tracking-wider text-unmsm-dorado-light">{p.semanaCorta}</span>
-                            </time>
-                            <div class="min-w-0">
-                                <p class="font-serif text-lg font-bold leading-tight text-unmsm-azul">{f.idioma}</p>
-                                <p class="text-sm text-slate-600">
-                                    {p.hora}
-                                    {f.publico && <span> · {f.publico}</span>}
-                                </p>
-                                <p class="mt-1.5 flex flex-wrap items-center gap-2 text-xs">
-                                    <span class="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 font-semibold text-slate-700">
-                                        <Icono icono={f.modalidad === 'presencial' ? faBuildingColumns : faLaptop} clase="h-3 w-3" />
-                                        {f.modalidad === 'presencial' ? 'Presencial' : 'Virtual'}
+    {/* ── Próximos ── */}
+    {
+        proximas.length > 0 && (
+            <div id="cronograma-proximos" data-si-hay data-cronograma>
+                {(idiomas.length > 1 || modalidades.length > 1) && (
+                    <div class="mt-6 flex flex-wrap items-center gap-2" role="group" aria-label="Filtrar por idioma o modalidad" data-filtros hidden>
+                        <button type="button" class="filtro" data-filtro="" aria-pressed="true">Todos</button>
+                        {idiomas.map((i) => (
+                            <button type="button" class="filtro" data-filtro={`idioma:${normalizar(i)}`} aria-pressed="false">{i}</button>
+                        ))}
+                        {/* Las modalidades, aparte: un grupo con su propio fondo
+                            y no un filete, que al partirse la fila quedaba
+                            suelto al principio de la segunda. */}
+                        {modalidades.length > 1 && (
+                            <span class="inline-flex gap-1 rounded-full bg-slate-100 p-1">
+                                {modalidades.map((m) => (
+                                    <button type="button" class="filtro" data-filtro={`modalidad:${m}`} aria-pressed="false">
+                                        <Icono icono={m === 'presencial' ? faBuildingColumns : faLaptop} clase="h-3 w-3" />
+                                        {m === 'presencial' ? 'Presencial' : 'Virtual'}
+                                    </button>
+                                ))}
+                            </span>
+                        )}
+                    </div>
+                )}
+
+                {meses.map((mes) => (
+                    <section aria-label={mes.titulo} class="mes mt-8" data-mes>
+                        <h3 class="flex items-center gap-3 text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">
+                            <span class="first-letter:uppercase">{mes.titulo}</span>
+                            <span aria-hidden="true" class="h-px flex-1 bg-slate-200" />
+                        </h3>
+                        <ol class="mt-4 grid gap-3 md:grid-cols-2">
+                            {mes.fechas.map((f) => {
+                                const p = piezas(f.inicio);
+                                return (
+                                    <li
+                                        class="examen flex gap-4 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200"
+                                        data-vence={f.inicio}
+                                        data-cierre={f.cierre_inscripcion}
+                                        data-idioma={normalizar(f.idioma)}
+                                        data-modalidad={f.modalidad}
+                                    >
+                                        <time datetime={f.inicio} class="flex h-20 w-16 flex-none flex-col items-center justify-center rounded-2xl bg-unmsm-azul text-white">
+                                            <span class="text-[0.65rem] font-semibold uppercase tracking-wider text-unmsm-dorado-light">{p.semanaCorta}</span>
+                                            <span class="font-serif text-3xl font-extrabold leading-none">{p.dia}</span>
+                                            <span class="mt-0.5 text-[0.65rem] font-semibold uppercase tracking-wider text-white/80">{p.mesCorto}</span>
+                                        </time>
+                                        <div class="flex min-w-0 flex-1 flex-col">
+                                            <div class="flex flex-wrap items-start justify-between gap-2">
+                                                <p class="font-serif text-xl font-bold leading-tight text-unmsm-azul">{f.idioma}</p>
+                                                <span class="inline-flex items-center gap-1 rounded-full bg-sky-50 px-2.5 py-1 text-xs font-semibold text-unmsm-azul ring-1 ring-sky-100">
+                                                    <Icono icono={f.modalidad === 'presencial' ? faBuildingColumns : faLaptop} clase="h-3 w-3" />
+                                                    {f.modalidad === 'presencial' ? 'Presencial' : 'Virtual'}
+                                                </span>
+                                            </div>
+                                            <p class="mt-1 text-sm text-slate-600">
+                                                {p.hora}
+                                                {f.publico && <span> · {f.publico}</span>}
+                                            </p>
+                                            <div class="mt-auto flex flex-wrap items-center justify-between gap-3 pt-4">
+                                                {/* El estado: abierta o cerrada; lo corrige el script al cargar. */}
+                                                <p class="estado text-xs font-semibold" data-abierta={abierta(f) ? '' : undefined}>
+                                                    <span class="estado-abierta inline-flex items-center gap-1.5 text-emerald-700">
+                                                        <span aria-hidden="true" class="h-2 w-2 flex-none rounded-full bg-emerald-500" />
+                                                        <span>
+                                                            Inscripción abierta hasta el <time datetime={f.cierre_inscripcion}>{larga(f.cierre_inscripcion)}</time>
+                                                        </span>
+                                                    </span>
+                                                    <span class="estado-cerrada inline-flex items-center gap-1.5 text-slate-500">
+                                                        <span aria-hidden="true" class="h-2 w-2 rounded-full bg-slate-400" />
+                                                        Inscripción cerrada
+                                                    </span>
+                                                </p>
+                                                <a href="/inscripcion#paso-pago" class="inscribirme inline-flex items-center gap-1.5 rounded-full bg-unmsm-azul px-4 py-2 text-sm font-semibold text-white transition hover:bg-unmsm-azul-dark">
+                                                    Inscribirme
+                                                    <Icono icono={faArrowRight} clase="h-3 w-3" />
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </li>
+                                );
+                            })}
+                        </ol>
+                    </section>
+                ))}
+                <p class="mt-6 hidden rounded-2xl bg-white px-5 py-4 text-sm text-slate-600 ring-1 ring-slate-200" data-sin-resultados>
+                    No hay exámenes con ese filtro. <button type="button" class="font-semibold text-unmsm-azul underline" data-filtro="">Ver todos</button>
+                </p>
+            </div>
+        )
+    }
+
+    {/* ── Sin próximos: lo dice, y da el contacto ── */}
+    <div data-vacio-de="cronograma-proximos" hidden={proximas.length > 0} class="mt-8">
+        <div class="flex flex-col items-start gap-5 rounded-3xl bg-white p-7 shadow-sm ring-1 ring-slate-200 sm:flex-row sm:items-center">
+            <span aria-hidden="true" class="flex h-14 w-14 flex-none items-center justify-center rounded-2xl bg-sky-50 text-unmsm-acento">
+                <Icono icono={faCalendarXmark} clase="h-6 w-6" />
+            </span>
+            <div class="flex-1">
+                <p class="font-serif text-xl font-bold text-unmsm-azul">Aún no hay fechas publicadas</p>
+                <p class="mt-1 text-sm leading-relaxed text-slate-600">
+                    La oficina publica el cronograma cada mes. Mientras tanto, puedes preparar tu inscripción o escribirnos para saber cuándo se rinde tu idioma.
+                </p>
+                <p class="mt-4 flex flex-wrap gap-3">
+                    {whatsapp && (
+                        <a href={whatsapp.enlace} target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 rounded-full bg-unmsm-azul px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-unmsm-azul-dark">
+                            <Icono icono={faWhatsapp} clase="h-4 w-4" />
+                            Escríbenos por WhatsApp
+                        </a>
+                    )}
+                    {email && (
+                        <a href={`mailto:${email}`} class="inline-flex items-center gap-2 rounded-full border-2 border-unmsm-azul px-5 py-2 text-sm font-semibold text-unmsm-azul transition hover:bg-unmsm-azul hover:text-white">
+                            <Icono icono={faEnvelope} clase="h-4 w-4" />
+                            Escribir al correo
+                        </a>
+                    )}
+                </p>
+            </div>
+        </div>
+
+        {
+            pasadas.length > 0 && (
+                <details class="group mt-6 rounded-3xl bg-white/70 ring-1 ring-slate-200">
+                    <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-6 py-4 text-sm font-semibold text-slate-700 [&::-webkit-details-marker]:hidden">
+                        Exámenes del último cronograma (ya realizados)
+                        <span aria-hidden="true" class="text-xs transition group-open:rotate-180">▾</span>
+                    </summary>
+                    <ul class="grid gap-2 px-6 pb-6 sm:grid-cols-2">
+                        {pasadas.map((f) => {
+                            const p = piezas(f.inicio);
+                            return (
+                                <li class="flex items-center gap-3 rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                                    <time datetime={f.inicio} class="w-20 flex-none font-semibold text-slate-700">
+                                        {p.semanaCorta} {p.dia} {p.mesCorto}
+                                    </time>
+                                    <span class="min-w-0">
+                                        {f.idioma} · {f.modalidad === 'presencial' ? 'Presencial' : 'Virtual'}
                                     </span>
-                                    <span class="text-slate-500">
-                                        Inscripción hasta el <time datetime={f.cierre_inscripcion}>{larga(f.cierre_inscripcion)}</time>
-                                    </span>
-                                </p>
-                            </div>
-                        </li>
-                    );
-                })}
-            </ol>
-        </section>
-    )
-}
+                                </li>
+                            );
+                        })}
+                    </ul>
+                </details>
+            )
+        }
+    </div>
+</section>
+
+<style>
+    .filtro {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.375rem;
+        border-radius: 9999px;
+        padding: 0.45rem 0.95rem;
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--color-unmsm-azul);
+        background-color: #fff;
+        box-shadow: inset 0 0 0 1px rgb(15 43 72 / 0.15);
+        transition:
+            background-color 200ms ease,
+            color 200ms ease,
+            box-shadow 200ms ease;
+    }
+
+    .filtro:hover {
+        box-shadow: inset 0 0 0 1.5px var(--color-unmsm-acento);
+    }
+
+    .filtro[aria-pressed='true'] {
+        background-color: var(--color-unmsm-azul);
+        color: #fff;
+        box-shadow: none;
+    }
+
+    /* El estado de la inscripción: una de las dos frases, según `data-abierta`.
+       Cerrada, el botón de inscribirse no tiene sentido y se oculta. */
+    .estado:not([data-abierta]) .estado-abierta,
+    .estado[data-abierta] .estado-cerrada {
+        display: none;
+    }
+
+    .examen:has(.estado:not([data-abierta])) .inscribirme {
+        display: none;
+    }
+</style>
+
+<script>
+    function iniciarCronograma() {
+        const raiz = document.querySelector<HTMLElement>('[data-cronograma]');
+        if (!raiz || raiz.dataset.listo) return;
+        raiz.dataset.listo = '1';
+
+        // Una inscripción que cerró después del build cambia de estado.
+        const ahora = Date.now();
+        raiz.querySelectorAll<HTMLElement>('[data-cierre]').forEach((e) => {
+            if (Date.parse(e.dataset.cierre!) <= ahora) e.querySelector('.estado')?.removeAttribute('data-abierta');
+        });
+
+        // Filtros: sin JavaScript no se ven (`hidden`) y la lista sale entera.
+        const filtros = raiz.querySelector<HTMLElement>('[data-filtros]');
+        if (!filtros) return;
+        filtros.hidden = false;
+        const examenes = [...raiz.querySelectorAll<HTMLElement>('.examen')];
+        const sinResultados = raiz.querySelector<HTMLElement>('[data-sin-resultados]')!;
+
+        const aplicar = (filtro: string) => {
+            const [campo, valor] = filtro.split(':');
+            filtros.querySelectorAll<HTMLButtonElement>('[data-filtro]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.filtro === filtro)));
+            let visibles = 0;
+            examenes.forEach((e) => {
+                const coincide = !filtro || e.dataset[campo as 'idioma' | 'modalidad'] === valor;
+                // Un examen ya vencido sigue oculto aunque coincida.
+                const vencido = Date.parse(e.dataset.vence!) <= Date.now();
+                e.hidden = !coincide || vencido;
+                if (!e.hidden) visibles++;
+            });
+            raiz.querySelectorAll<HTMLElement>('[data-mes]').forEach((m) => (m.hidden = !m.querySelector('.examen:not([hidden])')));
+            sinResultados.classList.toggle('hidden', visibles > 0);
+        };
+
+        raiz.addEventListener('click', (e) => {
+            const b = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-filtro]');
+            if (b) aplicar(b.dataset.filtro ?? '');
+        });
+    }
+
+    iniciarCronograma();
+    document.addEventListener('astro:page-load', iniciarCronograma);
+</script>

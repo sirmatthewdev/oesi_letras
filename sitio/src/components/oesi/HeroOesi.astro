@@ -24,6 +24,7 @@ import Icono from '../Icono.astro';
 import RedesSociales from '../RedesSociales.astro';
 import CopiarDato from './CopiarDato.astro';
 import HeroIdiomas from './HeroIdiomas.astro';
+import { corta, vigentes } from '../../lib/fechas';
 import BuscadorExamen from './BuscadorExamen.astro';
 import fachada from '../../assets/campus-fachada.webp';
 import type { Oesi } from '../../lib/api';
@@ -62,7 +63,9 @@ const [nombreInicio, nombreAcento] =
 // Las modalidades que la oficina tiene cargadas, para el aviso de la foto.
 const hayPresencial = oesi.modalidades.items.some((m) => m.modalidad === 'presencial');
 const hayVirtual = oesi.modalidades.items.some((m) => m.modalidad !== 'presencial');
-const publicacion = oesi.cronograma.imagen?.alt || null;
+// El aviso de la foto: el próximo examen del cronograma (el script de Base
+// deja el primero que no haya empezado) o, sin fechas, la invitación a verlo.
+const proximas = vigentes(oesi.cronograma.fechas);
 
 // Un color por cifra, como los filetes de la referencia, pero dentro de la
 // paleta de la casa. Si hay mas cifras que colores, se repiten.
@@ -202,11 +205,20 @@ const COLORES_CIFRA = ['var(--color-unmsm-dorado)', 'var(--color-unmsm-acento)',
                 <span aria-hidden="true" class="marca-degradado flex h-11 w-11 flex-none items-center justify-center rounded-xl text-white">
                     <Icono icono={faCalendarDays} clase="h-5 w-5" />
                 </span>
-                <span class="min-w-0">
-                    <span class="block text-[0.7rem] font-semibold uppercase tracking-wider text-slate-500">
-                        {publicacion ? 'Publicación vigente' : 'Antes de empezar'}
+                <span class="min-w-0" data-solo-primera>
+                    {proximas.map((f, i) => (
+                        <span data-vence={f.inicio} hidden={i > 0} class="block">
+                            <span class="block text-[0.7rem] font-semibold uppercase tracking-wider text-slate-500">Próximo examen</span>
+                            <span class="line-clamp-2 block font-semibold leading-snug text-unmsm-azul">
+                                {f.idioma}, {corta(f.inicio)}
+                            </span>
+                        </span>
+                    ))}
+                    {/* Sin próximas, o cuando vencen todas: la invitación. */}
+                    <span data-vacio-de-grupo hidden={proximas.length > 0} class="block">
+                        <span class="block text-[0.7rem] font-semibold uppercase tracking-wider text-slate-500">Antes de empezar</span>
+                        <span class="line-clamp-2 block font-semibold leading-snug text-unmsm-azul">Elige tu fecha en el cronograma</span>
                     </span>
-                    <span class="line-clamp-2 block font-semibold leading-snug text-unmsm-azul">{publicacion ?? 'Elige tu fecha en el cronograma'}</span>
                 </span>
                 <Icono icono={faArrowRight} clase="h-4 w-4 flex-none text-unmsm-azul transition group-hover:translate-x-0.5" />
             </a>
