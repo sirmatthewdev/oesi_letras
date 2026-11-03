@@ -1,0 +1,12 @@
+---
+/**
+ * El aviso de un enlace que abre otra pestaña —los de la Facultad en el menú—:
+ * un icono pequeño a la vista y, para el lector de pantalla, el texto. Sin él
+ * nada distinguía «El examen», que se queda en el sitio, de «CEID», que saca.
+ */
+import Icono from './Icono.astro';
+import { faArrowUpRightFromSquare } from '@fortawesome/free-solid-svg-icons';
+---
+
+<Icono icono={faArrowUpRightFromSquare} clase="h-2.5 w-2.5 flex-none opacity-60" />
+<span class="sr-only"> (se abre en una pestaña nueva)</span>

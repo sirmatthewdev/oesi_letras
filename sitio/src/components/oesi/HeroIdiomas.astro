@@ -155,11 +155,16 @@ const MODALIDADES = {
         }
     </div>
 
-    {/* Puntos y pausa, como en la referencia. Los puntos solo tienen sentido
-        con el acordeón: en el móvil se desliza con el dedo. */}
+    {/* Puntos y pausa, como en la referencia. En el móvil los puntos siguen al
+        deslizamiento —y llevan a cada idioma— y un contador dice cuántos hay:
+        antes solo asomaba el panel siguiente y nada decía que eran siete. La
+        pausa, solo en escritorio: en el móvil no avanza solo. */}
     {
         idiomas.length > 1 && (
-            <div class="controles mt-5 hidden items-center justify-center gap-2 lg:flex">
+            <div class="controles mt-5 flex items-center justify-center gap-2">
+                <span class="mr-2 text-xs font-semibold tabular-nums text-slate-500 lg:hidden" data-contador-idioma aria-live="polite">
+                    1 / {idiomas.length}
+                </span>
                 {idiomas.map((idioma, i) => (
                     <button
                         type="button"
@@ -169,7 +174,7 @@ const MODALIDADES = {
                         aria-current={i === 0 ? 'true' : undefined}
                     />
                 ))}
-                <button type="button" class="ml-3 flex h-8 w-8 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100 hover:text-unmsm-azul" data-pausa aria-label="Pausar el carrusel" aria-pressed="false">
+                <button type="button" class="ml-3 hidden h-8 w-8 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100 hover:text-unmsm-azul lg:flex" data-pausa aria-label="Pausar el carrusel" aria-pressed="false">
                     <Icono icono={faPause} clase="icono-pausa h-3.5 w-3.5" />
                     <Icono icono={faPlay} clase="icono-reanudar hidden h-3.5 w-3.5" />
                 </button>
@@ -222,10 +227,10 @@ const MODALIDADES = {
     /*
      * El velo del color del panel sobre la foto: lo que la deja «con
      * opacidad». Denso donde va el texto —el blanco tiene que mantener el
-     * contraste sobre cualquier zona de la foto— y más ligero donde va el
-     * sticker, para que la foto se vea. En el móvil el texto va arriba y el
-     * sticker abajo, así que el degradado es vertical; en escritorio, de
-     * izquierda a derecha. Sin foto no se ve: es el mismo color que el fondo.
+     * contraste sobre cualquier zona de la foto— y más ligero lejos del texto,
+     * para que la foto se vea. En el móvil el texto va arriba, así que el
+     * degradado es vertical; en escritorio, de izquierda a derecha. Sin foto
+     * no se ve: es el mismo color que el fondo.
      */
     .panel-velo {
         position: absolute;
@@ -430,6 +435,8 @@ const MODALIDADES = {
         const paneles = [...raiz.querySelectorAll<HTMLElement>('[data-panel]')];
         const puntos = [...raiz.querySelectorAll<HTMLButtonElement>('[data-punto]')];
         const pausa = raiz.querySelector<HTMLButtonElement>('[data-pausa]');
+        const contador = raiz.querySelector<HTMLElement>('[data-contador-idioma]');
+        const pista = raiz.querySelector<HTMLElement>('[data-acordeon-pista]');
         let activo = 0;
         let temporizador: number | undefined;
         let pausadoPorUsuario = false;
@@ -445,7 +452,13 @@ const MODALIDADES = {
                 // Solo en escritorio: en el móvil todos los paneles se ven.
                 p.querySelector('[data-contenido]')?.toggleAttribute('inert', escritorio.matches && !es);
             });
+            marcar();
+        };
+
+        // Los puntos y el contador, del panel activo.
+        const marcar = () => {
             puntos.forEach((b, i) => (i === activo ? b.setAttribute('aria-current', 'true') : b.removeAttribute('aria-current')));
+            if (contador) contador.textContent = `${activo + 1} / ${paneles.length}`;
         };
 
         const puedeAvanzar = () =>
@@ -464,10 +477,34 @@ const MODALIDADES = {
         );
         puntos.forEach((b, i) =>
             b.addEventListener('click', () => {
+                // En el móvil el punto desliza la pista hasta ese panel; el
+                // observador de abajo marca el activo al llegar.
+                if (!escritorio.matches && pista) {
+                    pista.scrollTo({ left: paneles[i].offsetLeft - pista.offsetLeft, behavior: quietud.matches ? 'auto' : 'smooth' });
+                    return;
+                }
                 abrir(i);
                 programar();
             })
         );
+
+        // En el móvil manda el deslizamiento: el panel que ocupa la pista es el
+        // activo, para los puntos y el contador.
+        if (pista) {
+            const enVista = new IntersectionObserver(
+                (entradas) => {
+                    if (escritorio.matches) return;
+                    for (const e of entradas) {
+                        if (e.isIntersecting) {
+                            activo = paneles.indexOf(e.target as HTMLElement);
+                            marcar();
+                        }
+                    }
+                },
+                { root: pista, threshold: 0.6 }
+            );
+            paneles.forEach((p) => enVista.observe(p));
+        }
 
         pausa?.addEventListener('click', () => {
             pausadoPorUsuario = !pausadoPorUsuario;

@@ -39,6 +39,7 @@ import Negritas from '../../components/oesi/Negritas.astro';
 import ImagenConRespaldo from '../../components/oesi/ImagenConRespaldo.astro';
 import ContactoDudas from '../../components/oesi/ContactoDudas.astro';
 import Continua from '../../components/oesi/Continua.astro';
+import IndiceFijo from '../../components/oesi/IndiceFijo.astro';
 import type { Oesi } from '../../lib/api';
 import { Image } from 'astro:assets';
 import type { ImageMetadata } from 'astro';
@@ -276,6 +277,28 @@ const RECORRIDO: { clave: Exclude<PaginaOesiClave, 'inicio'>; resumen: string }[
     { clave: 'preguntas', resumen: 'Resultados, certificado y otras dudas' },
 ];
 const posicion = RECORRIDO.findIndex((r) => r.clave === pagina);
+
+// El índice fijo de las páginas largas: las secciones de /examen y, en las dos
+// páginas de la inscripción, sus tres pasos con la numeración de la oficina.
+const PASOS_INDICE = [
+    { texto: 'Elige tu fecha', href: '/cronograma', actual: pagina === 'cronograma' },
+    { texto: 'Paso 1 · Pago', href: '/inscripcion#paso-pago' },
+    { texto: 'Paso 2 · Formulario', href: '/inscripcion#paso-formulario' },
+];
+const INDICES: Partial<Record<PaginaOesiClave, { etiqueta: string; items: { texto: string; href: string; actual?: boolean }[] }>> = {
+    examen: {
+        etiqueta: 'Secciones de la página',
+        items: [
+            { texto: 'A quién va dirigido', href: '#examen' },
+            { texto: 'Requisito', href: '#requisito' },
+            { texto: 'Habilidades', href: '#habilidades' },
+            { texto: 'Calificación y certificado', href: '#despues' },
+        ],
+    },
+    cronograma: { etiqueta: 'Pasos de la inscripción', items: PASOS_INDICE },
+    inscripcion: { etiqueta: 'Pasos de la inscripción', items: PASOS_INDICE },
+};
+const indice = INDICES[pagina];
 const vecina = (i: number) =>
     RECORRIDO[i] ? { titulo: PAGINAS[RECORRIDO[i].clave].titulo, texto: RECORRIDO[i].resumen, enlace: `/${RECORRIDO[i].clave}` } : null;
 
@@ -363,6 +386,8 @@ const PASOS_INICIO = [
     ) : (
         <HeroOesi oesi={oesi} />
     )}
+
+    {indice && <IndiceFijo etiqueta={indice.etiqueta} items={indice.items} />}
 
     <div data-oesi>
         {pagina === 'inicio' && (
