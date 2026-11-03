@@ -1,0 +1,33 @@
+---
+/**
+ * La flecha de los enlaces de acción: un aro fino con la flecha en diagonal,
+ * como el «Conoce más ↗» de la referencia (Idiomas PUCP). Sustituye a la
+ * flecha recta de Font Awesome, demasiado genérica.
+ *
+ * Es trazo y no relleno, así que toma el color del texto (`currentColor`) y
+ * se ve igual de fina a cualquier tamaño. Decorativa: el texto del enlace ya
+ * dice adónde lleva.
+ */
+interface Props {
+    /** «adelante» ↗ (por defecto) o «atras» ↙, para «Anterior». */
+    direccion?: 'adelante' | 'atras';
+    clase?: string;
+}
+
+const { direccion = 'adelante', clase = 'h-4 w-4' } = Astro.props;
+---
+
+<svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.75"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    class:list={['flecha flex-none', clase]}
+    aria-hidden="true"
+>
+    <circle cx="12" cy="12" r="10.25" />
+    {direccion === 'adelante' ? <path d="M9 15 15 9M10 9h5v5" /> : <path d="M15 9 9 15M14 15H9v-5" />}
+</svg>

@@ -20,6 +20,7 @@
  */
 import { Image } from 'astro:assets';
 import Boton from '../Boton.astro';
+import Flecha from '../Flecha.astro';
 import Icono from '../Icono.astro';
 import RedesSociales from '../RedesSociales.astro';
 import CopiarDato from './CopiarDato.astro';
@@ -30,7 +31,6 @@ import fachada from '../../assets/campus-fachada.webp';
 import type { Oesi } from '../../lib/api';
 import { faWhatsapp } from '@fortawesome/free-brands-svg-icons';
 import {
-    faArrowRight,
     faBuildingColumns,
     faCalendarDays,
     faClock,
@@ -220,7 +220,7 @@ const COLORES_CIFRA = ['var(--color-unmsm-dorado)', 'var(--color-unmsm-acento)',
                         <span class="line-clamp-2 block font-semibold leading-snug text-unmsm-azul">Elige tu fecha en el cronograma</span>
                     </span>
                 </span>
-                <Icono icono={faArrowRight} clase="h-4 w-4 flex-none text-unmsm-azul transition group-hover:translate-x-0.5" />
+                <Flecha clase="h-5 w-5 text-unmsm-azul transition group-hover:rotate-45" />
             </a>
         </div>
     </div>

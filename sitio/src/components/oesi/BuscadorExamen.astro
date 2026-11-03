@@ -82,6 +82,11 @@ const datos = {
         whatsapp: string | null;
     };
 
+    // La flecha del sitio (la de components/Flecha.astro), para el HTML que se
+    // arma aquí: los resultados se pintan en el navegador.
+    const FLECHA =
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 flex-none" aria-hidden="true"><circle cx="12" cy="12" r="10.25"/><path d="M9 15 15 9M10 9h5v5"/></svg>';
+
     // Todo lo que se pinta sale de datos de la oficina: se escapa, nunca HTML.
     const esc = (t: string) => t.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 
@@ -128,8 +133,8 @@ const datos = {
                 html += `<p class="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-700 ring-1 ring-slate-200">Aún no hay fecha publicada para <strong>${esc(idioma.nombre)}</strong>${etiqueta ? ` ${etiqueta}` : ''}. La oficina publica el cronograma cada mes${datos.whatsapp ? `; si tienes prisa, <a class="font-semibold text-unmsm-azul underline" href="${esc(datos.whatsapp)}" target="_blank" rel="noopener noreferrer">escríbenos por WhatsApp</a>` : ''}.</p>`;
             }
             html += `<p class="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm font-semibold text-unmsm-azul">
-                <a class="hover:underline" href="/cronograma">Ver todo el cronograma →</a>
-                <a class="hover:underline" href="/inscripcion#paso-pago">Costos y pago →</a>
+                <a class="inline-flex items-center gap-1.5 hover:underline" href="/cronograma">Ver todo el cronograma ${FLECHA}</a>
+                <a class="inline-flex items-center gap-1.5 hover:underline" href="/inscripcion#paso-pago">Costos y pago ${FLECHA}</a>
             </p>`;
             salida.innerHTML = html;
         });

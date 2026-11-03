@@ -177,8 +177,10 @@ test.describe('OESI', () => {
     test('el cronograma son datos y no una imagen', async ({ page }) => {
         await abrir(page, '/cronograma');
         await expect(page.locator('#cronograma img[src*="CRONOGRAMA"]')).toHaveCount(0);
-        // Con o sin fechas vigentes, siempre dice algo: las fechas o el aviso de que no hay.
-        await expect(page.locator('#cronograma-proximos:not([hidden]), [data-vacio-de="cronograma-proximos"]:not([hidden])')).toHaveCount(1);
+        // Con o sin fechas por venir, siempre hay cartel: el de las próximas o el
+        // del último cronograma registrado, con sus exámenes y su estado.
+        await expect(page.locator('#cronograma [data-cartel]').first()).toBeVisible();
+        await expect(page.locator('#cronograma .examen').first()).toHaveAttribute('data-estado', /abierta|cerrada|realizado/);
     });
 
     test('el cronograma avisa de las fechas y lleva al pago; sus formularios van en el paso 2', async ({ page }) => {

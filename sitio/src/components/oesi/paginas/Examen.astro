@@ -5,6 +5,7 @@
  * Parte de `PaginaOesi`, que pone el marco (cabecera, índice, «Continúa» y
  * las anclas). Los estilos de estas páginas están allí, en su <style>.
  */
+import Flecha from '../../Flecha.astro';
 import Icono from '../../Icono.astro';
 import FondoSeccion from '../../FondoSeccion.astro';
 import TituloSeccion from '../../TituloSeccion.astro';
@@ -13,7 +14,7 @@ import Negritas from '../Negritas.astro';
 import type { Oesi } from '../../../lib/api';
 import { Image } from 'astro:assets';
 import ilCertificado from '../../../assets/ilustraciones/certificado.webp';
-import { faBookOpen, faChartColumn, faCircleCheck, faCircleInfo, faClock, faLightbulb, faFeatherPointed, faListCheck, faTriangleExclamation, faArrowRight } from '@fortawesome/free-solid-svg-icons';
+import { faBookOpen, faChartColumn, faCircleCheck, faCircleInfo, faClock, faLightbulb, faFeatherPointed, faListCheck, faTriangleExclamation } from '@fortawesome/free-solid-svg-icons';
 import { icono, cabeceraTabla, marcoTabla } from '../../../lib/oesi-vista';
 
 interface Props {
@@ -104,7 +105,7 @@ const matrizHabilidades = (() => {
                             <p class="mt-3 text-lg leading-relaxed text-slate-700"><Negritas texto={examen.requisitos} /></p>
                             <a href="/cronograma" class="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-unmsm-azul hover:underline">
                                 Lo cumplo: ver las fechas del mes
-                                <Icono icono={faArrowRight} clase="h-3.5 w-3.5" />
+                                <Flecha clase="h-4 w-4" />
                             </a>
                         </div>
                     </div>
