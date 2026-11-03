@@ -338,11 +338,3 @@ const COLORES_CIFRA = ['var(--color-unmsm-dorado)', 'var(--color-unmsm-acento)',
     }
 </style>
 
-<script>
-    // La banda de contacto del final de la portada sigue al raton
-    // (`data-sigue-raton`); se arranca aqui, como antes.
-    import { seguirAlRaton } from '../../lib/sigue-raton';
-
-    seguirAlRaton();
-    document.addEventListener('astro:page-load', seguirAlRaton);
-</script>

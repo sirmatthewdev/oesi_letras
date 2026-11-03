@@ -14,7 +14,7 @@
 <button
     type="button"
     id="volver-arriba"
-    class="volver-arriba"
+    class="volver-arriba boton-flotante"
     aria-label="Volver al principio de la página"
     hidden
 >
@@ -67,9 +67,11 @@
         box-shadow: 0 10px 28px -12px rgb(15 43 72 / 0.55);
         opacity: 0;
         transform: translateY(0.5rem);
+        /* `translate` es el que usa `.boton-flotante` para apartarlo al bajar. */
         transition:
             opacity 300ms ease,
-            transform 300ms ease;
+            transform 300ms ease,
+            translate 300ms ease;
     }
 
     .volver-arriba[hidden] {

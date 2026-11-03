@@ -1,0 +1,71 @@
+---
+/**
+ * «Continúa»: el final de cada página interior, con la anterior y la siguiente
+ * del recorrido (conocer el examen → modalidades → fecha → inscripción →
+ * dudas). Antes las páginas de consulta terminaban sin salida: quien acababa
+ * de leer las indicaciones solo podía volver al menú.
+ *
+ * El orden lo fija `PaginaOesi`; aquí solo se pinta. Sin anterior, la tarjeta
+ * de la izquierda lleva al inicio; sin siguiente, la de la derecha también.
+ */
+import Icono from '../Icono.astro';
+import { faArrowLeft, faArrowRight, faHouse } from '@fortawesome/free-solid-svg-icons';
+
+type Vecina = { titulo: string; texto: string; enlace: string } | null;
+
+interface Props {
+    anterior: Vecina;
+    siguiente: Vecina;
+}
+
+const { anterior, siguiente } = Astro.props;
+const inicio = { titulo: 'Inicio', texto: 'Volver a la portada de la oficina', enlace: '/' };
+---
+
+<nav aria-label="Continúa" class="border-t border-slate-200 bg-white">
+    <div class="mx-auto grid max-w-6xl gap-4 px-6 py-10 sm:grid-cols-2">
+        <a href={(anterior ?? inicio).enlace} class="continua group flex items-center gap-4 rounded-2xl p-5 ring-1 ring-slate-200">
+            <span aria-hidden="true" class="flex h-11 w-11 flex-none items-center justify-center rounded-full bg-slate-100 text-unmsm-azul transition group-hover:-translate-x-0.5 group-hover:bg-unmsm-azul group-hover:text-white">
+                <Icono icono={anterior ? faArrowLeft : faHouse} clase="h-4 w-4" />
+            </span>
+            <span class="min-w-0">
+                <span class="block text-[0.7rem] font-semibold uppercase tracking-wider text-slate-500">{anterior ? 'Anterior' : 'Volver'}</span>
+                <span class="block font-serif text-lg font-bold text-unmsm-azul">{(anterior ?? inicio).titulo}</span>
+                <span class="block text-sm text-slate-600">{(anterior ?? inicio).texto}</span>
+            </span>
+        </a>
+
+        <a href={(siguiente ?? inicio).enlace} class="continua group flex items-center gap-4 rounded-2xl p-5 text-right ring-1 ring-slate-200 sm:flex-row-reverse sm:text-right max-sm:flex-row-reverse">
+            <span aria-hidden="true" class="flex h-11 w-11 flex-none items-center justify-center rounded-full bg-unmsm-azul text-white transition group-hover:translate-x-0.5 group-hover:bg-unmsm-azul-dark">
+                <Icono icono={siguiente ? faArrowRight : faHouse} clase="h-4 w-4" />
+            </span>
+            <span class="min-w-0 flex-1">
+                <span class="block text-[0.7rem] font-semibold uppercase tracking-wider text-slate-500">{siguiente ? 'Siguiente' : 'Volver'}</span>
+                <span class="block font-serif text-lg font-bold text-unmsm-azul">{(siguiente ?? inicio).titulo}</span>
+                <span class="block text-sm text-slate-600">{(siguiente ?? inicio).texto}</span>
+            </span>
+        </a>
+    </div>
+</nav>
+
+<style>
+    .continua {
+        transition:
+            box-shadow 250ms ease,
+            transform 250ms ease;
+    }
+
+    .continua:hover,
+    .continua:focus-visible {
+        transform: translateY(-2px);
+        box-shadow:
+            0 0 0 2px var(--color-unmsm-acento),
+            0 16px 32px -20px rgb(15 43 72 / 0.45);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .continua:hover {
+            transform: none;
+        }
+    }
+</style>

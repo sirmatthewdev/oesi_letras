@@ -233,6 +233,22 @@ html {
     }
 }
 
+/*
+ * Botones flotantes que se apartan al bajar (ver el script de Base). Se
+ * deslizan fuera por abajo en vez de desaparecer de golpe, y siguen en el
+ * árbol de accesibilidad: con el tabulador se llega igual.
+ */
+.boton-flotante {
+    transition:
+        translate 300ms ease,
+        opacity 300ms ease;
+}
+
+[data-flotantes-ocultos] .boton-flotante:not(:focus-visible) {
+    translate: 0 calc(100% + 2rem);
+    opacity: 0;
+}
+
 /* Salto al contenido: primer tabulador de la pagina, oculto hasta enfocarse. */
 .saltar-al-contenido {
     position: absolute;

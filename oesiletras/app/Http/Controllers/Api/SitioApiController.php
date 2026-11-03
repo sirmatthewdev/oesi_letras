@@ -24,6 +24,8 @@ class SitioApiController extends Controller
         return response()->json([
             'data' => [
                 'nombre' => $o?->nombre ?: 'Oficina de Examen de Suficiencia en Idiomas',
+                // La Facultad a la que pertenece, para el cierre del pie.
+                'institucion' => $o?->institucion ?: null,
                 'descripcion' => $o?->descripcion ?: null,
                 // Sin logotipo propio, el de la Facultad, a la que pertenece la
                 // oficina: mejor una marca institucional cierta que un hueco.
@@ -39,6 +41,7 @@ class SitioApiController extends Controller
                 'facultad' => [
                     'web' => $o?->web_facultad ?: null,
                 ],
+                'libro_reclamaciones' => $o?->libro_reclamaciones ?: null,
                 'redes' => collect(is_array($o?->redes) ? $o->redes : [])
                     ->filter(fn ($r) => is_array($r) && filled($r['red'] ?? null) && filled($r['url'] ?? null))
                     ->mapWithKeys(fn ($r) => [$r['red'] => $r['url']])

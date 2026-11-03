@@ -25,7 +25,7 @@ import type { ImageMetadata } from 'astro';
 import Icono from '../Icono.astro';
 import type { Oesi } from '../../lib/api';
 import { normalizar } from '../../lib/oesi';
-import { faBuildingColumns, faCalendarDays, faLaptop, faPause, faPlay, faUserPlus } from '@fortawesome/free-solid-svg-icons';
+import { faBuildingColumns, faLaptop, faPause, faPlay, faReceipt, faUserPlus } from '@fortawesome/free-solid-svg-icons';
 
 interface Props {
     idiomas: Oesi['idiomas'];
@@ -112,9 +112,13 @@ const MODALIDADES = {
                             Examen de suficiencia
                         </p>
 
-                        <h2 class="mt-5 font-serif text-[2.1rem] font-extrabold leading-[1.05] text-white sm:text-5xl">
+                        {/* Un párrafo y no un h2: son siete paneles antes del h1 de
+                            la oficina, y como títulos abrían el esquema de la
+                            página con siete secciones que no lo son. El nombre de
+                            cada panel ya lo da su `aria-label`. */}
+                        <p class="mt-5 font-serif text-[2.1rem] font-extrabold leading-[1.05] text-white sm:text-5xl">
                             Certifica tu <span class="panel-acento">{idioma.nombre.toLowerCase()}</span>
-                        </h2>
+                        </p>
 
                         <div class="mt-5 flex flex-wrap items-center gap-2 text-sm text-white/90">
                             {idioma.publico && <span class="rounded-full bg-black/20 px-3 py-1.5 font-medium">{idioma.publico}</span>}
@@ -127,19 +131,22 @@ const MODALIDADES = {
                         </div>
 
                         <div class="mt-8 flex flex-wrap gap-3">
+                            {/* «Inscríbete» lleva al primer paso —elegir la fecha—, igual
+                                que el botón de la cabecera: antes aquí saltaba al pago
+                                y el mismo botón llevaba a dos sitios. */}
                             <a
-                                href="/inscripcion"
+                                href="/cronograma"
                                 class="inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-semibold text-unmsm-azul shadow-sm transition hover:bg-unmsm-dorado-light hover:text-unmsm-azul-dark"
                             >
                                 <Icono icono={faUserPlus} clase="h-4 w-4" />
                                 Inscríbete
                             </a>
                             <a
-                                href="/cronograma"
+                                href="/inscripcion#paso-pago"
                                 class="inline-flex items-center gap-2 rounded-full border border-white/50 px-6 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
                             >
-                                <Icono icono={faCalendarDays} clase="h-4 w-4" />
-                                Ver la fecha
+                                <Icono icono={faReceipt} clase="h-4 w-4" />
+                                Ver costos
                             </a>
                         </div>
                     </div>

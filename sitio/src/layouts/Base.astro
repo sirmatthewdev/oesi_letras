@@ -5,6 +5,10 @@ import BotonWhatsapp from '../components/BotonWhatsapp.astro';
 import RedesSociales from '../components/RedesSociales.astro';
 import VolverArriba from '../components/VolverArriba.astro';
 import Cabecera from '../components/Cabecera.astro';
+import Boton from '../components/Boton.astro';
+import Icono from '../components/Icono.astro';
+import { faWhatsapp } from '@fortawesome/free-brands-svg-icons';
+import { faBookOpen, faEnvelope } from '@fortawesome/free-solid-svg-icons';
 import { ClientRouter } from 'astro:transitions';
 
 interface Props {
@@ -181,6 +185,31 @@ const enlacesDelPie = [
             // Tambien con cada navegacion de ClientRouter, que no recarga la
             // pagina: con `load` solo contaria la primera.
             document.addEventListener('astro:page-load', registrarVisita);
+
+            // Los botones flotantes (WhatsApp, volver arriba) se apartan
+            // mientras se baja, que es cuando se está leyendo y tapaban texto
+            // en el móvil, y vuelven en cuanto se sube o se llega al final.
+            // Un solo oyente, pasivo, y la decisión en un rAF.
+            let ultimoY = window.scrollY;
+            let pendiente = false;
+            window.addEventListener(
+                'scroll',
+                () => {
+                    if (pendiente) return;
+                    pendiente = true;
+                    requestAnimationFrame(() => {
+                        const y = window.scrollY;
+                        const alFinal = y + innerHeight >= document.documentElement.scrollHeight - 80;
+                        const bajando = y > ultimoY + 4 && y > 400 && !alFinal;
+                        if (Math.abs(y - ultimoY) > 4) {
+                            document.documentElement.toggleAttribute('data-flotantes-ocultos', bajando);
+                            ultimoY = y;
+                        }
+                        pendiente = false;
+                    });
+                },
+                { passive: true }
+            );
         </script>
 
         {contacto.whatsapp && (
@@ -210,6 +239,35 @@ const enlacesDelPie = [
             </div>
 
             <div class="mx-auto max-w-6xl px-6 py-16">
+                {/* El cierre «¿Tienes alguna duda?», que antes era una banda
+                    aparte solo en la portada y quedaba pegada al pie. Ahora abre
+                    el pie en todas las páginas, como el de la referencia (Idiomas
+                    PUCP): la misma Facultad, la misma pregunta, el horario y los
+                    dos canales. */}
+                {(contacto.whatsapp || contacto.email) && (
+                    <div class="mb-14 flex flex-col gap-6 border-b border-white/10 pb-12 md:flex-row md:items-center md:justify-between">
+                        <div>
+                            {sitio.institucion && (
+                                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-unmsm-dorado-light">{sitio.institucion}</p>
+                            )}
+                            <h2 class="mt-2 font-serif text-2xl font-bold text-white sm:text-3xl">¿Tienes alguna duda sobre el examen?</h2>
+                            {contacto.horario && <p class="mt-3 max-w-2xl text-slate-300">Atención: {contacto.horario}</p>}
+                        </div>
+                        <div class="flex flex-wrap gap-3">
+                            {contacto.whatsapp && (
+                                <Boton href={contacto.whatsapp} icono={faWhatsapp} nuevaPestana>
+                                    Escríbenos por WhatsApp
+                                </Boton>
+                            )}
+                            {contacto.email && (
+                                <Boton href={`mailto:${contacto.email}`} variante="contorno-claro" icono={faEnvelope}>
+                                    Escribir al correo
+                                </Boton>
+                            )}
+                        </div>
+                    </div>
+                )}
+
                 <div class="grid gap-12 lg:grid-cols-12">
                     {/* Quiénes somos: la marca, una línea de qué es esto, y las
                         redes. */}
@@ -341,6 +399,18 @@ const enlacesDelPie = [
                         © {new Date().getFullYear()} {sitio.nombre} · Universidad Nacional Mayor de
                         San Marcos
                     </span>
+                    {/* Solo si la oficina escribió la dirección en el panel. */}
+                    {sitio.libro_reclamaciones && (
+                        <a
+                            href={sitio.libro_reclamaciones}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="inline-flex items-center gap-2 rounded-lg border border-white/20 px-3 py-1.5 font-medium text-slate-200 transition hover:border-white/40 hover:text-white"
+                        >
+                            <Icono icono={faBookOpen} clase="h-3.5 w-3.5" />
+                            Libro de Reclamaciones<span class="sr-only"> (se abre en una pestaña nueva)</span>
+                        </a>
+                    )}
                 </p>
             </div>
         </footer>

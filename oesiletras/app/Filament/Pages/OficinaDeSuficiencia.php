@@ -197,6 +197,11 @@ class OficinaDeSuficiencia extends Page
                     ImagenOptimizada::make('favicon_path', 'sitio', 512, 'Favicon'),
                     Textarea::make('direccion')->label('Dirección')->rows(2),
                     TextInput::make('web_facultad')->label('Web de la Facultad')->url()->maxLength(500),
+                    TextInput::make('libro_reclamaciones')
+                        ->label('Libro de Reclamaciones')
+                        ->helperText('La dirección del Libro de Reclamaciones de la universidad. Vacío, el pie no muestra el enlace.')
+                        ->url()
+                        ->maxLength(500),
                 ]),
         ];
     }

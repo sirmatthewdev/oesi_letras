@@ -38,6 +38,7 @@ import TarjetaOesi from '../../components/oesi/TarjetaOesi.astro';
 import Negritas from '../../components/oesi/Negritas.astro';
 import ImagenConRespaldo from '../../components/oesi/ImagenConRespaldo.astro';
 import ContactoDudas from '../../components/oesi/ContactoDudas.astro';
+import Continua from '../../components/oesi/Continua.astro';
 import type { Oesi } from '../../lib/api';
 import { Image } from 'astro:assets';
 import type { ImageMetadata } from 'astro';
@@ -263,6 +264,31 @@ const PAGINAS: Record<
     },
 };
 const meta = pagina === 'inicio' ? null : PAGINAS[pagina];
+
+// El orden en que se recorre el sitio: conocer el examen, sus modalidades, elegir
+// la fecha, inscribirse y, al final, las dudas. Cada página termina llevando a
+// la anterior y a la siguiente; ninguna se queda sin salida.
+const RECORRIDO: { clave: Exclude<PaginaOesiClave, 'inicio'>; resumen: string }[] = [
+    { clave: 'examen', resumen: 'Qué es, a quién va dirigido y cómo se califica' },
+    { clave: 'modalidades', resumen: 'Las indicaciones para el día del examen' },
+    { clave: 'cronograma', resumen: 'Elige la fecha de tu idioma' },
+    { clave: 'inscripcion', resumen: 'Paga el derecho y envía el formulario' },
+    { clave: 'preguntas', resumen: 'Resultados, certificado y otras dudas' },
+];
+const posicion = RECORRIDO.findIndex((r) => r.clave === pagina);
+const vecina = (i: number) =>
+    RECORRIDO[i] ? { titulo: PAGINAS[RECORRIDO[i].clave].titulo, texto: RECORRIDO[i].resumen, enlace: `/${RECORRIDO[i].clave}` } : null;
+
+// «Cómo llegar» al examen presencial. Se busca el lugar por su nombre —la
+// Facultad, que es la que da el panel—, no por coordenadas escritas a mano. La
+// referencia de la puerta va en la nota de la oficina, justo encima.
+const lugar = encodeURIComponent(
+    `${(oesi.institucion ?? 'Facultad de Letras y Ciencias Humanas UNMSM').replace(/\s*·\s*/g, ' ')}, Ciudad Universitaria, Lima`
+);
+const comoLlegar = {
+    maps: `https://www.google.com/maps/search/?api=1&query=${lugar}`,
+    waze: `https://waze.com/ul?q=${lugar}&navigate=yes`,
+};
 
 // Los accesos del inicio a las páginas de consulta. La inscripción no va aquí:
 // tiene su propio bloque, el del recorrido.
@@ -869,6 +895,16 @@ const PASOS_INICIO = [
                                                 <p class="font-serif text-lg font-bold">Aula y local</p>
                                             </div>
                                             <p class="mt-4 leading-relaxed text-slate-200"><Negritas texto={m.nota} /></p>
+                                            <div class="mt-5 flex flex-wrap items-center gap-2 border-t border-white/10 pt-5">
+                                                <span class="mr-1 text-sm font-semibold text-white">¿Cómo llegar?</span>
+                                                <a href={comoLlegar.maps} target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 rounded-full bg-white px-4 py-2 text-sm font-semibold text-unmsm-azul transition hover:bg-unmsm-dorado-light">
+                                                    <Icono icono={faLocationDot} clase="h-3.5 w-3.5" />
+                                                    Google Maps<span class="sr-only"> (se abre en una pestaña nueva)</span>
+                                                </a>
+                                                <a href={comoLlegar.waze} target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 rounded-full border border-white/40 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/10">
+                                                    Waze<span class="sr-only"> (se abre en una pestaña nueva)</span>
+                                                </a>
+                                            </div>
                                         </aside>
                                     )}
                                 </div>
@@ -1478,37 +1514,12 @@ const PASOS_INICIO = [
         )}
     </div>
 
-    {/* Cierre: la banda de marca en degradado de la portada del CERSEU, con el
-        contacto de la oficina. Solo en el inicio: en el resto el contacto ya
-        está donde hace falta —las fechas, las preguntas—, en el pie y en el
-        botón flotante, y una banda más era repetirlo por repetir. */}
-    {
-        pagina === 'inicio' && (wa || contacto.email) && (
-            <section data-banda-degradado data-sigue-raton class="banda-marca relative isolate overflow-hidden py-16 text-white">
-                <FondoSeccion tono="oscuro" deriva={80} />
-                <div aria-hidden="true" class="luz-raton" />
-                <div class="relative mx-auto flex max-w-6xl flex-col gap-6 px-6 md:flex-row md:items-center md:justify-between">
-                    <div>
-                        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-unmsm-dorado-light">{oesi.institucion}</p>
-                        <h2 class="mt-2 font-serif text-2xl font-bold sm:text-3xl">¿Tienes alguna duda sobre el examen?</h2>
-                        {contacto.horario && <p class="mt-3 max-w-2xl text-slate-200">Atención: {contacto.horario}</p>}
-                    </div>
-                    <div class="flex flex-wrap gap-3">
-                        {wa && (
-                            <Boton href={wa.enlace} icono={faWhatsapp} nuevaPestana>
-                                Escríbenos por WhatsApp
-                            </Boton>
-                        )}
-                        {contacto.email && (
-                            <Boton href={`mailto:${contacto.email}`} variante="contorno-claro" icono={faEnvelope}>
-                                Escribir al correo
-                            </Boton>
-                        )}
-                    </div>
-                </div>
-            </section>
-        )
-    }
+    {meta && posicion >= 0 && <Continua anterior={vecina(posicion - 1)} siguiente={vecina(posicion + 1)} />}
+
+    {/* La banda de cierre «¿Tienes alguna duda sobre el examen?» que iba aquí
+        ahora abre el pie (`layouts/Base.astro`), en todas las páginas: antes
+        solo estaba en el inicio y quedaba pegada al pie, dos bloques oscuros
+        seguidos. */}
 
     {/*
      * Anclas.
@@ -1868,25 +1879,6 @@ const PASOS_INICIO = [
         .paso:last-child::after {
             display: none;
         }
-    }
-
-    /* La banda de marca y su luz, de la portada del CERSEU. */
-    .banda-marca {
-        background-image: var(--degradado-banda);
-        background-size: 200% 100%;
-        background-position: 0% 50%;
-    }
-
-    .luz-raton {
-        position: absolute;
-        inset: 0;
-        pointer-events: none;
-        mix-blend-mode: screen;
-        background: radial-gradient(
-            38rem 22rem at calc(50% + var(--raton-h, 0) * 42%) calc(50% + var(--raton-v, 0) * 70%),
-            color-mix(in oklab, var(--color-unmsm-dorado) 26%, transparent) 0%,
-            transparent 70%
-        );
     }
 
     /*
