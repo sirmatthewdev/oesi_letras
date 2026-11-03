@@ -1,6 +1,6 @@
 ---
 /**
- * /cronograma: las fechas del mes y la publicación vigente.
+ * /cronograma: las fechas de examen, administradas en el panel.
  *
  * Parte de `PaginaOesi`, que pone el marco (cabecera, índice, «Continúa» y
  * las anclas). Los estilos de estas páginas están allí, en su <style>.
@@ -10,18 +10,16 @@ import Boton from '../../Boton.astro';
 import Icono from '../../Icono.astro';
 import FondoSeccion from '../../FondoSeccion.astro';
 import PasosInscripcion from '../PasosInscripcion.astro';
-import ImagenConRespaldo from '../ImagenConRespaldo.astro';
 import FechasCronograma from '../FechasCronograma.astro';
 import { faWhatsapp } from '@fortawesome/free-brands-svg-icons';
-import { faCalendarDays, faEnvelope, faTriangleExclamation, faUpRightFromSquare, faArrowRight } from '@fortawesome/free-solid-svg-icons';
-import { icono } from '../../../lib/oesi-vista';
+import { faEnvelope, faTriangleExclamation, faArrowRight } from '@fortawesome/free-solid-svg-icons';
 
 interface Props {
     oesi: Oesi;
 }
 
 const { oesi } = Astro.props;
-const { contacto, examen, inscripcion } = oesi;
+const { contacto } = oesi;
 const wa = contacto.whatsapp;
 ---
 
@@ -35,9 +33,7 @@ const wa = contacto.whatsapp;
         <div class="mx-auto max-w-6xl px-6">
             <PasosInscripcion actuales={['fecha']} />
 
-            {/* El cronograma cambia cada mes y la página no guarda sus
-                fechas: las dice la publicación vigente. El aviso va
-                delante de ella, que es donde se leen. */}
+            {/* El aviso de la oficina sobre las fechas, delante de ellas. */}
             {oesi.cronograma.aviso && (
                 <p class="mx-auto mt-8 flex max-w-3xl gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-relaxed text-amber-950" role="note">
                     <Icono icono={faTriangleExclamation} clase="mt-0.5 h-4 w-4 flex-none" />
@@ -45,59 +41,23 @@ const wa = contacto.whatsapp;
                 </p>
             )}
 
-            <FechasCronograma fechas={oesi.cronograma.fechas} />
-
             {/*
-             * La publicación del mes, que es la fuente de las fechas, y
-             * a su lado lo que se hace después: pagar, o preguntar si
-             * hay dudas. La tarjeta acompaña a la imagen al bajar
-             * (`sticky`): la imagen es muy alta, y una columna lateral
-             * corta dejaba un hueco a media página.
+             * Las fechas, administradas en el panel, y a su lado lo que se
+             * hace después: pagar, o preguntar si hay dudas. La tarjeta lateral
+             * acompaña al bajar (`sticky`).
              */}
-            <div class="mt-8 grid items-start gap-8 lg:grid-cols-12">
-                {oesi.cronograma.imagen && (
-                    <article
-                        aria-labelledby="t-publicacion"
-                        class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm lg:col-span-7"
-                    >
-                        <header class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-6 py-4">
-                            <div class="flex items-center gap-3">
-                                <span aria-hidden="true" class="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-unmsm-dorado">
-                                    <Icono icono={faCalendarDays} clase="h-4 w-4" />
-                                </span>
-                                <div>
-                                    <p class="text-[0.7rem] font-semibold uppercase tracking-wider text-slate-500">Publicación vigente</p>
-                                    <h2 id="t-publicacion" class="font-serif text-lg font-bold leading-snug text-unmsm-azul">
-                                        {oesi.cronograma.imagen.alt || 'Cronograma de exámenes'}
-                                    </h2>
-                                </div>
-                            </div>
-                            <a
-                                href={oesi.cronograma.imagen.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                class="inline-flex items-center gap-1.5 text-sm font-semibold text-unmsm-azul hover:underline"
-                            >
-                                <Icono icono={faUpRightFromSquare} clase="h-3.5 w-3.5" />
-                                Ver en tamaño completo
-                                <span class="sr-only">(se abre en una pestaña nueva)</span>
-                            </a>
-                        </header>
-
-                        <div class="p-4 sm:p-6">
-                            <ImagenConRespaldo
-                                imagen={oesi.cronograma.imagen}
-                                queEs="el cronograma"
-                                whatsapp={wa?.enlace}
-                                pie={oesi.cronograma.intro}
-                                clase="mx-auto max-w-xl"
-                            />
-                        </div>
-                    </article>
-                )}
+            <div class="grid items-start gap-8 lg:grid-cols-12">
+                <div class="lg:col-span-8">
+                    <FechasCronograma
+                        fechas={oesi.cronograma.fechas}
+                        intro={oesi.cronograma.intro}
+                        whatsapp={wa}
+                        email={contacto.email}
+                    />
+                </div>
                 <aside
                     aria-labelledby="t-inscribete-fecha"
-                    class="relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm lg:sticky lg:top-28 lg:col-span-5"
+                    class="relative mt-10 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm lg:sticky lg:top-40 lg:col-span-4"
                 >
                     <div aria-hidden="true" class="marca-degradado h-1 w-full"></div>
 

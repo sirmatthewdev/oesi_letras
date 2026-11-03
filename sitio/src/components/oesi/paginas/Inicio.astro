@@ -6,6 +6,7 @@
  * las anclas). Los estilos de estas páginas están allí, en su <style>.
  */
 import type { Oesi } from '../../../lib/api';
+import { corta, vigentes } from '../../../lib/fechas';
 import Boton from '../../Boton.astro';
 import Icono from '../../Icono.astro';
 import FondoSeccion from '../../FondoSeccion.astro';
@@ -56,7 +57,9 @@ const PASOS_INICIO = [
         marca: null,
         titulo: 'Elige tu fecha',
         texto: 'Consulta la fecha de tu idioma en el cronograma del mes.',
-        detalle: oesi.cronograma.imagen?.alt || null,
+        // Los próximos exámenes; el script de Base deja visible el primero
+        // que no haya empezado (`data-solo-primera`).
+        proximas: vigentes(oesi.cronograma.fechas),
         enlace: '/cronograma',
         destino: 'cronograma',
         accion: 'Ver el cronograma',
@@ -67,7 +70,6 @@ const PASOS_INICIO = [
         marca: '1',
         titulo: 'Paga el derecho de examen',
         texto: 'En San Market, con el concepto que te corresponde.',
-        detalle: null,
         enlace: '/inscripcion#paso-pago',
         destino: 'inscripcion',
         accion: 'Ver costos y pagar',
@@ -78,7 +80,6 @@ const PASOS_INICIO = [
         marca: '2',
         titulo: 'Envía el formulario',
         texto: 'Con el recibo de pago, tu documento de identidad y la declaración jurada.',
-        detalle: null,
         enlace: '/inscripcion#paso-formulario',
         destino: null,
         accion: 'Ver los formularios',
@@ -132,10 +133,16 @@ const PASOS_INICIO = [
                                 <span class="mt-5 block text-[0.7rem] font-semibold uppercase tracking-wider text-slate-500">{paso.rotulo}</span>
                                 <span class="block font-serif text-xl font-bold leading-snug text-unmsm-azul">{paso.titulo}</span>
                                 <span class="mt-2 block text-sm leading-relaxed text-slate-600">{paso.texto}</span>
-                                {paso.detalle && (
-                                    <span class="mt-3 flex gap-2 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600">
+                                {paso.proximas && paso.proximas.length > 0 && (
+                                    <span class="mt-3 flex gap-2 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600" data-si-hay>
                                         <Icono icono={faCalendarDays} clase="mt-0.5 h-3.5 w-3.5 flex-none text-unmsm-dorado" />
-                                        <span>Publicación vigente: {paso.detalle}</span>
+                                        <span data-solo-primera>
+                                            {paso.proximas.map((f, i) => (
+                                                <span data-vence={f.inicio} hidden={i > 0}>
+                                                    Próximo examen: {f.idioma}, {corta(f.inicio)}
+                                                </span>
+                                            ))}
+                                        </span>
                                     </span>
                                 )}
                                 <span class="mt-auto inline-flex items-center gap-1.5 pt-5 text-sm font-semibold text-unmsm-azul">
@@ -205,7 +212,6 @@ const PASOS_INICIO = [
             <TituloSeccion
                 id="t-curso-preparacion"
                 titulo="Curso de preparación"
-                kicker="Opcional · lo dicta el CEID"
                 bajada={curso.bajada ?? undefined}
                 centrado
             />
@@ -241,7 +247,7 @@ const PASOS_INICIO = [
                     <p class="mt-6 flex gap-2.5 rounded-xl bg-slate-50 px-4 py-3 text-sm leading-relaxed text-slate-600">
                         <Icono icono={faCircleInfo} clase="mt-0.5 h-4 w-4 flex-none text-unmsm-dorado" />
                         <span>
-                            El curso es una preparación opcional. La inscripción al examen de suficiencia se hace aparte:
+                            El curso te prepara para el examen. La inscripción al examen de suficiencia se hace aparte:
                             consulta <a href="#como-inscribirte" class="font-semibold text-unmsm-azul hover:underline">cómo inscribirte</a>.
                         </span>
                     </p>

@@ -428,16 +428,14 @@ class OficinaDeSuficiencia extends Page
     {
         return [
             Section::make('Cronograma del mes')
-                ->description('Cambia cada mes: las fechas, una fila por examen, y la imagen vigente como respaldo. Con las fechas cargadas, el sitio anuncia el próximo examen y lo muestra en cada idioma. Los formularios de la convocatoria salen en la página de Inscripción, en el paso 2.')
+                ->description('El cronograma del sitio son estas fechas, una fila por examen: se cargan cada mes. Con ellas la página Cronograma las agrupa por mes con filtros y el estado de la inscripción, y el sitio anuncia el próximo examen en la barra superior y en cada idioma. Las fechas pasadas dejan de mostrarse solas. Los formularios de la convocatoria salen en la página de Inscripción, en el paso 2.')
                 ->columns(2)
                 ->schema([
-                    Textarea::make('cronograma_intro')->label('Introducción')->rows(2)->columnSpanFull(),
-                    TextInput::make('cronograma_imagen')->label('Imagen del cronograma (URL)')->url()->maxLength(500),
-                    TextInput::make('cronograma_imagen_alt')
-                        ->label('Descripción de la imagen')
-                        ->helperText('Mejor si dice el periodo: «Cronograma de exámenes, 21 al 28 de septiembre».')
-                        ->requiredWith('cronograma_imagen')
-                        ->maxLength(255),
+                    Textarea::make('cronograma_intro')
+                        ->label('Introducción')
+                        ->helperText('Va bajo el título «Fechas de examen».')
+                        ->rows(2)
+                        ->columnSpanFull(),
                     Textarea::make('cronograma_aviso')->label('Aviso sobre las fechas')->rows(2)->columnSpanFull(),
                     Repeater::make('cronograma_fechas')
                         ->label('Fechas de examen')

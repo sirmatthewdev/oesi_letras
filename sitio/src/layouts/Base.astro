@@ -215,9 +215,17 @@ const enlacesDelPie = [
                     const items = [...g.querySelectorAll<HTMLElement>(':scope > [data-vence]')];
                     const primera = items.find((e) => !vencida(e));
                     items.forEach((e) => (e.hidden = e !== primera));
+                    // El texto de respaldo del grupo, solo si no queda ninguna.
+                    g.querySelectorAll<HTMLElement>(':scope > [data-vacio-de-grupo]').forEach((v) => (v.hidden = !!primera));
                 });
                 document.querySelectorAll<HTMLElement>('[data-si-hay]').forEach((g) => {
                     g.hidden = !g.querySelector('[data-vence]:not([hidden])');
+                });
+                // Un estado vacío que se muestra cuando el bloque que nombra
+                // (por su id) se quedó sin nada vigente.
+                document.querySelectorAll<HTMLElement>('[data-vacio-de]').forEach((v) => {
+                    const de = document.getElementById(v.dataset.vacioDe!);
+                    v.hidden = !!de && !de.hidden;
                 });
             }
             document.addEventListener('astro:page-load', ocultarVencidas);

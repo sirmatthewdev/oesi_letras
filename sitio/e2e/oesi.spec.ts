@@ -174,6 +174,13 @@ test.describe('OESI', () => {
         await expect(page.locator('#inscripcion a[href^="https://forms.gle/"]')).toHaveCount(5);
     });
 
+    test('el cronograma son datos y no una imagen', async ({ page }) => {
+        await abrir(page, '/cronograma');
+        await expect(page.locator('#cronograma img[src*="CRONOGRAMA"]')).toHaveCount(0);
+        // Con o sin fechas vigentes, siempre dice algo: las fechas o el aviso de que no hay.
+        await expect(page.locator('#cronograma-proximos:not([hidden]), [data-vacio-de="cronograma-proximos"]:not([hidden])')).toHaveCount(1);
+    });
+
     test('el cronograma avisa de las fechas y lleva al pago; sus formularios van en el paso 2', async ({ page }) => {
         await abrir(page, '/cronograma');
 
@@ -196,17 +203,17 @@ test.describe('OESI', () => {
     test('si una imagen no carga, se ve su respaldo con salida', async ({ page }) => {
         // Las imágenes viven en la web de Letras: se simula que no responde.
         await page.route('https://letras.unmsm.edu.pe/**', (ruta) => ruta.abort());
-        await abrir(page, '/cronograma');
+        // El resumen del paso 1, en /inscripcion (el cronograma ya no es una
+        // imagen: son las fechas del panel).
+        await abrir(page, '/inscripcion');
 
-        const figura = page.locator('#cronograma [data-imagen-oesi]');
+        const figura = page.locator('#paso-pago [data-imagen-oesi]').first();
+        await figura.scrollIntoViewIfNeeded();
         const respaldo = figura.locator('[data-imagen-respaldo]');
 
         await expect(respaldo).toBeVisible();
-        await expect(respaldo).toContainText('No pudimos mostrar el cronograma');
-        await expect(respaldo.getByRole('link', { name: 'Abrir la imagen' })).toHaveAttribute(
-            'href',
-            /CRONOGRAMA-OESI/
-        );
+        await expect(respaldo).toContainText('No pudimos mostrar el resumen del paso 1');
+        await expect(respaldo.getByRole('link', { name: 'Abrir la imagen' })).toHaveAttribute('href', /proceso-de-insc/);
         await expect(respaldo.getByRole('link', { name: /WhatsApp/ })).toHaveAttribute('href', /wa\.me\/51914033108/);
         await expect(figura.locator('img')).toBeHidden();
     });
