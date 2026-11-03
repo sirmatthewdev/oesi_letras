@@ -205,8 +205,8 @@ test.describe('OESI', () => {
     test('si una imagen no carga, se ve su respaldo con salida', async ({ page }) => {
         // Las imágenes viven en la web de Letras: se simula que no responde.
         await page.route('https://letras.unmsm.edu.pe/**', (ruta) => ruta.abort());
-        // El resumen del paso 1, en /inscripcion (el cronograma ya no es una
-        // imagen: son las fechas del panel).
+        // La guía del medio de pago, en /inscripcion: el cronograma y los
+        // resúmenes de los pasos ya no son imágenes.
         await abrir(page, '/inscripcion');
 
         const figura = page.locator('#paso-pago [data-imagen-oesi]').first();
@@ -214,8 +214,8 @@ test.describe('OESI', () => {
         const respaldo = figura.locator('[data-imagen-respaldo]');
 
         await expect(respaldo).toBeVisible();
-        await expect(respaldo).toContainText('No pudimos mostrar el resumen del paso 1');
-        await expect(respaldo.getByRole('link', { name: 'Abrir la imagen' })).toHaveAttribute('href', /proceso-de-insc/);
+        await expect(respaldo).toContainText('No pudimos mostrar la guía del medio de pago');
+        await expect(respaldo.getByRole('link', { name: 'Abrir la imagen' })).toHaveAttribute('href', /medio-pago/);
         await expect(respaldo.getByRole('link', { name: /WhatsApp/ })).toHaveAttribute('href', /wa\.me\/51914033108/);
         await expect(figura.locator('img')).toBeHidden();
     });

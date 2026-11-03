@@ -79,9 +79,6 @@ const claseIconoFormulario =
                         {inscripcion.costos_intro && <p class="mt-2 max-w-2xl text-slate-600">{inscripcion.costos_intro}</p>}
                     </div>
                 </div>
-                {inscripcion.imagenes.proceso_1 && (
-                    <ImagenConRespaldo imagen={inscripcion.imagenes.proceso_1} queEs="el resumen del paso 1" whatsapp={wa?.enlace} clase="w-full max-w-xs flex-none" />
-                )}
             </header>
 
             <div class="mt-10 grid items-start gap-8 lg:grid-cols-12">
@@ -238,9 +235,6 @@ const claseIconoFormulario =
                         {inscripcion.cierre && <p class="mt-2 max-w-2xl text-slate-300">{inscripcion.cierre}</p>}
                     </div>
                 </div>
-                {inscripcion.imagenes.proceso_2 && (
-                    <ImagenConRespaldo imagen={inscripcion.imagenes.proceso_2} queEs="el resumen del paso 2" whatsapp={wa?.enlace} clase="w-full max-w-xs flex-none" />
-                )}
             </header>
 
             {inscripcion.documentos.length > 0 && (

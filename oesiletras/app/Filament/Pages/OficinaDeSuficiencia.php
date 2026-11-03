@@ -490,10 +490,8 @@ class OficinaDeSuficiencia extends Page
                 ->columns(2)
                 ->schema([
                     Textarea::make('inscripcion_intro')->label('Introducción')->rows(2)->columnSpanFull(),
-                    TextInput::make('proceso_imagen_1')->label('Pasos del proceso (URL)')->url()->maxLength(500),
-                    TextInput::make('proceso_imagen_1_alt')->label('Descripción')->requiredWith('proceso_imagen_1')->maxLength(255),
-                    TextInput::make('proceso_imagen_2')->label('Pasos finales (URL)')->url()->maxLength(500),
-                    TextInput::make('proceso_imagen_2_alt')->label('Descripción')->requiredWith('proceso_imagen_2')->maxLength(255),
+                    // Las imágenes «Paso N° 1» y «Paso N° 2» ya no salen: cada paso
+                    // tiene su encabezado en la página. Sus columnas se conservan.
                     TextInput::make('medio_pago_imagen')->label('Medio de pago (URL)')->url()->maxLength(500),
                     TextInput::make('medio_pago_imagen_alt')->label('Descripción')->requiredWith('medio_pago_imagen')->maxLength(255),
                 ]),
