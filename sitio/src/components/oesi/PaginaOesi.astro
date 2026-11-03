@@ -642,11 +642,11 @@ const vecina = (i: number) =>
 
     /* Global: el botón vive en CopiarDato, fuera del ámbito de esta hoja. */
     [data-copiado='si'] {
-        color: #86efac;
+        color: var(--color-green-300);
     }
 
     [data-copiado='no'] {
-        color: #fca5a5;
+        color: var(--color-red-300);
     }
 
     @media (prefers-reduced-motion: reduce) {
