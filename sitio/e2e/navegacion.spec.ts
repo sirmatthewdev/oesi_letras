@@ -59,3 +59,36 @@ test.describe('La navegación no saca del sitio', () => {
         }
     });
 });
+
+/**
+ * El recorrido entre páginas (fase 1 de navegación). Las páginas de consulta
+ * terminaban sin salida y el mismo botón «Inscríbete» llevaba a dos sitios.
+ */
+test.describe('El recorrido no tiene callejones sin salida', () => {
+    test('cada página interior termina con la anterior y la siguiente', async ({ page }) => {
+        for (const ruta of ['/examen', '/modalidades', '/cronograma', '/inscripcion', '/preguntas']) {
+            await page.goto(ruta);
+            const continua = page.locator('nav[aria-label="Continúa"] a');
+            await expect(continua, `${ruta} debería cerrar con «Continúa»`).toHaveCount(2);
+            for (const href of await continua.evaluateAll((a) => a.map((x) => x.getAttribute('href') ?? ''))) {
+                expect(href, `«${href}» en ${ruta}`).toMatch(/^\//);
+            }
+        }
+    });
+
+    test('«Inscríbete» lleva siempre al primer paso, elegir la fecha', async ({ page }) => {
+        await page.goto('/');
+        const destinos = await page
+            .locator('a')
+            .filter({ hasText: /^\s*Inscríbete\s*$/ })
+            .evaluateAll((a) => [...new Set(a.map((x) => x.getAttribute('href')))]);
+        expect(destinos).toEqual(['/cronograma']);
+    });
+
+    test('en la portada el primer título es el de la oficina', async ({ page }) => {
+        await page.goto('/');
+        // Los paneles del acordeón no son secciones: no pueden abrir el esquema.
+        const primero = await page.locator('main :is(h1, h2, h3)').first().evaluate((h) => h.tagName);
+        expect(primero).toBe('H1');
+    });
+});

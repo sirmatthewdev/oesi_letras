@@ -78,31 +78,6 @@
      */
     --alto-cabecera: 7.5rem;
 
-    /*
-     * Degradado de la banda ancha: azul profundo a dorado, en diagonal.
-     *
-     * No es `--degradado-marca` porque ese termina en el dorado de marca
-     * (#B6A350), y sobre el dorado a plena luz el texto blanco se queda en un
-     * contraste de mesa camilla. Aqui el dorado esta rebajado y llega solo al
-     * ultimo tramo, que es donde no hay parrafo sino el boton. El degradado de
-     * marca sigue siendo el de los filos y los aros, donde no hay texto encima.
-     */
-    /* La inclinacion sale fuera para que quien lo use pueda cambiarla sin
-       reescribir las paradas de color: las tarjetas de programa sin fotografia
-       reparten cuatro inclinaciones entre ellas, y con el angulo escrito aqui
-       dentro habrian tenido que copiarse el degradado entero. Por defecto, la
-       de siempre. */
-    --degradado-banda: linear-gradient(
-        var(--angulo-banda, 115deg),
-        var(--color-unmsm-azul-dark) 0%,
-        var(--color-unmsm-azul) 36%,
-        /* Un paso intermedio a propósito: interpolando en sRGB de azul a dorado
-           el centro sale gris sucio, y con este apoyo el paso se lee como una
-           transición y no como una mancha. */
-        #4A5545 70%,
-        #7A6730 100%
-    );
-
     --degradado-marca: linear-gradient(135deg, var(--color-unmsm-azul-dark) 0%, var(--color-unmsm-dorado) 100%);
     --degradado-marca-suave: linear-gradient(
         135deg,
@@ -129,12 +104,6 @@
     background-image: var(--degradado-marca-suave);
 }
 
-/* El de la banda ancha, que es el que admite texto encima: el dorado llega
-   rebajado y solo al ultimo tramo. Lo usan la banda de la portada y el fondo de
-   las tarjetas de programa sin fotografia. */
-@utility marca-degradado-banda {
-    background-image: var(--degradado-banda);
-}
 
 @utility marca-regla {
     background-image: var(--regla-dorada);
@@ -231,6 +200,24 @@ html {
         transition-duration: 0.01ms !important;
         scroll-behavior: auto !important;
     }
+}
+
+/*
+ * Botones flotantes que se apartan al bajar (ver el script de VolverArriba). Se
+ * deslizan fuera por abajo en vez de desaparecer de golpe, y siguen en el
+ * árbol de accesibilidad: con el tabulador se llega igual.
+ *
+ * Aquí no va `transition`: esta regla no está en ninguna capa, así que ganaría
+ * a las utilidades de Tailwind y le quitaría al botón de WhatsApp su animación
+ * al pasar. Cada botón declara la suya, con `translate` y `opacity` incluidas.
+ *
+ * `:root` sube la especificidad por encima de la del estado `.se-ve` de
+ * VolverArriba (que pone `opacity: 1`): sin él, ganaba una u otra según el
+ * orden en que el build emitiera las hojas.
+ */
+:root[data-flotantes-ocultos] .boton-flotante:not(:focus-visible) {
+    translate: 0 calc(100% + 2rem);
+    opacity: 0;
 }
 
 /* Salto al contenido: primer tabulador de la pagina, oculto hasta enfocarse. */

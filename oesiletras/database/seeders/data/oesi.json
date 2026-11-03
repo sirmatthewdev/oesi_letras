@@ -21,6 +21,8 @@
     "favicon_path": null,
     "direccion": null,
     "web_facultad": "https://letras.unmsm.edu.pe",
+    "_libro_reclamaciones": "Sin dirección en la fuente: la escribe la oficina en el panel. Vacío, el pie no muestra el enlace.",
+    "libro_reclamaciones": null,
 
     "estadisticas": [
         { "valor": 2500, "prefijo": "", "sufijo": "+", "etiqueta": "Exámenes tomados" },

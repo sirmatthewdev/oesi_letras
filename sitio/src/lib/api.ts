@@ -93,6 +93,10 @@ export type ConfiguracionSitio = {
         horario: string | null;
     };
     facultad: { web: string | null };
+    /** La Facultad a la que pertenece la oficina, para el cierre del pie. */
+    institucion: string | null;
+    /** Solo si la oficina escribió la dirección en el panel. */
+    libro_reclamaciones: string | null;
     redes: Record<string, string>;
 };
 

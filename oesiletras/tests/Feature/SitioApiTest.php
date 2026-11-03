@@ -42,6 +42,20 @@ class SitioApiTest extends TestCase
         $this->getJson('/api/v1/oesi')->assertOk()->assertJsonPath('data', null);
     }
 
+    public function test_el_pie_recibe_la_facultad_y_el_libro_de_reclamaciones_solo_si_esta_escrito(): void
+    {
+        $this->seed(OesiSeeder::class);
+
+        // Sin dirección en el panel, no hay enlace: no se inventa ninguna.
+        $this->getJson('/api/v1/sitio')
+            ->assertJsonPath('data.institucion', OesiSetting::actual()->institucion)
+            ->assertJsonPath('data.libro_reclamaciones', null);
+
+        OesiSetting::actual()->update(['libro_reclamaciones' => 'https://ejemplo.unmsm.edu.pe/reclamaciones']);
+
+        $this->getJson('/api/v1/sitio')->assertJsonPath('data.libro_reclamaciones', 'https://ejemplo.unmsm.edu.pe/reclamaciones');
+    }
+
     public function test_sin_fila_la_identidad_no_revienta(): void
     {
         // Una instalación sin sembrar no debe tumbar el build del sitio.

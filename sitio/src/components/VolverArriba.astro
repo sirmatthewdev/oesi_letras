@@ -14,7 +14,7 @@
 <button
     type="button"
     id="volver-arriba"
-    class="volver-arriba"
+    class="volver-arriba boton-flotante"
     aria-label="Volver al principio de la página"
     hidden
 >
@@ -67,9 +67,11 @@
         box-shadow: 0 10px 28px -12px rgb(15 43 72 / 0.55);
         opacity: 0;
         transform: translateY(0.5rem);
+        /* `translate` es el que usa `.boton-flotante` para apartarlo al bajar. */
         transition:
             opacity 300ms ease,
-            transform 300ms ease;
+            transform 300ms ease,
+            translate 300ms ease;
     }
 
     .volver-arriba[hidden] {
@@ -132,6 +134,7 @@
             var anillo = boton.querySelector('.anillo-progreso');
             var VUELTA = 283; // 2·π·45, el perímetro del círculo del SVG
             var pendiente = false;
+            var ultimoY = window.scrollY;
 
             function revisar() {
                 var alto = document.documentElement.scrollHeight - window.innerHeight;
@@ -141,6 +144,17 @@
 
                 anillo.style.strokeDashoffset = String(VUELTA - avance * VUELTA);
                 boton.classList.toggle('se-ve', window.scrollY > 400);
+
+                // Los flotantes (este y el de WhatsApp) se apartan mientras se
+                // baja —se está leyendo, y en el móvil tapaban texto— y vuelven
+                // al subir o al llegar al final. Aquí y no en otro oyente: es
+                // el mismo scroll y las mismas medidas.
+                var y = window.scrollY;
+                if (Math.abs(y - ultimoY) > 4) {
+                    var bajando = y > ultimoY && y > 400 && alto - y > 80;
+                    document.documentElement.toggleAttribute('data-flotantes-ocultos', bajando);
+                    ultimoY = y;
+                }
 
                 pendiente = false;
             }
