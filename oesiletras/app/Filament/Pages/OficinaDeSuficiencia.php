@@ -6,6 +6,7 @@ use App\Filament\Componentes\ImagenOptimizada;
 use App\Models\OesiSetting;
 use BackedEnum;
 use Filament\Actions\Action;
+use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\Radio;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
@@ -72,6 +73,7 @@ class OficinaDeSuficiencia extends Page
                         Tab::make('Publicación')->schema($this->publicacion()),
                         Tab::make('Contacto')->schema($this->contacto()),
                         Tab::make('Sitio')->schema($this->sitio()),
+                        Tab::make('Idiomas')->schema($this->idiomas()),
                         Tab::make('Curso')->schema($this->curso()),
                         Tab::make('Examen')->schema($this->examen()),
                         Tab::make('Habilidades')->schema($this->habilidades()),
@@ -293,6 +295,47 @@ class OficinaDeSuficiencia extends Page
                 ->description(self::NEGRITAS)
                 ->schema([
                     Textarea::make('requisitos')->hiddenLabel()->rows(3),
+                ]),
+        ];
+    }
+
+    /** @return list<mixed> */
+    private function idiomas(): array
+    {
+        return [
+            Section::make('Idiomas que se evalúan')
+                ->description('Cada idioma es una pestaña del carrusel de la portada, en este orden: el primero es el que se ve al entrar. Conviene revisarlos con cada cronograma.')
+                ->schema([
+                    Repeater::make('idiomas')
+                        ->hiddenLabel()
+                        ->addActionLabel('Añadir idioma')
+                        ->defaultItems(0)
+                        ->collapsible()
+                        ->reorderable()
+                        ->itemLabel(fn (array $state): ?string => $state['nombre'] ?? null)
+                        ->columns(2)
+                        ->schema([
+                            TextInput::make('nombre')->required()->maxLength(40),
+                            TextInput::make('saludo')
+                                ->helperText('Decorativo, en grande sobre la pestaña: «Hello», «Allillanchu»…')
+                                ->maxLength(30),
+                            TextInput::make('publico')
+                                ->label('Para quién')
+                                ->placeholder('Pregrado y posgrado')
+                                ->maxLength(60),
+                            CheckboxList::make('modalidades')
+                                ->options(['presencial' => 'Presencial', 'virtual' => 'Virtual'])
+                                ->columns(2),
+                            TextInput::make('imagen')
+                                ->label('Fotografía (URL, opcional)')
+                                ->helperText('Sin foto, la pestaña lleva el fondo de color.')
+                                ->url()
+                                ->maxLength(500),
+                            TextInput::make('imagen_alt')
+                                ->label('Descripción de la fotografía')
+                                ->requiredWith('imagen')
+                                ->maxLength(255),
+                        ]),
                 ]),
         ];
     }

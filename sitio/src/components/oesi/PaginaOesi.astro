@@ -39,6 +39,21 @@ import Negritas from '../../components/oesi/Negritas.astro';
 import ImagenConRespaldo from '../../components/oesi/ImagenConRespaldo.astro';
 import ContactoDudas from '../../components/oesi/ContactoDudas.astro';
 import type { Oesi } from '../../lib/api';
+import { Image } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
+// Ilustraciones recortadas de las láminas de `oesiletras/docs`: una por paso y
+// una por acceso de la portada, y una por página en su cabecera.
+import ilFecha from '../../assets/ilustraciones/paso-fecha.webp';
+import ilPago from '../../assets/ilustraciones/paso-pago.webp';
+import ilFormulario from '../../assets/ilustraciones/paso-formulario.webp';
+import ilAccesoExamen from '../../assets/ilustraciones/acceso-examen.webp';
+import ilAccesoModalidades from '../../assets/ilustraciones/acceso-modalidades.webp';
+import ilAccesoPreguntas from '../../assets/ilustraciones/acceso-preguntas.webp';
+import ilPaginaExamen from '../../assets/ilustraciones/pagina-examen.webp';
+import ilPaginaModalidades from '../../assets/ilustraciones/pagina-modalidades.webp';
+import ilPaginaCronograma from '../../assets/ilustraciones/pagina-cronograma.webp';
+import ilPaginaPreguntas from '../../assets/ilustraciones/pagina-preguntas.webp';
+import ilCertificado from '../../assets/ilustraciones/certificado.webp';
 import { agruparPreguntas, normalizar, soles, sinMarcas } from '../../lib/oesi';
 import { faWhatsapp } from '@fortawesome/free-brands-svg-icons';
 import {
@@ -206,23 +221,26 @@ const claseIconoFormulario =
  */
 const PAGINAS: Record<
     Exclude<PaginaOesiClave, 'inicio'>,
-    { titulo: string; kicker?: string; bajada?: string | null; descripcion: string }
+    { titulo: string; kicker?: string; bajada?: string | null; descripcion: string; ilustracion: ImageMetadata }
 > = {
     examen: {
         titulo: 'El examen',
         kicker: 'Examen de suficiencia en idiomas',
+        ilustracion: ilPaginaExamen,
         descripcion:
             'Qué es el examen de suficiencia en idiomas de la Facultad de Letras de la UNMSM, a quién va dirigido, el requisito, qué evalúa y cómo se califica.',
     },
     modalidades: {
         titulo: 'Modalidades',
         kicker: 'El día del examen',
+        ilustracion: ilPaginaModalidades,
         bajada: oesi.modalidades.intro,
         descripcion: 'Indicaciones para rendir el examen de suficiencia en idiomas de forma presencial o virtual.',
     },
     cronograma: {
         titulo: 'Cronograma',
         kicker: 'Inscripción · antes de empezar',
+        ilustracion: ilPaginaCronograma,
         bajada: 'Consulta la fecha de tu idioma en la publicación del mes.',
         descripcion:
             'Fechas de los exámenes de suficiencia en idiomas del mes: consulta la de tu idioma y empieza tu inscripción.',
@@ -230,6 +248,7 @@ const PAGINAS: Record<
     inscripcion: {
         titulo: 'Inscripción',
         kicker: 'Inscripción · pasos 1 y 2',
+        ilustracion: ilPago,
         bajada: inscripcion.intro,
         descripcion:
             'Cómo inscribirte al examen de suficiencia en idiomas: costos, pago en San Market, documentos y formularios.',
@@ -237,6 +256,7 @@ const PAGINAS: Record<
     preguntas: {
         titulo: 'Preguntas frecuentes',
         kicker: 'Dudas',
+        ilustracion: ilPaginaPreguntas,
         bajada: oesi.faqs.intro,
         descripcion:
             'Respuestas sobre fechas, requisitos, pagos, resultados y certificado del examen de suficiencia en idiomas.',
@@ -247,13 +267,14 @@ const meta = pagina === 'inicio' ? null : PAGINAS[pagina];
 // Los accesos del inicio a las páginas de consulta. La inscripción no va aquí:
 // tiene su propio bloque, el del recorrido.
 const ACCESOS = [
-    { clave: 'examen', titulo: 'El examen', texto: 'Qué es, a quién va dirigido, el requisito, qué se evalúa y cómo se califica.', icono: faAward },
-    { clave: 'modalidades', titulo: 'Modalidades', texto: 'Las indicaciones para rendirlo de forma presencial o virtual.', icono: faLaptop },
+    { clave: 'examen', titulo: 'El examen', texto: 'Qué es, a quién va dirigido, el requisito, qué se evalúa y cómo se califica.', icono: faAward, ilustracion: ilAccesoExamen },
+    { clave: 'modalidades', titulo: 'Modalidades', texto: 'Las indicaciones para rendirlo de forma presencial o virtual.', icono: faLaptop, ilustracion: ilAccesoModalidades },
     {
         clave: 'preguntas',
         titulo: 'Preguntas frecuentes',
         texto: `${oesi.faqs.items.length} respuestas sobre fechas, requisitos, pagos y resultados.`,
         icono: faCircleQuestion,
+        ilustracion: ilAccesoPreguntas,
     },
 ];
 
@@ -270,6 +291,7 @@ const PASOS_INICIO = [
         enlace: '/cronograma',
         destino: 'cronograma',
         accion: 'Ver el cronograma',
+        ilustracion: ilFecha,
     },
     {
         rotulo: 'Paso 1',
@@ -280,6 +302,7 @@ const PASOS_INICIO = [
         enlace: '/inscripcion#paso-pago',
         destino: 'inscripcion',
         accion: 'Ver costos y pagar',
+        ilustracion: ilPago,
     },
     {
         rotulo: 'Paso 2',
@@ -290,6 +313,7 @@ const PASOS_INICIO = [
         enlace: '/inscripcion#paso-formulario',
         destino: null,
         accion: 'Ver los formularios',
+        ilustracion: ilFormulario,
     },
 ];
 ---
@@ -301,7 +325,17 @@ const PASOS_INICIO = [
     datos={pagina === 'preguntas' ? datosFaq : undefined}
     sobreHero={pagina === 'inicio'}
 >
-    {meta ? <HeroPagina titulo={meta.titulo} kicker={meta.kicker} bajada={meta.bajada} /> : <HeroOesi oesi={oesi} />}
+    {meta ? (
+        <HeroPagina
+            titulo={meta.titulo}
+            kicker={meta.kicker}
+            bajada={meta.bajada}
+            migas={[{ texto: 'Inicio', url: '/' }, { texto: meta.titulo }]}
+            ilustracion={meta.ilustracion}
+        />
+    ) : (
+        <HeroOesi oesi={oesi} />
+    )}
 
     <div data-oesi>
         {pagina === 'inicio' && (
@@ -314,23 +348,41 @@ const PASOS_INICIO = [
                  * publicación vigente—.
                  */}
                 <div id="como-inscribirte" class="panel-oesi">
-                    <section aria-labelledby="t-como-inscribirte" class="relative isolate overflow-hidden bg-slate-50 py-20">
+                    <section aria-labelledby="t-como-inscribirte" class="relative isolate overflow-hidden bg-fondo-suave py-20">
                         <FondoSeccion />
                         <div class="mx-auto max-w-6xl px-6">
                             <TituloSeccion id="t-como-inscribirte" titulo="Cómo inscribirte" kicker="Fecha, pago y formulario" centrado />
 
+                            {/* Cada tarjeta lleva la barra de avance de la
+                                referencia («Vamos a descubrir tu nivel ideal»):
+                                un tercio, dos tercios, completa. Dice cuánto
+                                falta sin tener que contar las tarjetas. */}
                             <ol class="mt-12 grid gap-5 lg:grid-cols-3">
-                                {PASOS_INICIO.map((paso) => (
-                                    <li class="paso relative">
+                                {PASOS_INICIO.map((paso, i) => (
+                                    <li class="relative">
                                         <a
                                             href={paso.enlace}
                                             data-destino={paso.destino ?? undefined}
-                                            class="tarjeta-recurso group flex h-full flex-col rounded-2xl bg-white p-6 shadow-sm"
+                                            class="tarjeta-recurso group flex h-full flex-col rounded-3xl bg-white p-7 shadow-sm ring-1 ring-slate-200/70"
                                         >
-                                            <span aria-hidden="true" class="marca-degradado flex h-11 w-11 items-center justify-center rounded-full font-serif text-lg font-bold text-white shadow">
-                                                {paso.marca ?? <Icono icono={faCalendarDays} clase="h-4 w-4" />}
+                                            <Image
+                                                src={paso.ilustracion}
+                                                alt=""
+                                                widths={[260, 520]}
+                                                sizes="260px"
+                                                loading="lazy"
+                                                class="mx-auto mb-6 h-40 w-auto mix-blend-multiply"
+                                            />
+                                            <span class="flex items-center gap-3">
+                                                <span aria-hidden="true" class="marca-degradado flex h-11 w-11 flex-none items-center justify-center rounded-2xl font-serif text-lg font-extrabold text-white shadow">
+                                                    {paso.marca ?? <Icono icono={faCalendarDays} clase="h-4 w-4" />}
+                                                </span>
+                                                <span aria-hidden="true" class="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-100">
+                                                    <span class="block h-full rounded-full bg-unmsm-acento" style={`width: ${((i + 1) / PASOS_INICIO.length) * 100}%`}></span>
+                                                </span>
+                                                <span class="text-xs font-semibold tabular-nums text-slate-500">{i + 1}/{PASOS_INICIO.length}</span>
                                             </span>
-                                            <span class="mt-4 block text-[0.7rem] font-semibold uppercase tracking-wider text-slate-500">{paso.rotulo}</span>
+                                            <span class="mt-5 block text-[0.7rem] font-semibold uppercase tracking-wider text-slate-500">{paso.rotulo}</span>
                                             <span class="block font-serif text-xl font-bold leading-snug text-unmsm-azul">{paso.titulo}</span>
                                             <span class="mt-2 block text-sm leading-relaxed text-slate-600">{paso.texto}</span>
                                             {paso.detalle && (
@@ -367,17 +419,26 @@ const PASOS_INICIO = [
                         <div class="mx-auto max-w-6xl px-6">
                             <TituloSeccion id="t-conoce" titulo="Conoce el examen" kicker="Antes de rendirlo" centrado />
 
-                            <ul class="mt-12 grid gap-5 md:grid-cols-3">
+                            {/* Como las «razones» de la referencia: sin tarjeta,
+                                una ilustración por acceso y un filete
+                                discontinuo entre columnas. */}
+                            <ul class="mt-12 grid gap-y-8 md:grid-cols-3 md:divide-x md:divide-dashed md:divide-slate-300">
                                 {ACCESOS.map((a) => (
-                                    <li>
-                                        <a href={`/${a.clave}`} data-destino={a.clave} class="tarjeta-recurso group flex h-full items-start gap-4 rounded-2xl bg-slate-50 p-6">
-                                            <span aria-hidden="true" class="flex h-12 w-12 flex-none items-center justify-center rounded-xl bg-white text-unmsm-dorado shadow-sm transition duration-300 group-hover:bg-unmsm-azul group-hover:text-white">
-                                                <Icono icono={a.icono} clase="h-5 w-5" />
+                                    <li class="md:px-6 md:first:pl-0 md:last:pr-0">
+                                        <a href={`/${a.clave}`} data-destino={a.clave} class="group flex h-full flex-col rounded-3xl p-2 transition hover:bg-slate-50">
+                                            <Image
+                                                src={a.ilustracion}
+                                                alt=""
+                                                widths={[280, 560]}
+                                                sizes="280px"
+                                                loading="lazy"
+                                                class="mx-auto h-44 w-auto mix-blend-multiply"
+                                            />
+                                            <span class="mt-5 flex items-center gap-1.5 font-serif text-lg font-bold leading-snug text-unmsm-azul">
+                                                {a.titulo}
+                                                <Icono icono={faArrowRight} clase="h-3.5 w-3.5 opacity-0 transition group-hover:translate-x-0.5 group-hover:opacity-100" />
                                             </span>
-                                            <span>
-                                                <span class="block font-serif text-lg font-bold leading-snug text-unmsm-azul">{a.titulo}</span>
-                                                <span class="mt-1 block text-sm leading-relaxed text-slate-600">{a.texto}</span>
-                                            </span>
+                                            <span class="mt-1 block text-sm leading-relaxed text-slate-600">{a.texto}</span>
                                         </a>
                                     </li>
                                 ))}
@@ -388,7 +449,7 @@ const PASOS_INICIO = [
 
             {/* ══ Curso de preparación ══ */}
             <div id="curso-preparacion" class="panel-oesi">
-                <section class="relative isolate overflow-hidden bg-slate-50 py-20">
+                <section class="relative isolate overflow-hidden bg-fondo-calido py-20">
                     <FondoSeccion />
                     <div class="mx-auto max-w-6xl px-6">
                         <TituloSeccion
@@ -483,7 +544,7 @@ const PASOS_INICIO = [
             <Fragment>
             {/* ══ Examen de suficiencia ══ */}
             <div id="examen" class="panel-oesi">
-                <section class="relative isolate overflow-hidden bg-slate-50 py-14">
+                <section class="relative isolate overflow-hidden bg-fondo-suave py-14">
                     <FondoSeccion />
                     <div class="mx-auto max-w-6xl px-6">
                         {examen.objetivo && (
@@ -558,7 +619,7 @@ const PASOS_INICIO = [
              * rejilla simple: mejor una rejilla correcta que una matriz forzada.
              */}
             <div id="habilidades" class="panel-oesi">
-                <section class="relative isolate overflow-clip bg-slate-50 py-20">
+                <section class="relative isolate overflow-clip bg-fondo-suave py-20">
                     <FondoSeccion />
                     <div class="mx-auto max-w-6xl px-6">
                         <TituloSeccion
@@ -630,6 +691,7 @@ const PASOS_INICIO = [
             <div id="despues" class="panel-oesi">
                 <section aria-labelledby="t-despues" class="relative isolate overflow-hidden bg-white py-20">
                     <div class="mx-auto max-w-6xl px-6">
+                        <Image src={ilCertificado} alt="" widths={[240, 480]} sizes="240px" loading="lazy" class="mx-auto mb-6 h-36 w-auto mix-blend-multiply" />
                         <TituloSeccion id="t-despues" titulo="Calificación, resultados y certificado" kicker="Después del examen" centrado />
 
                         <div class="mt-12 grid gap-8 lg:grid-cols-2">
@@ -731,20 +793,34 @@ const PASOS_INICIO = [
              * que la oficina añada en el panel cae en su sitio.
              */}
             <div id="modalidades" class="panel-oesi">
-                <section class="relative isolate overflow-clip bg-slate-50 py-12">
+                <section class="relative isolate overflow-clip bg-fondo-suave py-12">
                     <FondoSeccion />
                     <div class="mx-auto max-w-6xl px-6">
-                        <ul class="mx-auto grid max-w-4xl gap-4 sm:grid-cols-2">
+                        {/* El selector de la referencia («¿Cómo deseas rendir
+                            el examen?»): una tarjeta por modalidad, con su
+                            marca redonda y lo que cubre en lista. Aquí no es
+                            un formulario sino un índice —cada tarjeta lleva a
+                            su bloque—, así que son enlaces y no radios. */}
+                        <p class="mx-auto max-w-4xl text-sm font-semibold text-slate-700">¿Cómo vas a rendir el examen?</p>
+                        <ul class="mx-auto mt-3 grid max-w-4xl gap-4 sm:grid-cols-2">
                             {modalidadesIndice.map((m) => (
                                 <li>
-                                    <a href={`#modalidad-${m.clave}`} class="tarjeta-recurso group flex h-full items-start gap-4 rounded-2xl bg-white p-5 shadow-sm">
-                                        <span aria-hidden="true" class="flex h-12 w-12 flex-none items-center justify-center rounded-xl bg-slate-100 text-unmsm-dorado transition duration-300 group-hover:bg-unmsm-azul group-hover:text-white">
-                                            <Icono icono={m.icono} clase="h-5 w-5" />
+                                    <a href={`#modalidad-${m.clave}`} class="opcion-modalidad group flex h-full flex-col rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+                                        <span class="flex items-center gap-3">
+                                            <span aria-hidden="true" class="flex h-10 w-10 flex-none items-center justify-center rounded-xl bg-sky-50 text-unmsm-acento">
+                                                <Icono icono={m.icono} clase="h-5 w-5" />
+                                            </span>
+                                            <span class="flex-1 font-serif text-lg font-bold text-unmsm-azul">{m.etiqueta}</span>
+                                            <span aria-hidden="true" class="marca-opcion h-5 w-5 flex-none rounded-full border-2 border-slate-300 transition"></span>
                                         </span>
-                                        <span>
-                                            <span class="block font-serif text-lg font-bold leading-snug text-unmsm-azul">{m.etiqueta}</span>
-                                            <span class="mt-1 block text-sm leading-relaxed text-slate-600">{m.resumen}</span>
-                                        </span>
+                                        <ul class="mt-4 space-y-1.5 text-sm text-slate-600">
+                                            {m.resumen.split(' · ').map((r) => (
+                                                <li class="flex gap-2">
+                                                    <Icono icono={faCheck} clase="mt-1 h-3 w-3 flex-none text-unmsm-acento" />
+                                                    <span>{r}</span>
+                                                </li>
+                                            ))}
+                                        </ul>
                                     </a>
                                 </li>
                             ))}
@@ -761,7 +837,7 @@ const PASOS_INICIO = [
                                     <Icono icono={faBuildingColumns} clase="h-5 w-5" />
                                 </span>
                                 <div>
-                                    <p class="text-xs font-semibold uppercase tracking-[0.18em] text-unmsm-dorado">Modalidad</p>
+                                    <p class="text-xs font-semibold uppercase tracking-[0.18em] text-unmsm-dorado-texto">Modalidad</p>
                                     <h2 id="t-mod-presencial" class="font-serif text-2xl font-bold text-unmsm-azul sm:text-3xl">Presencial</h2>
                                 </div>
                             </header>
@@ -889,7 +965,7 @@ const PASOS_INICIO = [
                 {/* `overflow-clip` y no `overflow-hidden`: recorta el fondo igual,
                     pero no crea un contenedor de desplazamiento, que es lo que
                     anulaba el `sticky` de la tarjeta lateral. */}
-                <section class="relative isolate overflow-clip bg-slate-50 py-12">
+                <section class="relative isolate overflow-clip bg-fondo-suave py-12">
                     <FondoSeccion />
                     <div class="mx-auto max-w-6xl px-6">
                         <PasosInscripcion actuales={['fecha']} />
@@ -1012,7 +1088,7 @@ const PASOS_INICIO = [
              * de precios.
              */}
             <div id="inscripcion" class="panel-oesi">
-                <section class="relative isolate overflow-clip bg-slate-50 py-12">
+                <section class="relative isolate overflow-clip bg-fondo-suave py-12">
                     <FondoSeccion />
                     <div class="mx-auto max-w-6xl px-6">
                         <PasosInscripcion actuales={['pago', 'formulario']} />
@@ -1037,7 +1113,7 @@ const PASOS_INICIO = [
                             <div class="flex items-start gap-4">
                                 <span aria-hidden="true" class="marca-degradado flex h-12 w-12 flex-none items-center justify-center rounded-full font-serif text-xl font-bold text-white shadow">1</span>
                                 <div>
-                                    <p class="text-xs font-semibold uppercase tracking-[0.18em] text-unmsm-dorado">Paso 1</p>
+                                    <p class="text-xs font-semibold uppercase tracking-[0.18em] text-unmsm-dorado-texto">Paso 1</p>
                                     <h2 id="t-paso-pago" class="font-serif text-2xl font-bold text-unmsm-azul sm:text-3xl">Paga el derecho de examen</h2>
                                     {inscripcion.costos_intro && <p class="mt-2 max-w-2xl text-slate-600">{inscripcion.costos_intro}</p>}
                                 </div>
@@ -1298,7 +1374,7 @@ const PASOS_INICIO = [
              * el texto de las respuestas cerradas.
              */}
             <div id="preguntas" class="panel-oesi">
-                <section class="relative isolate overflow-clip bg-slate-50 py-12">
+                <section class="relative isolate overflow-clip bg-fondo-suave py-12">
                     <FondoSeccion />
                     <div class="mx-auto max-w-6xl px-6">
                         <div class="grid items-start gap-8 lg:grid-cols-12" data-faq>
@@ -1735,6 +1811,28 @@ const PASOS_INICIO = [
     }
 
     /* Las tarjetas de recurso de la portada del CERSEU. */
+    /* La tarjeta del selector de modalidad: al pasar, el filo y la marca
+       redonda toman el azul, como la opción elegida de la referencia. */
+    .opcion-modalidad {
+        transition:
+            box-shadow 250ms ease,
+            transform 250ms ease;
+    }
+
+    .opcion-modalidad:hover,
+    .opcion-modalidad:focus-visible {
+        transform: translateY(-2px);
+        box-shadow:
+            0 0 0 2px var(--color-unmsm-acento),
+            0 16px 32px -20px rgb(15 43 72 / 0.45);
+    }
+
+    .opcion-modalidad:hover .marca-opcion,
+    .opcion-modalidad:focus-visible .marca-opcion {
+        border-width: 6px;
+        border-color: var(--color-unmsm-acento);
+    }
+
     .tarjeta-recurso {
         border: 1px solid transparent;
         transition:

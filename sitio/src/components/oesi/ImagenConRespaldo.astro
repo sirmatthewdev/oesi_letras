@@ -42,7 +42,7 @@ const { imagen, enlace, queEs, whatsapp, alternativa, clase = '', prioritaria = 
                     alt={imagen.alt}
                     loading={prioritaria ? 'eager' : 'lazy'}
                     decoding="async"
-                    class="w-full rounded-xl shadow-md transition duration-300 hover:shadow-lg"
+                    class="mx-auto w-full rounded-xl shadow-md transition duration-300 hover:shadow-lg"
                 />
                 <span class="sr-only"> (se abre en una pestaña nueva)</span>
             </a>
@@ -52,7 +52,7 @@ const { imagen, enlace, queEs, whatsapp, alternativa, clase = '', prioritaria = 
                 alt={imagen.alt}
                 loading={prioritaria ? 'eager' : 'lazy'}
                 decoding="async"
-                class="w-full rounded-xl shadow-md"
+                class="mx-auto w-full rounded-xl shadow-md"
                 data-imagen-cuerpo
             />
         )
@@ -123,6 +123,16 @@ const { imagen, enlace, queEs, whatsapp, alternativa, clase = '', prioritaria = 
             }
 
             img.addEventListener('error', () => marcarRota(figura), { once: true });
+
+            // Estas imágenes vienen de la web de Letras y no pasan por el
+            // optimizador: si la columna es más ancha que el fichero, el
+            // navegador la amplía y se ve borrosa (el flyer del curso, de 470
+            // px, salía a 512). Se limita a su ancho real en cuanto se conoce.
+            const limitar = () => {
+                if (img.naturalWidth > 0) img.style.maxWidth = `${img.naturalWidth}px`;
+            };
+            if (img.complete) limitar();
+            else img.addEventListener('load', limitar, { once: true });
         });
     }
 

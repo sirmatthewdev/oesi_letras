@@ -49,6 +49,7 @@ class OesiSetting extends Model
         'examen_destinatarios' => 'array',
         'escala' => 'array',
         'vigencia' => 'array',
+        'idiomas' => 'array',
         'habilidades' => 'array',
         'modalidades' => 'array',
         'cronograma_formularios' => 'array',

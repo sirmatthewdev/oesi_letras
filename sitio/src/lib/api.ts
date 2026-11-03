@@ -150,6 +150,14 @@ export type Oesi = {
         resultados: { aprobados: string | null; desaprobados: string | null; virtual: string | null };
         requisitos: string | null;
     };
+    /** Una pestaña del hero de la portada por idioma, en el orden del panel. */
+    idiomas: {
+        nombre: string;
+        saludo: string | null;
+        publico: string | null;
+        modalidades: ('presencial' | 'virtual')[];
+        imagen: { url: string; alt: string } | null;
+    }[];
     habilidades: {
         intro: string | null;
         items: { titulo: string; descripcion: string; icono: string | null }[];

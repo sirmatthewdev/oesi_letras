@@ -262,6 +262,37 @@ class OesiTest extends TestCase
         $this->getJson('/api/v1/oesi')->assertJsonPath('data.faqs.items.0.categoria', null);
     }
 
+    public function test_los_idiomas_del_cronograma_salen_en_orden_para_el_hero(): void
+    {
+        $this->publicar();
+
+        $this->getJson('/api/v1/oesi')
+            ->assertJsonCount(7, 'data.idiomas')
+            ->assertJsonPath('data.idiomas.0', [
+                'nombre' => 'Inglés',
+                'saludo' => 'Hello',
+                'publico' => 'Pregrado',
+                'modalidades' => ['presencial'],
+                'imagen' => null,
+            ])
+            ->assertJsonPath('data.idiomas.6.nombre', 'Aimara');
+    }
+
+    public function test_un_idioma_sin_nombre_no_sale_y_una_modalidad_desconocida_se_descarta(): void
+    {
+        $this->publicar([
+            'idiomas' => [
+                'u1' => ['nombre' => 'Quechua', 'modalidades' => ['virtual', 'hibrida'], 'imagen' => 'https://ejemplo.pe/q.jpg', 'imagen_alt' => 'Cusco'],
+                'u2' => ['nombre' => '', 'modalidades' => ['virtual']],
+            ],
+        ]);
+
+        $this->getJson('/api/v1/oesi')
+            ->assertJsonCount(1, 'data.idiomas')
+            ->assertJsonPath('data.idiomas.0.modalidades', ['virtual'])
+            ->assertJsonPath('data.idiomas.0.imagen', ['url' => 'https://ejemplo.pe/q.jpg', 'alt' => 'Cusco']);
+    }
+
     public function test_las_redes_salen_como_clave_y_enlace(): void
     {
         $this->publicar();

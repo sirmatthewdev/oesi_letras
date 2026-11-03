@@ -88,7 +88,9 @@ const { tono = 'claro', deriva = 60 } = Astro.props;
         left: -8%;
         width: 46%;
         height: 70%;
-        background: color-mix(in oklab, var(--color-unmsm-azul) 16%, transparent);
+        /* El celeste de la paleta y no el azul institucional: el azul hondo,
+           desenfocado sobre un fondo claro, se leía como una mancha gris. */
+        background: color-mix(in oklab, var(--color-unmsm-azul-soft) 34%, transparent);
     }
 
     .fondo-claro .resplandor-b {
@@ -96,7 +98,7 @@ const { tono = 'claro', deriva = 60 } = Astro.props;
         bottom: -22%;
         width: 42%;
         height: 65%;
-        background: color-mix(in oklab, var(--color-unmsm-dorado) 14%, transparent);
+        background: color-mix(in oklab, var(--color-unmsm-dorado-light) 16%, transparent);
     }
 
     .fondo-oscuro .resplandor-a {

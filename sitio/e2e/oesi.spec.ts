@@ -215,6 +215,11 @@ test.describe('OESI', () => {
         await page.route('https://letras.unmsm.edu.pe/**', (ruta) => ruta.abort());
         await abrir(page);
 
+        // El flyer es `loading="lazy"` y en el móvil queda lejos del primer
+        // pantallazo: el navegador no lo pide —ni falla— hasta acercarse. Se
+        // baja hasta él, como haría quien lo busca.
+        await page.locator('#curso-preparacion').scrollIntoViewIfNeeded();
+
         const respaldo = page.locator('#curso-preparacion [data-imagen-respaldo]');
         await expect(respaldo).toBeVisible();
         await expect(respaldo.getByRole('link', { name: 'Ver la información del curso' })).toBeVisible();

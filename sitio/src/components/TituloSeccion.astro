@@ -16,12 +16,25 @@ interface Props {
 }
 
 const { titulo, bajada, centrado = false, kicker, claro = false, id } = Astro.props;
+
+// Titulo en dos tonos: la ultima palabra en el azul de acento, como los de la
+// referencia («Testimonios *que inspiran*»). Se parte en la ultima palabra y no
+// en un marcado del panel para que funcione con cualquier titulo sin pedirle
+// nada a quien lo escribe; un titulo de una sola palabra va entero en azul.
+const corte = titulo.trimEnd().lastIndexOf(' ');
+const [inicio, final] = corte > 0 ? [titulo.slice(0, corte + 1), titulo.slice(corte + 1)] : [titulo, ''];
 ---
 
 <header class={centrado ? 'text-center' : ''}>
     {
         kicker && (
-            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-unmsm-dorado-light">
+            <p
+                class:list={[
+                    'inline-flex items-center gap-2 rounded-full px-3 py-1 text-[0.7rem] font-semibold uppercase tracking-[0.16em]',
+                    claro ? 'bg-white/10 text-unmsm-dorado-light' : 'bg-unmsm-azul/[0.06] text-unmsm-azul',
+                ]}
+            >
+                <span aria-hidden="true" class="h-1.5 w-1.5 rounded-full bg-unmsm-dorado"></span>
                 {kicker}
             </p>
         )
@@ -30,12 +43,12 @@ const { titulo, bajada, centrado = false, kicker, claro = false, id } = Astro.pr
     <h2
         id={id}
         class:list={[
-            'font-serif text-3xl font-bold tracking-tight',
-            kicker ? 'mt-2' : '',
+            'font-serif text-3xl font-extrabold sm:text-4xl',
+            kicker ? 'mt-4' : '',
             claro ? 'text-white' : 'text-unmsm-azul',
         ]}
     >
-        {titulo}
+        {inicio}{final && <span class={claro ? 'text-unmsm-dorado-light' : 'text-unmsm-acento'}>{final}</span>}
     </h2>
 
     {/* La regla bajo el título es el gesto que identifica al sitio. Deja de ser

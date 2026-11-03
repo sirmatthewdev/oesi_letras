@@ -1,0 +1,490 @@
+---
+/**
+ * Hero de la portada: un acordeón con una pestaña por idioma.
+ *
+ * Es el hero de Idiomas PUCP: en escritorio, una fila de paneles en la que uno
+ * está abierto y el resto se queda en una franja estrecha con el nombre en
+ * vertical; pasa solo de uno a otro y se puede pausar. En el móvil la franja
+ * vertical no cabe, así que los mismos paneles son un carrusel que se desliza
+ * con el dedo —desplazamiento nativo con `scroll-snap`, sin JavaScript—.
+ *
+ * Cada panel dice lo que la oficina carga en el panel, en «Idiomas»: el
+ * nombre, para quién es, en qué modalidad y, de adorno, un saludo en ese idioma
+ * escrito en grande. Las acciones son las dos de siempre: inscribirse y ver la
+ * fecha en el cronograma. Sin fotografía, cada panel lleva un color de la
+ * paleta; con ella, la foto con un velo de ese color para que el texto blanco
+ * mantenga el contraste.
+ *
+ * Rendimiento: no hay librería de carrusel. El cambio de panel es una
+ * transición de `flex-grow` y el avance automático, un temporizador que se
+ * detiene si se pidió menos movimiento, si el hero no está en pantalla, si la
+ * pestaña del navegador está oculta o mientras el ratón o el foco están dentro.
+ */
+import { Image } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
+import Icono from '../Icono.astro';
+import type { Oesi } from '../../lib/api';
+import { normalizar } from '../../lib/oesi';
+import { faBuildingColumns, faCalendarDays, faLaptop, faPause, faPlay, faUserPlus } from '@fortawesome/free-solid-svg-icons';
+
+interface Props {
+    idiomas: Oesi['idiomas'];
+}
+
+const { idiomas } = Astro.props;
+
+// La fotografía de fondo de cada idioma (`fondos-idioma/ingles.jpg`, de
+// Unsplash; los créditos, en `fondos-idioma/CREDITOS.md`), buscada por el nombre
+// que escribe la oficina sin tildes ni mayúsculas: «Inglés» → `ingles`. Una
+// foto subida en el panel la sustituye. Un idioma nuevo sin foto se queda con
+// su color y su saludo en grande.
+const clave = (nombre: string) => normalizar(nombre).replace(/\s+/g, '-');
+const FONDOS = import.meta.glob<{ default: ImageMetadata }>('../../assets/fondos-idioma/*.jpg', { eager: true });
+const fondo = (nombre: string) => FONDOS[`../../assets/fondos-idioma/${clave(nombre)}.jpg`]?.default;
+
+// Un color por idioma, todos con texto blanco por encima en AA. Los de la casa
+// —azul, acento, azul hondo— y cuatro de apoyo de la misma luminosidad para
+// que la fila no se lea como siete veces el mismo panel.
+const COLORES = ['#143B63', '#7A1F3D', '#0F5E6B', '#1F6FB8', '#5C4A12', '#3B2F6B', '#0F2B48'];
+
+const MODALIDADES = {
+    presencial: { etiqueta: 'Presencial', icono: faBuildingColumns },
+    virtual: { etiqueta: 'Virtual', icono: faLaptop },
+} as const;
+---
+
+<section class="hero-idiomas" aria-roledescription="carrusel" aria-label="Idiomas que se evalúan" data-acordeon>
+    <div class="acordeon" data-acordeon-pista>
+        {
+            idiomas.map((idioma, i) => (
+                <article
+                    class="panel"
+                    data-panel
+                    data-activo={i === 0 ? '' : undefined}
+                    aria-roledescription="diapositiva"
+                    aria-label={`${i + 1} de ${idiomas.length}: ${idioma.nombre}`}
+                    style={`--panel-color: ${COLORES[i % COLORES.length]}`}
+                >
+                    {/* La foto de fondo: decorativa (`alt` vacío) salvo la que sube
+                        la oficina, que trae su descripción. En el móvil el panel
+                        es vertical y la foto, apaisada, lo cubre por el alto: por
+                        eso pide 150vw y no el ancho del panel, o el navegador
+                        bajaba una versión corta y la ampliaba. */}
+                    {idioma.imagen ? (
+                        <img
+                            src={idioma.imagen.url}
+                            alt={idioma.imagen.alt}
+                            loading={i === 0 ? 'eager' : 'lazy'}
+                            decoding="async"
+                            class="panel-foto"
+                        />
+                    ) : (
+                        fondo(idioma.nombre) && (
+                            <Image
+                                src={fondo(idioma.nombre)!}
+                                alt=""
+                                widths={[640, 960, 1280, 1600]}
+                                sizes="(min-width: 64rem) 60vw, 150vw"
+                                quality={70}
+                                loading={i === 0 ? 'eager' : 'lazy'}
+                                class="panel-foto"
+                            />
+                        )
+                    )}
+                    <span aria-hidden="true" class="panel-velo" />
+                    {/* Sin foto, el saludo va en grande de fondo; con foto
+                        sobraría: la foto ya es el adorno. */}
+                    {idioma.saludo && !idioma.imagen && !fondo(idioma.nombre) && (
+                        <span aria-hidden="true" class="panel-saludo">
+                            {idioma.saludo}
+                        </span>
+                    )}
+                    {/* La franja cerrada: solo en escritorio. Es un botón
+                        porque abre el panel. */}
+                    <button type="button" class="panel-pestana" data-pestana aria-expanded={i === 0 ? 'true' : 'false'}>
+                        <span class="panel-pestana-texto">{idioma.nombre}</span>
+                        <span class="sr-only">: ver el panel</span>
+                    </button>
+
+                    <div class="panel-contenido" data-contenido>
+                        <p class="inline-flex items-center gap-2 whitespace-nowrap rounded-full bg-black/25 px-3 py-1 text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-white">
+                            <span aria-hidden="true" class="h-1.5 w-1.5 rounded-full bg-unmsm-dorado-light" />
+                            Examen de suficiencia
+                        </p>
+
+                        <h2 class="mt-5 font-serif text-[2.1rem] font-extrabold leading-[1.05] text-white sm:text-5xl">
+                            Certifica tu <span class="panel-acento">{idioma.nombre.toLowerCase()}</span>
+                        </h2>
+
+                        <div class="mt-5 flex flex-wrap items-center gap-2 text-sm text-white/90">
+                            {idioma.publico && <span class="rounded-full bg-black/20 px-3 py-1.5 font-medium">{idioma.publico}</span>}
+                            {idioma.modalidades.map((m) => (
+                                <span class="inline-flex items-center gap-1.5 rounded-full bg-black/20 px-3 py-1.5 font-medium">
+                                    <Icono icono={MODALIDADES[m].icono} clase="panel-acento h-3.5 w-3.5" />
+                                    {MODALIDADES[m].etiqueta}
+                                </span>
+                            ))}
+                        </div>
+
+                        <div class="mt-8 flex flex-wrap gap-3">
+                            <a
+                                href="/inscripcion"
+                                class="inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-semibold text-unmsm-azul shadow-sm transition hover:bg-unmsm-dorado-light hover:text-unmsm-azul-dark"
+                            >
+                                <Icono icono={faUserPlus} clase="h-4 w-4" />
+                                Inscríbete
+                            </a>
+                            <a
+                                href="/cronograma"
+                                class="inline-flex items-center gap-2 rounded-full border border-white/50 px-6 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
+                            >
+                                <Icono icono={faCalendarDays} clase="h-4 w-4" />
+                                Ver la fecha
+                            </a>
+                        </div>
+                    </div>
+                </article>
+            ))
+        }
+    </div>
+
+    {/* Puntos y pausa, como en la referencia. Los puntos solo tienen sentido
+        con el acordeón: en el móvil se desliza con el dedo. */}
+    {
+        idiomas.length > 1 && (
+            <div class="controles mt-5 hidden items-center justify-center gap-2 lg:flex">
+                {idiomas.map((idioma, i) => (
+                    <button
+                        type="button"
+                        class="punto"
+                        data-punto={i}
+                        aria-label={`Ver ${idioma.nombre}`}
+                        aria-current={i === 0 ? 'true' : undefined}
+                    />
+                ))}
+                <button type="button" class="ml-3 flex h-8 w-8 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100 hover:text-unmsm-azul" data-pausa aria-label="Pausar el carrusel" aria-pressed="false">
+                    <Icono icono={faPause} clase="icono-pausa h-3.5 w-3.5" />
+                    <Icono icono={faPlay} clase="icono-reanudar hidden h-3.5 w-3.5" />
+                </button>
+            </div>
+        )
+    }
+</section>
+
+<style>
+    .acordeon {
+        display: flex;
+        gap: 0.75rem;
+        /* Móvil: carrusel nativo. Cada panel ocupa casi el ancho y deja asomar
+           el siguiente, que es lo que dice «hay más, desliza». */
+        overflow-x: auto;
+        scroll-snap-type: x mandatory;
+        scrollbar-width: none;
+        padding-inline: 1rem;
+        scroll-padding-inline: 1rem;
+    }
+
+    .acordeon::-webkit-scrollbar {
+        display: none;
+    }
+
+    .panel {
+        position: relative;
+        isolation: isolate;
+        overflow: hidden;
+        flex: 0 0 86%;
+        min-height: 26rem;
+        scroll-snap-align: start;
+        border-radius: 1.75rem;
+        background: linear-gradient(135deg, var(--panel-color), color-mix(in oklab, var(--panel-color) 70%, #000));
+        color: #fff;
+    }
+
+    /* La foto del idioma, de fondo y algo apagada: es ambiente, no
+       protagonista. */
+    .panel-foto {
+        position: absolute;
+        inset: 0;
+        z-index: -2;
+        height: 100%;
+        width: 100%;
+        object-fit: cover;
+        filter: saturate(0.85);
+    }
+
+    /*
+     * El velo del color del panel sobre la foto: lo que la deja «con
+     * opacidad». Denso donde va el texto —el blanco tiene que mantener el
+     * contraste sobre cualquier zona de la foto— y más ligero donde va el
+     * sticker, para que la foto se vea. En el móvil el texto va arriba y el
+     * sticker abajo, así que el degradado es vertical; en escritorio, de
+     * izquierda a derecha. Sin foto no se ve: es el mismo color que el fondo.
+     */
+    .panel-velo {
+        position: absolute;
+        inset: 0;
+        z-index: -1;
+        background: linear-gradient(
+            180deg,
+            color-mix(in oklab, var(--panel-color) 92%, transparent) 0%,
+            color-mix(in oklab, var(--panel-color) 86%, transparent) 55%,
+            color-mix(in oklab, var(--panel-color) 62%, transparent) 100%
+        );
+    }
+
+    /* El saludo, enorme y casi transparente, saliendo por la esquina: el
+       adorno de cada panel, sin imagen ni petición. */
+    .panel-saludo {
+        position: absolute;
+        right: -0.5rem;
+        bottom: -2.25rem;
+        z-index: -1;
+        font-size: clamp(4.5rem, 13vw, 11rem);
+        font-weight: 800;
+        line-height: 1;
+        letter-spacing: -0.04em;
+        white-space: nowrap;
+        color: rgb(255 255 255 / 0.12);
+        pointer-events: none;
+    }
+
+    .panel-pestana {
+        display: none;
+    }
+
+    .panel-contenido {
+        position: relative;
+        padding: 2rem 1.5rem;
+    }
+
+    /*
+     * El acento del título («Certifica tu francés») y de los iconos. Es un
+     * ámbar claro y no el dorado de la casa: el dorado caía a 2,3:1 sobre el
+     * azul medio y a 3,3:1 sobre el verde azulado; este no baja de 4,2:1 en
+     * ninguno de los siete (AA para texto grande).
+     */
+    .panel-acento {
+        color: #fde68a;
+    }
+
+    .panel {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .punto {
+        height: 0.5rem;
+        width: 0.5rem;
+        border-radius: 9999px;
+        background-color: rgb(148 163 184 / 0.6);
+        transition:
+            width 300ms ease,
+            background-color 300ms ease;
+    }
+
+    .punto[aria-current='true'] {
+        width: 1.75rem;
+        background-color: var(--color-unmsm-azul);
+    }
+
+    [data-pausa][aria-pressed='true'] :global(.icono-pausa) {
+        display: none;
+    }
+
+    [data-pausa][aria-pressed='true'] :global(.icono-reanudar) {
+        display: block;
+    }
+
+    /*
+     * Escritorio: el acordeón. El abierto crece; los demás se quedan en una
+     * franja con el nombre en vertical. Se anima `flex-grow`, que cuesta layout,
+     * pero solo dentro de esta fila y durante el medio segundo del cambio.
+     */
+    @media (min-width: 64rem) {
+        .acordeon {
+            overflow: visible;
+            height: 30rem;
+            padding-inline: 0;
+        }
+
+        .panel {
+            flex: 0 0 3.75rem;
+            min-height: 0;
+            transition: flex-grow 650ms cubic-bezier(0.32, 0.72, 0, 1);
+        }
+
+        .panel[data-activo] {
+            flex-grow: 1;
+        }
+
+        .panel-velo {
+            background: linear-gradient(
+                100deg,
+                color-mix(in oklab, var(--panel-color) 94%, transparent) 0%,
+                color-mix(in oklab, var(--panel-color) 86%, transparent) 45%,
+                color-mix(in oklab, var(--panel-color) 58%, transparent) 100%
+            );
+        }
+
+        .panel-pestana {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            padding-bottom: 1.5rem;
+            cursor: pointer;
+            transition: opacity 250ms ease;
+        }
+
+        .panel-pestana:hover {
+            background-color: rgb(255 255 255 / 0.06);
+        }
+
+        .panel-pestana-texto {
+            writing-mode: vertical-rl;
+            transform: rotate(180deg);
+            font-size: 1rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .panel[data-activo] .panel-pestana {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        /* El contenido del panel cerrado no se ve ni se alcanza con el
+           tabulador (el script le pone `inert`); el ancho fijo evita que el
+           texto se recoloque mientras el panel crece. */
+        .panel-contenido {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            justify-content: center;
+            height: 100%;
+            padding: 3rem;
+            opacity: 0;
+            transform: translateY(12px);
+            /* Al cerrarse se va en seguida —si se quedaba, se veía aplastarse
+               con el panel—; al abrirse, entra cuando ya hay sitio. */
+            transition:
+                opacity 120ms ease,
+                transform 120ms ease;
+        }
+
+        .panel[data-activo] .panel-contenido {
+            opacity: 1;
+            transform: none;
+            transition:
+                opacity 350ms ease 300ms,
+                transform 350ms ease 300ms;
+        }
+
+        /* En la franja el saludo estorba: solo en el abierto. */
+        .panel-saludo {
+            opacity: 0;
+            transition: opacity 400ms ease;
+        }
+
+        .panel[data-activo] .panel-saludo {
+            opacity: 1;
+        }
+
+        /* El texto no pasa de una columna cómoda: a la derecha queda la foto. */
+        .panel-contenido {
+            max-width: 40rem;
+        }
+    }
+
+    @media (min-width: 80rem) {
+        .panel {
+            flex-basis: 4.5rem;
+        }
+
+        .panel-contenido {
+            padding: 3.5rem;
+        }
+    }
+</style>
+
+<script>
+    const AVANCE_MS = 7000;
+    const escritorio = window.matchMedia('(min-width: 64rem)');
+    const quietud = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+    function iniciarAcordeon() {
+        const raiz = document.querySelector<HTMLElement>('[data-acordeon]');
+        if (!raiz || raiz.dataset.iniciado) return;
+        raiz.dataset.iniciado = '1';
+
+        const paneles = [...raiz.querySelectorAll<HTMLElement>('[data-panel]')];
+        const puntos = [...raiz.querySelectorAll<HTMLButtonElement>('[data-punto]')];
+        const pausa = raiz.querySelector<HTMLButtonElement>('[data-pausa]');
+        let activo = 0;
+        let temporizador: number | undefined;
+        let pausadoPorUsuario = false;
+        let dentro = false;
+        let visible = true;
+
+        const abrir = (n: number) => {
+            activo = (n + paneles.length) % paneles.length;
+            paneles.forEach((p, i) => {
+                const es = i === activo;
+                p.toggleAttribute('data-activo', es);
+                p.querySelector('[data-pestana]')?.setAttribute('aria-expanded', String(es));
+                // Solo en escritorio: en el móvil todos los paneles se ven.
+                p.querySelector('[data-contenido]')?.toggleAttribute('inert', escritorio.matches && !es);
+            });
+            puntos.forEach((b, i) => (i === activo ? b.setAttribute('aria-current', 'true') : b.removeAttribute('aria-current')));
+        };
+
+        const puedeAvanzar = () =>
+            escritorio.matches && !quietud.matches && !pausadoPorUsuario && !dentro && visible && !document.hidden && paneles.length > 1;
+
+        const programar = () => {
+            window.clearTimeout(temporizador);
+            if (puedeAvanzar()) temporizador = window.setTimeout(() => (abrir(activo + 1), programar()), AVANCE_MS);
+        };
+
+        paneles.forEach((p, i) =>
+            p.querySelector('[data-pestana]')?.addEventListener('click', () => {
+                abrir(i);
+                programar();
+            })
+        );
+        puntos.forEach((b, i) =>
+            b.addEventListener('click', () => {
+                abrir(i);
+                programar();
+            })
+        );
+
+        pausa?.addEventListener('click', () => {
+            pausadoPorUsuario = !pausadoPorUsuario;
+            pausa.setAttribute('aria-pressed', String(pausadoPorUsuario));
+            pausa.setAttribute('aria-label', pausadoPorUsuario ? 'Reanudar el carrusel' : 'Pausar el carrusel');
+            programar();
+        });
+
+        // Quien está leyendo o tabulando dentro no quiere que el panel cambie.
+        raiz.addEventListener('pointerenter', () => ((dentro = true), programar()));
+        raiz.addEventListener('pointerleave', () => ((dentro = false), programar()));
+        raiz.addEventListener('focusin', () => ((dentro = true), programar()));
+        raiz.addEventListener('focusout', (e) => {
+            if (!raiz.contains(e.relatedTarget as Node)) (dentro = false), programar();
+        });
+
+        new IntersectionObserver(([e]) => ((visible = e.isIntersecting), programar())).observe(raiz);
+        document.addEventListener('visibilitychange', programar);
+        escritorio.addEventListener('change', () => (abrir(activo), programar()));
+
+        abrir(0);
+        programar();
+    }
+
+    iniciarAcordeon();
+    document.addEventListener('astro:page-load', iniciarAcordeon);
+</script>
