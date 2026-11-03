@@ -200,6 +200,16 @@
     "cronograma_imagen": "https://letras.unmsm.edu.pe/wp-content/uploads/2026/09/CRONOGRAMA-OESI-21-28-SEP.png",
     "cronograma_imagen_alt": "Cronograma de exámenes de suficiencia",
     "cronograma_aviso": "Las fechas son las de la publicación vigente. Confírmalas antes de pagar: ante cualquier duda, escríbenos por WhatsApp o al correo.",
+    "_cronograma_fechas": "Las siete fechas de la imagen vigente (CRONOGRAMA-OESI-21-28-SEP.png), transcritas tal cual. Hora de Lima. Se cargan de nuevo cada mes en el panel.",
+    "cronograma_fechas": [
+        { "idioma": "Alemán", "fecha": "2026-09-21", "hora": "18:00", "modalidad": "virtual", "publico": "Pregrado y posgrado" },
+        { "idioma": "Aimara", "fecha": "2026-09-21", "hora": "18:00", "modalidad": "virtual", "publico": "Pregrado y posgrado" },
+        { "idioma": "Portugués", "fecha": "2026-09-24", "hora": "17:00", "modalidad": "virtual", "publico": "Pregrado y posgrado" },
+        { "idioma": "Francés", "fecha": "2026-09-25", "hora": "18:00", "modalidad": "virtual", "publico": "Pregrado y posgrado" },
+        { "idioma": "Italiano", "fecha": "2026-09-25", "hora": "17:00", "modalidad": "virtual", "publico": "Pregrado y posgrado" },
+        { "idioma": "Inglés", "fecha": "2026-09-26", "hora": "11:00", "modalidad": "presencial", "publico": "Pregrado" },
+        { "idioma": "Quechua", "fecha": "2026-09-28", "hora": "19:00", "modalidad": "virtual", "publico": "Pregrado y posgrado" }
+    ],
     "cronograma_formularios": [
         { "nombre": "Pregrado", "url": "https://forms.gle/1w1ySuaFFfbPb1Ff9" },
         { "nombre": "Posgrado", "url": "https://forms.gle/QZguJrD9xmQd5DqYA" }

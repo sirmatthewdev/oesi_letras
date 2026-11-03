@@ -11,12 +11,20 @@ import {
     faWhatsapp,
 } from '@fortawesome/free-brands-svg-icons';
 import type { ConfiguracionSitio } from '../lib/api';
+import { corta, vigentes, type FechaExamen } from '../lib/fechas';
+import { faCalendarDays } from '@fortawesome/free-solid-svg-icons';
 
 interface Props {
     sitio: ConfiguracionSitio;
+    fechas?: FechaExamen[];
 }
 
-const { sitio } = Astro.props;
+const { sitio, fechas = [] } = Astro.props;
+
+// El próximo examen, como el aviso de la barra de la referencia. Van todas las
+// vigentes al build; el script de Base deja visible solo la primera que no
+// haya empezado (`data-solo-primera`).
+const proximas = vigentes(fechas);
 const { contacto, facultad, redes } = sitio;
 
 // Los accesos institucionales: el correo de la oficina y la web de la Facultad.
@@ -93,6 +101,22 @@ const sociales = Object.entries(redes)
                 </>
             ))}
         </div>
+
+        {proximas.length > 0 && (
+            <div class="hidden lg:block" data-si-hay>
+                <p class="flex items-center gap-2" data-solo-primera>
+                    {proximas.map((f, i) => (
+                        <a href="/cronograma" data-vence={f.inicio} hidden={i > 0} class="flex items-center gap-2 transition hover:text-white/80">
+                            <Icono icono={faCalendarDays} clase="h-3.5 w-3.5 text-unmsm-dorado-light" />
+                            <span>
+                                Próximo examen: <strong class="font-semibold">{f.idioma}</strong>, {corta(f.inicio)}
+                            </span>
+                            <span aria-hidden="true" class="font-semibold underline underline-offset-2">Ver fechas</span>
+                        </a>
+                    ))}
+                </p>
+            </div>
+        )}
 
         <ul class="ml-auto flex items-center gap-4 lg:ml-0">
             {sociales.map((red) => (
