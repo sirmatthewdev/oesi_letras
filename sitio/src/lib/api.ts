@@ -199,6 +199,13 @@ export type Oesi = {
         documentos: string[];
         formularios: EnlaceOesi[];
         cierre: string | null;
+        /** Los del asistente «¿Cuál es tu caso?», ya resueltos; vacío si la oficina no los definió. */
+        casos: {
+            caso: string;
+            detalle: string | null;
+            tarifa: { concepto: string; monto: number | null; url_pago: string };
+            formulario: EnlaceOesi;
+        }[];
     };
     faqs: {
         intro: string | null;

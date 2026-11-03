@@ -59,6 +59,7 @@ class OesiSetting extends Model
         'tarifario' => 'array',
         'documentos' => 'array',
         'formularios' => 'array',
+        'casos_inscripcion' => 'array',
         'faqs' => 'array',
     ];
 

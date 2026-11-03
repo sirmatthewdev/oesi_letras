@@ -82,6 +82,7 @@ class OficinaDeSuficiencia extends Page
                         Tab::make('Cronograma')->schema($this->cronograma()),
                         Tab::make('Inscripción')->schema($this->inscripcion()),
                         Tab::make('Tarifario')->schema($this->tarifario()),
+                        Tab::make('Asistente')->schema($this->asistente()),
                         Tab::make('Preguntas')->schema($this->preguntas()),
                     ]),
             ])
@@ -580,6 +581,43 @@ class OficinaDeSuficiencia extends Page
                                 ->columnSpanFull(),
                         ]),
                     Textarea::make('tarifario_nota')->label('Nota')->rows(2),
+                ]),
+        ];
+    }
+
+    /** @return list<mixed> */
+    private function asistente(): array
+    {
+        return [
+            Section::make('Asistente de inscripción')
+                ->description('Cada caso es una opción de «¿Cuál es tu caso?» en la página de Inscripción: quien la elige ve solo su derecho de examen y su formulario. Sin casos, la página muestra todas las tarifas y formularios, como siempre. El concepto y el formulario se escriben exactamente como en las pestañas Tarifario e Inscripción: si no coinciden, el caso no se muestra.')
+                ->schema([
+                    Repeater::make('casos_inscripcion')
+                        ->hiddenLabel()
+                        ->addActionLabel('Añadir caso')
+                        ->defaultItems(0)
+                        ->collapsible()
+                        ->itemLabel(fn (array $state): ?string => $state['caso'] ?? null)
+                        ->columns(2)
+                        ->schema([
+                            TextInput::make('caso')
+                                ->required()
+                                ->maxLength(80)
+                                ->placeholder('Bachiller de la FLCH, examen presencial'),
+                            TextInput::make('detalle')
+                                ->label('Aclaración (opcional)')
+                                ->maxLength(160),
+                            TextInput::make('tarifa')
+                                ->label('Concepto de pago')
+                                ->helperText('Tal cual en Tarifario, p. ej. «Examen Ordinario (Presencial o Virtual)».')
+                                ->required()
+                                ->maxLength(150),
+                            TextInput::make('formulario')
+                                ->label('Formulario')
+                                ->helperText('El nombre tal cual en Inscripción o en Cronograma, p. ej. «Pregrado».')
+                                ->required()
+                                ->maxLength(80),
+                        ]),
                 ]),
         ];
     }

@@ -24,6 +24,7 @@ import Icono from '../Icono.astro';
 import RedesSociales from '../RedesSociales.astro';
 import CopiarDato from './CopiarDato.astro';
 import HeroIdiomas from './HeroIdiomas.astro';
+import BuscadorExamen from './BuscadorExamen.astro';
 import fachada from '../../assets/campus-fachada.webp';
 import type { Oesi } from '../../lib/api';
 import { faWhatsapp } from '@fortawesome/free-brands-svg-icons';
@@ -78,6 +79,8 @@ const COLORES_CIFRA = ['var(--color-unmsm-dorado)', 'var(--color-unmsm-acento)',
             </div>
         )
     }
+
+    <BuscadorExamen idiomas={oesi.idiomas} fechas={oesi.cronograma.fechas} whatsapp={wa?.enlace ?? null} />
 
     <div class="mx-auto grid max-w-7xl items-center gap-12 px-4 pb-14 lg:grid-cols-[1.05fr_1fr] lg:gap-16 lg:px-8 lg:pb-20">
         <div class="max-w-xl">

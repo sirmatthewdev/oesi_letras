@@ -328,6 +328,31 @@ class OesiTest extends TestCase
             ->assertJsonPath('data.cronograma.fechas.0.publico', null);
     }
 
+    public function test_sin_casos_escritos_el_asistente_no_tiene_nada_que_ofrecer(): void
+    {
+        $this->publicar();
+
+        $this->getJson('/api/v1/oesi')->assertJsonPath('data.inscripcion.casos', []);
+    }
+
+    public function test_un_caso_se_resuelve_con_su_tarifa_y_su_formulario_y_si_no_existen_se_omite(): void
+    {
+        $this->publicar([
+            'casos_inscripcion' => [
+                'a' => ['caso' => 'Bachiller de la FLCH', 'tarifa' => '  examen de suficiencia presencial para bachiller (flch) ', 'formulario' => 'Formulario para bachilleres'],
+                'b' => ['caso' => 'Con tarifa que no existe', 'tarifa' => 'Examen gratuito', 'formulario' => 'Pregrado'],
+                'c' => ['caso' => 'Con formulario que no existe', 'tarifa' => 'Duplicado de Certificado', 'formulario' => 'Otro'],
+            ],
+        ]);
+
+        $this->getJson('/api/v1/oesi')
+            ->assertJsonCount(1, 'data.inscripcion.casos')
+            ->assertJsonPath('data.inscripcion.casos.0.caso', 'Bachiller de la FLCH')
+            ->assertJsonPath('data.inscripcion.casos.0.tarifa.monto', 50)
+            ->assertJsonPath('data.inscripcion.casos.0.tarifa.url_pago', fn ($u) => str_starts_with($u, 'https://sanmarket.unmsm.edu.pe/'))
+            ->assertJsonPath('data.inscripcion.casos.0.formulario.nombre', 'Formulario para bachilleres');
+    }
+
     public function test_las_redes_salen_como_clave_y_enlace(): void
     {
         $this->publicar();

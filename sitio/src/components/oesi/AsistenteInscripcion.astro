@@ -1,0 +1,131 @@
+---
+/**
+ * «¿Cuál es tu caso?», en /inscripcion: el asistente de la referencia (el
+ * examen de clasificación de Idiomas PUCP), con los casos que define la
+ * oficina en el panel (pestaña Asistente). Al elegir uno se ve solo lo suyo:
+ * qué derecho pagar, con su botón de San Market, y qué formulario enviar.
+ *
+ * No adivina: sin casos escritos no se pinta, y la página muestra todas las
+ * tarifas y formularios, como siempre. Esas secciones siguen debajo igual,
+ * para quien prefiera verlo todo.
+ *
+ * Funciona sin JavaScript: son radios de verdad, y el resultado de cada uno
+ * se muestra con `:has(:checked)`.
+ */
+import Icono from '../Icono.astro';
+import type { Oesi } from '../../lib/api';
+import { soles } from '../../lib/oesi';
+import { faFileSignature, faReceipt, faUpRightFromSquare } from '@fortawesome/free-solid-svg-icons';
+
+interface Props {
+    casos: Oesi['inscripcion']['casos'];
+}
+
+const { casos } = Astro.props;
+---
+
+{
+    casos.length > 0 && (
+        <section aria-labelledby="t-asistente" class="asistente mx-auto mt-10 max-w-3xl rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200 sm:p-8">
+            <h2 id="t-asistente" class="font-serif text-2xl font-extrabold text-unmsm-azul">
+                ¿Cuál es tu <span class="text-unmsm-acento">caso?</span>
+            </h2>
+            <p class="mt-1 text-sm text-slate-600">Elige el tuyo y te decimos qué pagar y qué formulario enviar.</p>
+
+            <fieldset class="mt-5">
+                <legend class="sr-only">Tu caso</legend>
+                <div class="grid gap-2 sm:grid-cols-2">
+                    {casos.map((c, i) => (
+                        <label class="opcion flex cursor-pointer items-start gap-3 rounded-2xl p-4 ring-1 ring-slate-200 transition hover:ring-unmsm-acento">
+                            <input type="radio" name="caso" value={String(i)} class="mt-1 h-4 w-4 flex-none accent-[var(--color-unmsm-acento)]" />
+                            <span>
+                                <span class="block font-semibold text-unmsm-azul">{c.caso}</span>
+                                {c.detalle && <span class="block text-sm text-slate-600">{c.detalle}</span>}
+                            </span>
+                        </label>
+                    ))}
+                </div>
+            </fieldset>
+
+            {casos.map((c, i) => (
+                <div class="resultado mt-6 border-t border-slate-200 pt-6" data-caso={String(i)} aria-live="polite">
+                    <ol class="grid gap-3 sm:grid-cols-2">
+                        <li class="rounded-2xl bg-slate-50 p-5">
+                            <p class="flex items-center gap-2 text-[0.7rem] font-semibold uppercase tracking-wider text-slate-500">
+                                <Icono icono={faReceipt} clase="h-3.5 w-3.5 text-unmsm-dorado" />
+                                Paso 1 · Paga
+                            </p>
+                            <p class="mt-2 font-semibold text-slate-800">{c.tarifa.concepto}</p>
+                            <p class="mt-1 font-serif text-2xl font-extrabold text-unmsm-azul">{soles(c.tarifa.monto)}</p>
+                            <a href={c.tarifa.url_pago} target="_blank" rel="noopener noreferrer" class="mt-4 inline-flex items-center gap-2 rounded-full bg-unmsm-azul px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-unmsm-azul-dark">
+                                Pagar en San Market
+                                <Icono icono={faUpRightFromSquare} clase="h-3 w-3" />
+                                <span class="sr-only">(se abre en una pestaña nueva)</span>
+                            </a>
+                        </li>
+                        <li class="rounded-2xl bg-slate-50 p-5">
+                            <p class="flex items-center gap-2 text-[0.7rem] font-semibold uppercase tracking-wider text-slate-500">
+                                <Icono icono={faFileSignature} clase="h-3.5 w-3.5 text-unmsm-dorado" />
+                                Paso 2 · Envía el formulario
+                            </p>
+                            <p class="mt-2 font-semibold text-slate-800">{c.formulario.nombre}</p>
+                            {c.formulario.descripcion && <p class="mt-1 text-sm text-slate-600">{c.formulario.descripcion}</p>}
+                            <a href={c.formulario.url} target="_blank" rel="noopener noreferrer" class="mt-4 inline-flex items-center gap-2 rounded-full border-2 border-unmsm-azul px-5 py-2 text-sm font-semibold text-unmsm-azul transition hover:bg-unmsm-azul hover:text-white">
+                                Abrir el formulario
+                                <Icono icono={faUpRightFromSquare} clase="h-3 w-3" />
+                                <span class="sr-only">(se abre en una pestaña nueva)</span>
+                            </a>
+                        </li>
+                    </ol>
+                    <p class="mt-4 text-sm text-slate-600">
+                        Ten listos tus documentos en PDF: <a href="#paso-formulario" class="font-semibold text-unmsm-azul hover:underline">ver cuáles</a>.
+                    </p>
+                </div>
+            ))}
+        </section>
+    )
+}
+
+<style>
+    .resultado {
+        display: none;
+    }
+
+    /* El resultado del radio marcado. Un selector por caso: se generan con
+       los índices de los casos, que son pocos. */
+    .asistente:has(input[value='0']:checked) .resultado[data-caso='0'],
+    .asistente:has(input[value='1']:checked) .resultado[data-caso='1'],
+    .asistente:has(input[value='2']:checked) .resultado[data-caso='2'],
+    .asistente:has(input[value='3']:checked) .resultado[data-caso='3'],
+    .asistente:has(input[value='4']:checked) .resultado[data-caso='4'],
+    .asistente:has(input[value='5']:checked) .resultado[data-caso='5'],
+    .asistente:has(input[value='6']:checked) .resultado[data-caso='6'],
+    .asistente:has(input[value='7']:checked) .resultado[data-caso='7'],
+    .asistente:has(input[value='8']:checked) .resultado[data-caso='8'],
+    .asistente:has(input[value='9']:checked) .resultado[data-caso='9'] {
+        display: block;
+    }
+
+    .opcion:has(input:checked) {
+        background-color: rgb(31 111 184 / 0.06);
+        box-shadow: 0 0 0 2px var(--color-unmsm-acento);
+    }
+</style>
+
+<script>
+    // Con más de diez casos, los selectores de arriba no llegan: el resultado
+    // se muestra desde aquí. Con diez o menos esto no hace nada que no haga
+    // ya el CSS.
+    function iniciarAsistente() {
+        document.querySelectorAll<HTMLElement>('.asistente').forEach((a) => {
+            if (a.dataset.listo) return;
+            a.dataset.listo = '1';
+            a.addEventListener('change', (e) => {
+                const v = (e.target as HTMLInputElement).value;
+                a.querySelectorAll<HTMLElement>('.resultado').forEach((r) => (r.style.display = r.dataset.caso === v ? 'block' : ''));
+            });
+        });
+    }
+    iniciarAsistente();
+    document.addEventListener('astro:page-load', iniciarAsistente);
+</script>

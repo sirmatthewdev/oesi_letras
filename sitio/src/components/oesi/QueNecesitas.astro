@@ -1,0 +1,87 @@
+---
+/**
+ * «¿Qué necesitas?»: los dos caminos de quien llega, como el «¿Cómo deseas
+ * empezar?» de la referencia, en una banda azul con la textura de los saludos
+ * de cada idioma (los del panel) escritos de fondo. Quien va a rendir el
+ * examen empieza por la fecha; quien ya lo rindió busca resultados,
+ * certificado o un duplicado. Las dos tarjetas llevan a páginas que ya existen.
+ */
+import Icono from '../Icono.astro';
+import type { Oesi } from '../../lib/api';
+import { faArrowRight, faAward, faCalendarDays } from '@fortawesome/free-solid-svg-icons';
+
+interface Props {
+    idiomas: Oesi['idiomas'];
+}
+
+const saludos = Astro.props.idiomas.map((i) => i.saludo).filter(Boolean) as string[];
+// La textura repite los saludos hasta llenar la banda; es decorativa.
+const textura = Array.from({ length: 4 }, () => saludos).flat();
+
+const CAMINOS = [
+    {
+        titulo: 'Quiero rendir el examen',
+        texto: 'Elige la fecha de tu idioma, paga el derecho de examen y envía el formulario con tus documentos.',
+        icono: faCalendarDays,
+        enlaces: [
+            { texto: 'Empezar: elige tu fecha', href: '/cronograma', principal: true },
+            { texto: 'Antes, conoce el examen', href: '/examen' },
+        ],
+    },
+    {
+        titulo: 'Ya rendí el examen',
+        texto: 'Cuándo llegan los resultados, cuánto dura el certificado y cómo pedir un duplicado.',
+        icono: faAward,
+        enlaces: [
+            { texto: 'Resultados y certificado', href: '/examen#despues', principal: true },
+            { texto: 'Dudas sobre resultados', href: '/preguntas#faq-resultados' },
+        ],
+    },
+];
+---
+
+<section aria-labelledby="t-que-necesitas" class="relative isolate overflow-hidden bg-unmsm-azul py-20 text-white">
+    {
+        textura.length > 0 && (
+            <div aria-hidden="true" class="pointer-events-none absolute inset-0 -z-10 flex flex-wrap content-center justify-center gap-x-10 gap-y-2 overflow-hidden opacity-[0.07]">
+                {textura.map((s, i) => (
+                    <span class:list={['whitespace-nowrap font-serif font-extrabold italic', i % 3 === 0 ? 'text-7xl' : i % 3 === 1 ? 'text-5xl' : 'text-6xl']}>{s}</span>
+                ))}
+            </div>
+        )
+    }
+
+    <div class="mx-auto max-w-5xl px-6">
+        <h2 id="t-que-necesitas" class="text-center font-serif text-3xl font-extrabold sm:text-4xl">
+            ¿Qué <span class="text-unmsm-dorado-light">necesitas?</span>
+        </h2>
+
+        <ul class="mt-10 grid gap-5 md:grid-cols-2">
+            {
+                CAMINOS.map((c) => (
+                    <li class="flex flex-col rounded-3xl bg-white p-7 text-slate-700 shadow-xl shadow-black/10">
+                        <span aria-hidden="true" class="flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-50 text-unmsm-acento">
+                            <Icono icono={c.icono} clase="h-5 w-5" />
+                        </span>
+                        <h3 class="mt-5 font-serif text-xl font-bold text-unmsm-azul">{c.titulo}</h3>
+                        <p class="mt-2 text-sm leading-relaxed text-slate-600">{c.texto}</p>
+                        <p class="mt-auto flex flex-wrap items-center gap-3 pt-6">
+                            {c.enlaces.map((e) =>
+                                e.principal ? (
+                                    <a href={e.href} class="inline-flex items-center gap-2 rounded-full bg-unmsm-azul px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-unmsm-azul-dark">
+                                        {e.texto}
+                                        <Icono icono={faArrowRight} clase="h-3.5 w-3.5" />
+                                    </a>
+                                ) : (
+                                    <a href={e.href} class="text-sm font-semibold text-unmsm-azul hover:underline">
+                                        {e.texto}
+                                    </a>
+                                )
+                            )}
+                        </p>
+                    </li>
+                ))
+            }
+        </ul>
+    </div>
+</section>

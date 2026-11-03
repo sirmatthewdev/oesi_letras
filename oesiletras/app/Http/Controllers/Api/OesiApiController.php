@@ -181,6 +181,7 @@ class OesiApiController extends Controller
                 'documentos' => $this->textos($o->documentos),
                 'formularios' => $this->enlaces($o->formularios),
                 'cierre' => $o->inscripcion_cierre ?: null,
+                'casos' => $this->casos($o),
             ],
 
             'faqs' => [
@@ -254,6 +255,48 @@ class OesiApiController extends Controller
     private function imagen(?string $url, ?string $alt): ?array
     {
         return filled($url) ? ['url' => $url, 'alt' => (string) $alt] : null;
+    }
+
+    /**
+     * Los casos del asistente, ya resueltos: cada uno con la tarifa y el
+     * formulario que le corresponden, buscados por su nombre en el tarifario y
+     * en los formularios (los de la convocatoria y los de otros trámites). Un
+     * caso cuya tarifa o formulario no existe se omite: mejor que falte a que
+     * lleve a pagar o a enviar algo que no es.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function casos(OesiSetting $o): array
+    {
+        $clave = fn (?string $t) => mb_strtolower(trim(preg_replace('/\s+/', ' ', (string) $t)));
+
+        $tarifas = collect($this->lista($o->tarifario))->keyBy(fn ($t) => $clave($t['concepto'] ?? ''));
+        $formularios = collect($this->enlaces($o->cronograma_formularios))
+            ->merge($this->enlaces($o->formularios))
+            ->keyBy(fn ($f) => $clave($f['nombre']));
+
+        return collect($this->lista($o->casos_inscripcion))
+            ->map(function (array $c) use ($clave, $tarifas, $formularios) {
+                $tarifa = $tarifas->get($clave($c['tarifa'] ?? ''));
+                $formulario = $formularios->get($clave($c['formulario'] ?? ''));
+                if (! filled($c['caso'] ?? null) || ! $tarifa || ! $formulario || ! filled($tarifa['url_pago'] ?? null)) {
+                    return null;
+                }
+
+                return [
+                    'caso' => (string) $c['caso'],
+                    'detalle' => ($c['detalle'] ?? null) ?: null,
+                    'tarifa' => [
+                        'concepto' => (string) $tarifa['concepto'],
+                        'monto' => $this->monto($tarifa['monto'] ?? null),
+                        'url_pago' => $tarifa['url_pago'],
+                    ],
+                    'formulario' => $formulario,
+                ];
+            })
+            ->filter()
+            ->values()
+            ->all();
     }
 
     /**

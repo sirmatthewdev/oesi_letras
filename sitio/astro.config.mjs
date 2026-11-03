@@ -28,8 +28,13 @@ export default defineConfig({
     // Optimizacion de imagenes sobre las que sirve Laravel. Astro las descarga
     // en el build, genera varios anchos y las convierte a AVIF/WebP. Hace
     // falta autorizar el origen: por seguridad no procesa cualquier URL remota.
+    //
+    // letras.unmsm.edu.pe, de donde vienen el cronograma, el flyer y las guías
+    // de pago: se autoriza solo para leer sus medidas (ImagenConRespaldo), que
+    // es lo que evita que la página salte al cargarlas. Esas imágenes se siguen
+    // sirviendo tal cual con <img>, sin descargarlas en el build.
     image: {
-        domains: ['localhost', 'web', 'suficiencialetras.unmsm.edu.pe'],
+        domains: ['localhost', 'web', 'suficiencialetras.unmsm.edu.pe', 'letras.unmsm.edu.pe'],
     },
     output: 'static',
     server: { host: true, port: 4321 },
