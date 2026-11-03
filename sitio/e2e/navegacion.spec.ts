@@ -81,8 +81,28 @@ test.describe('El recorrido no tiene callejones sin salida', () => {
         const destinos = await page
             .locator('a')
             .filter({ hasText: /^\s*Inscríbete\s*$/ })
-            .evaluateAll((a) => [...new Set(a.map((x) => x.getAttribute('href')))]);
+            .evaluateAll((a) => [...new Set(a.map((x) => new URL(x.getAttribute('href') ?? '', location.href).pathname))]);
+        // Los del hero llevan además su idioma (`?idioma=…`): la misma página, filtrada.
         expect(destinos).toEqual(['/cronograma']);
+    });
+
+    test('desde el panel de un idioma, el cronograma llega filtrado por ese idioma', async ({ page }) => {
+        await page.goto('/');
+        const enlace = page.locator('[data-panel]').filter({ hasText: /francés/i }).locator('a', { hasText: 'Inscríbete' });
+        await expect(enlace).toHaveAttribute('href', '/cronograma?idioma=frances');
+
+        await page.goto('/cronograma?idioma=frances');
+        await expect(page.locator('[data-filtros] [aria-pressed="true"]')).toHaveText(/Francés/);
+        const visibles = await page
+            .locator('#cronograma .examen:not([hidden])')
+            .evaluateAll((e) => e.map((x) => (x as HTMLElement).dataset.idioma));
+        expect(visibles.length).toBeGreaterThan(0);
+        expect(new Set(visibles)).toEqual(new Set(['frances']));
+
+        // «Todos los idiomas» vuelve a la lista completa y limpia la dirección.
+        await page.locator('[data-filtros] button', { hasText: 'Todos los idiomas' }).click();
+        await expect(page).toHaveURL(/\/cronograma$/);
+        expect(await page.locator('#cronograma .examen:not([hidden])').count()).toBeGreaterThan(visibles.length);
     });
 
     test('en la portada el primer título es el de la oficina', async ({ page }) => {

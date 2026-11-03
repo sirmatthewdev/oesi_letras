@@ -59,6 +59,10 @@ const ahora = new Date();
 const ordenadas = [...fechas].sort((a, b) => a.inicio.localeCompare(b.inicio));
 const mes = (f: FechaExamen) => f.inicio.slice(0, 7);
 
+// La clave de un idioma en los filtros y en la dirección (`?idioma=frances`):
+// la misma que usa el hero para enlazar aquí.
+const clave = (nombre: string) => normalizar(nombre).replace(/\s+/g, '-');
+
 const proximas = vigentes(ordenadas, ahora);
 const hayProximas = proximas.length > 0;
 // Los meses con algo por venir; sin nada por venir, el último registrado.
@@ -72,7 +76,12 @@ const carteles = clavesMes.map((clave) => {
     const p = piezas(de[0].inicio);
     return { clave, mes: p.mes, anio: clave.slice(0, 4), fechas: de };
 });
-const idiomas = [...new Set(carteles.flatMap((c) => c.fechas.map((f) => f.idioma)))];
+// Los idiomas del filtro: todos los del panel, en su orden, y los que solo
+// aparezcan en el cronograma. Así se puede elegir el propio aunque este mes no
+// tenga examen, y la página lo dice.
+const idiomas = [...ordenIdiomas, ...carteles.flatMap((c) => c.fechas.map((f) => f.idioma))].filter(
+    (i, k, todos) => todos.findIndex((x) => normalizar(x) === normalizar(i)) === k
+);
 const modalidades = [...new Set(carteles.flatMap((c) => c.fechas.map((f) => f.modalidad)))];
 
 // La fecha del próximo examen, para resaltarlo (lo corrige el script al cargar).
@@ -140,14 +149,16 @@ const estado = (f: FechaExamen): Estado =>
         )
     }
 
-    {/* Filtros, solo si hay de qué filtrar y algo por venir. Sin JavaScript no
-        se ven (`hidden`) y el cartel sale entero. */}
+    {/* Filtros encima del cartel: todos los idiomas o uno, y la modalidad. El
+        elegido va en la dirección (`?idioma=frances`), así que se puede
+        compartir; el hero de la portada enlaza así a cada idioma. Sin
+        JavaScript no se ven (`hidden`) y el cartel sale entero. */}
     {
-        hayProximas && (idiomas.length > 1 || modalidades.length > 1) && (
+        carteles.length > 0 && (idiomas.length > 1 || modalidades.length > 1) && (
             <div class="mt-6 flex flex-wrap items-center gap-2" role="group" aria-label="Filtrar por idioma o modalidad" data-filtros hidden>
-                <button type="button" class="filtro" data-filtro="" aria-pressed="true">Todos</button>
+                <button type="button" class="filtro" data-filtro="" aria-pressed="true">Todos los idiomas</button>
                 {idiomas.map((i) => (
-                    <button type="button" class="filtro" data-filtro={`idioma:${normalizar(i)}`} aria-pressed="false" style={`--idioma-color: ${colorIdioma(i)}`}>
+                    <button type="button" class="filtro" data-filtro={`idioma:${clave(i)}`} data-nombre={i} aria-pressed="false" style={`--idioma-color: ${colorIdioma(i)}`}>
                         <span aria-hidden="true" class="punto-idioma" />
                         {i}
                     </button>
@@ -155,7 +166,7 @@ const estado = (f: FechaExamen): Estado =>
                 {modalidades.length > 1 && (
                     <span class="inline-flex gap-1 rounded-full bg-slate-100 p-1">
                         {modalidades.map((m) => (
-                            <button type="button" class="filtro" data-filtro={`modalidad:${m}`} aria-pressed="false">
+                            <button type="button" class="filtro" data-filtro={`modalidad:${m}`} data-nombre={m === 'presencial' ? 'modalidad presencial' : 'modalidad virtual'} aria-pressed="false">
                                 <Icono icono={m === 'presencial' ? faBuildingColumns : faLaptop} clase="h-3 w-3" />
                                 {m === 'presencial' ? 'Presencial' : 'Virtual'}
                             </button>
@@ -197,7 +208,7 @@ const estado = (f: FechaExamen): Estado =>
                                 class="examen flex items-stretch"
                                 data-inicio={f.inicio}
                                 data-cierre={f.cierre_inscripcion}
-                                data-idioma={normalizar(f.idioma)}
+                                data-idioma={clave(f.idioma)}
                                 data-modalidad={f.modalidad}
                                 data-estado={e}
                                 data-proximo={f.inicio.slice(0, 10) === proximoInicio ? '' : undefined}
@@ -277,7 +288,14 @@ const estado = (f: FechaExamen): Estado =>
     }
 
     <p class="mt-6 hidden rounded-2xl bg-white px-5 py-4 text-sm text-slate-600 ring-1 ring-slate-200" data-sin-resultados>
-        No hay exámenes con ese filtro. <button type="button" class="font-semibold text-unmsm-azul underline" data-filtro="">Ver todos</button>
+        <span data-sin-texto>No hay exámenes con ese filtro en este cronograma.</span>
+        {whatsapp && (
+            <>
+                {' '}
+                <a href={whatsapp.enlace} target="_blank" rel="noopener noreferrer" class="font-semibold text-unmsm-azul underline">Pregúntanos por WhatsApp</a> o
+            </>
+        )}{' '}
+        <button type="button" class="font-semibold text-unmsm-azul underline" data-filtro="">ver todos los idiomas</button>.
     </p>
 
     {/* Ni siquiera un cronograma anterior: lo dice, y da el contacto. */}
@@ -449,22 +467,41 @@ const estado = (f: FechaExamen): Estado =>
         filtros.hidden = false;
         const sinResultados = raiz.querySelector<HTMLElement>('[data-sin-resultados]')!;
 
-        const aplicar = (filtro: string) => {
+        const sinTexto = raiz.querySelector<HTMLElement>('[data-sin-texto]')!;
+        const botones = [...filtros.querySelectorAll<HTMLButtonElement>('[data-filtro]')];
+
+        const aplicar = (filtro: string, { guardar = true } = {}) => {
             const [campo, valor] = filtro.split(':');
-            filtros.querySelectorAll<HTMLButtonElement>('[data-filtro]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.filtro === filtro)));
+            botones.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.filtro === filtro)));
             let visibles = 0;
             examenes.forEach((e) => {
                 e.hidden = !!filtro && e.dataset[campo as 'idioma' | 'modalidad'] !== valor;
                 if (!e.hidden) visibles++;
             });
             raiz.querySelectorAll<HTMLElement>('[data-cartel]').forEach((c) => (c.hidden = !c.querySelector('.examen:not([hidden])')));
+            const nombre = botones.find((b) => b.dataset.filtro === filtro)?.dataset.nombre;
+            sinTexto.textContent = nombre ? `No hay exámenes de ${nombre} en este cronograma.` : 'No hay exámenes con ese filtro en este cronograma.';
             sinResultados.classList.toggle('hidden', visibles > 0);
+
+            // El filtro, en la dirección: se puede compartir y sobrevive a recargar.
+            if (guardar) {
+                const url = new URL(location.href);
+                url.searchParams.delete('idioma');
+                url.searchParams.delete('modalidad');
+                if (filtro) url.searchParams.set(campo, valor);
+                history.replaceState(history.state, '', url);
+            }
         };
 
         raiz.addEventListener('click', (e) => {
             const b = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-filtro]');
             if (b) aplicar(b.dataset.filtro ?? '');
         });
+
+        // Al llegar con `?idioma=…` (desde el hero) o `?modalidad=…`, ya filtrado.
+        const pedido = new URLSearchParams(location.search);
+        const inicial = ['idioma', 'modalidad'].map((c) => (pedido.get(c) ? `${c}:${pedido.get(c)}` : '')).find(Boolean);
+        if (inicial && botones.some((b) => b.dataset.filtro === inicial)) aplicar(inicial, { guardar: false });
     }
 
     iniciarCronograma();

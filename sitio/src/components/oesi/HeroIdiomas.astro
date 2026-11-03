@@ -152,8 +152,9 @@ const MODALIDADES = {
                             {/* «Inscríbete» lleva al primer paso —elegir la fecha—, igual
                                 que el botón de la cabecera: antes aquí saltaba al pago
                                 y el mismo botón llevaba a dos sitios. */}
+                            {/* Al cronograma ya filtrado por este idioma. */}
                             <a
-                                href="/cronograma"
+                                href={`/cronograma?idioma=${clave(idioma.nombre)}`}
                                 class="inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-semibold text-unmsm-azul shadow-sm transition hover:bg-unmsm-dorado-light hover:text-unmsm-azul-dark"
                             >
                                 <Icono icono={faUserPlus} clase="h-4 w-4" />
