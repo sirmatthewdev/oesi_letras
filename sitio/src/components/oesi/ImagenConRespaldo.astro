@@ -1,4 +1,5 @@
 ---
+import { inferRemoteSize } from 'astro:assets';
 import Icono from '../Icono.astro';
 import { faCircleExclamation, faUpRightFromSquare } from '@fortawesome/free-solid-svg-icons';
 import { faWhatsapp } from '@fortawesome/free-brands-svg-icons';
@@ -30,7 +31,32 @@ const { imagen, enlace, queEs, whatsapp, alternativa, clase = '', prioritaria = 
  * servidor tarda o está caído, se cae la construcción del sitio entero —los 39
  * cursos incluidos— por una imagen de otra web. Con <img> la descarga la hace
  * el navegador, y si falla se ve el respaldo de abajo en vez de un hueco.
+ *
+ * Lo que sí se pide en el build son sus medidas: `inferRemoteSize` lee solo
+ * la cabecera del fichero. Con ellas el <img> lleva `width` y `height` y el
+ * navegador reserva el hueco; sin ellas la imagen nacía con alto cero y, al
+ * cargar, empujaba lo de debajo (el pie de la portada saltaba al llegar al
+ * flyer). Con un tope de tiempo y sin hacer caer nada: si el servidor no
+ * responde, la imagen sale sin medidas, como antes.
  */
+let medidas: { width: number; height: number } | null = null;
+let tope: ReturnType<typeof setTimeout> | undefined;
+try {
+    const r = await Promise.race([
+        inferRemoteSize(imagen.url),
+        new Promise<never>((_, rechazar) => (tope = setTimeout(() => rechazar(new Error('sin respuesta')), 4000))),
+    ]);
+    if (r.width && r.height) medidas = { width: r.width, height: r.height };
+} catch (e) {
+    // En el log del build, para saber por qué una imagen salió sin medidas.
+    console.warn(`[ImagenConRespaldo] sin medidas para ${imagen.url}: ${(e as Error).message}`);
+    medidas = null;
+} finally {
+    clearTimeout(tope);
+}
+// Tampoco más ancha que su resolución: a más, el navegador la amplía y se ve
+// borrosa. Con medidas se resuelve aquí; sin ellas, el script de abajo.
+const tamano = medidas ? { width: medidas.width, height: medidas.height, style: `max-width: ${medidas.width}px` } : {};
 ---
 
 <figure class:list={['imagen-oesi', clase]} data-imagen-oesi>
@@ -42,7 +68,8 @@ const { imagen, enlace, queEs, whatsapp, alternativa, clase = '', prioritaria = 
                     alt={imagen.alt}
                     loading={prioritaria ? 'eager' : 'lazy'}
                     decoding="async"
-                    class="mx-auto w-full rounded-xl shadow-md transition duration-300 hover:shadow-lg"
+                    {...tamano}
+                    class="mx-auto h-auto w-full rounded-xl shadow-md transition duration-300 hover:shadow-lg"
                 />
                 <span class="sr-only"> (se abre en una pestaña nueva)</span>
             </a>
@@ -52,7 +79,8 @@ const { imagen, enlace, queEs, whatsapp, alternativa, clase = '', prioritaria = 
                 alt={imagen.alt}
                 loading={prioritaria ? 'eager' : 'lazy'}
                 decoding="async"
-                class="mx-auto w-full rounded-xl shadow-md"
+                {...tamano}
+                class="mx-auto h-auto w-full rounded-xl shadow-md"
                 data-imagen-cuerpo
             />
         )

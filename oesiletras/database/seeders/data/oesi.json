@@ -284,6 +284,8 @@
         { "nombre": "Solicitud de duplicado", "url": "https://forms.gle/stPNDN1qJTkwrHcNA" }
     ],
     "inscripcion_cierre": "Se debe llenar el formato en línea con todos los datos requeridos.",
+    "_casos_inscripcion": "Vacío a propósito: qué tarifa y qué formulario corresponden a cada perfil lo define la oficina en el panel. Sin casos, la página de inscripción muestra todas las opciones.",
+    "casos_inscripcion": null,
 
     "faqs_intro": "Resuelve tus dudas sobre el examen de suficiencia en idiomas. Toca una pregunta para ver la respuesta.",
     "faqs": [

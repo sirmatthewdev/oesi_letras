@@ -41,6 +41,8 @@ import ContactoDudas from '../../components/oesi/ContactoDudas.astro';
 import Continua from '../../components/oesi/Continua.astro';
 import IndiceFijo from '../../components/oesi/IndiceFijo.astro';
 import FechasCronograma from '../../components/oesi/FechasCronograma.astro';
+import QueNecesitas from '../../components/oesi/QueNecesitas.astro';
+import AsistenteInscripcion from '../../components/oesi/AsistenteInscripcion.astro';
 import { vigentes } from '../../lib/fechas';
 import type { Oesi } from '../../lib/api';
 import { Image } from 'astro:assets';
@@ -518,6 +520,9 @@ const PASOS_INICIO = [
                         </div>
                     </section>
                 </div>
+
+            {/* ══ ¿Qué necesitas? ══ */}
+            <QueNecesitas idiomas={oesi.idiomas} />
 
             {/* ══ Curso de preparación ══ */}
             <div id="curso-preparacion" class="panel-oesi">
@@ -1187,6 +1192,8 @@ const PASOS_INICIO = [
                                 </span>
                             </p>
                         )}
+
+                        <AsistenteInscripcion casos={inscripcion.casos} />
                     </div>
                 </section>
 
