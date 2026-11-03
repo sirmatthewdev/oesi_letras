@@ -2,6 +2,7 @@
 import BarraSuperior from './BarraSuperior.astro';
 import Icono from './Icono.astro';
 import { faBars, faUserPlus } from '@fortawesome/free-solid-svg-icons';
+import Externo from './Externo.astro';
 import type { ConfiguracionSitio, ItemMenu } from '../lib/api';
 
 interface Props {
@@ -157,9 +158,10 @@ const activo = (item: ItemMenu) =>
                                                 rel={hijo.nueva_pestana ? 'noopener noreferrer' : undefined}
                                                 x-on:click="cerrar()"
                                                 aria-current={mismaSeccion(hijo.enlace) ? 'page' : undefined}
-                                                class="block border-l-2 border-transparent px-4 py-2 text-sm transition hover:border-unmsm-dorado hover:bg-slate-50 hover:text-unmsm-azul aria-[current]:border-unmsm-dorado aria-[current]:text-unmsm-azul"
+                                                class="flex items-center justify-between gap-3 border-l-2 border-transparent px-4 py-2 text-sm transition hover:border-unmsm-dorado hover:bg-slate-50 hover:text-unmsm-azul aria-[current]:border-unmsm-dorado aria-[current]:text-unmsm-azul"
                                             >
                                                 {hijo.etiqueta}
+                                                {hijo.nueva_pestana && <Externo />}
                                             </a>
                                         </li>
                                     ))}
@@ -177,6 +179,7 @@ const activo = (item: ItemMenu) =>
                                 ]}
                             >
                                 {item.etiqueta}
+                                {item.nueva_pestana && <Externo />}
                             </a>
                         )
                     )
@@ -203,6 +206,12 @@ const activo = (item: ItemMenu) =>
                 </button>
             </div>
         </div>
+
+        {/* Velo del menú móvil: oscurece la página mientras el menú está
+            abierto —antes el título de la página competía con las opciones— y
+            al tocarlo se cierra. Dentro de la cabecera (z-50) y por debajo de su
+            contenido, así queda entre la página y el menú. */}
+        <div id="velo-menu" hidden class="velo-menu fixed inset-0 -z-10 bg-slate-900/40 lg:hidden" aria-hidden="true"></div>
 
         {/* Los paneles cuelgan de la cápsula y siguen su ancho, para que se lean
             como parte de ella y no como cajas sueltas pegadas debajo. */}
@@ -231,9 +240,10 @@ const activo = (item: ItemMenu) =>
                                                         target={hijo.nueva_pestana ? '_blank' : undefined}
                                                         rel={hijo.nueva_pestana ? 'noopener noreferrer' : undefined}
                                                         aria-current={mismaSeccion(hijo.enlace) ? 'page' : undefined}
-                                                        class="block rounded-lg px-3 py-2 text-sm text-slate-600 transition hover:bg-slate-100 hover:text-unmsm-azul aria-[current]:font-semibold aria-[current]:text-unmsm-azul"
+                                                        class="flex items-center justify-between gap-3 rounded-lg px-3 py-2 text-sm text-slate-600 transition hover:bg-slate-100 hover:text-unmsm-azul aria-[current]:font-semibold aria-[current]:text-unmsm-azul"
                                                     >
                                                         {hijo.etiqueta}
+                                                        {hijo.nueva_pestana && <Externo />}
                                                     </a>
                                                 </li>
                                             ))}
@@ -245,9 +255,10 @@ const activo = (item: ItemMenu) =>
                                         target={item.nueva_pestana ? '_blank' : undefined}
                                         rel={item.nueva_pestana ? 'noopener noreferrer' : undefined}
                                         aria-current={activo(item) ? 'page' : undefined}
-                                        class="block rounded-lg px-3 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-100 aria-[current]:bg-slate-100 aria-[current]:text-unmsm-azul"
+                                        class="flex items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-100 aria-[current]:bg-slate-100 aria-[current]:text-unmsm-azul"
                                     >
                                         {item.etiqueta}
+                                        {item.nueva_pestana && <Externo />}
                                     </a>
                                 )}
                             </li>
@@ -265,6 +276,11 @@ const activo = (item: ItemMenu) =>
 </header>
 
 <style is:global>
+    /* Mientras el menú móvil está abierto, la página no se desplaza. */
+    html.menu-abierto {
+        overflow: hidden;
+    }
+
     /*
      * Los dos estados viven en variables y no en reglas repetidas: el alto lo
      * necesitan también el separador de Base y el hero de las páginas
@@ -609,19 +625,43 @@ const activo = (item: ItemMenu) =>
                     }
                 });
 
+            var velo = document.getElementById('velo-menu');
+
+            // El menú móvil abre con su velo y deja la página quieta debajo:
+            // si no, el dedo que bajaba por el menú arrastraba la página.
+            function menuAbierto(abierto) {
+                if (!menu || !abrirMenu) return;
+                menu.classList.toggle('hidden', !abierto);
+                abrirMenu.setAttribute('aria-expanded', String(abierto));
+                if (velo) velo.hidden = !abierto;
+                document.documentElement.classList.toggle('menu-abierto', abierto);
+            }
+
             abrirMenu &&
                 abrirMenu.addEventListener('click', function () {
-                    alternar(menu, abrirMenu);
+                    menuAbierto(menu.classList.contains('hidden'));
                 });
 
-            // Los destinos del menú son secciones de esta misma página: pulsar
-            // uno cambia el ancla sin navegar, y el panel se quedaría abierto
-            // tapando justo la sección a la que se quería ir.
+            velo &&
+                velo.addEventListener('click', function () {
+                    menuAbierto(false);
+                    abrirMenu && abrirMenu.focus();
+                });
+
+            // Cualquier destino del menú lo cierra: una sección de esta misma
+            // página cambia el ancla sin navegar, y el panel se quedaría abierto
+            // tapando justo lo que se quería ver.
             menu &&
                 menu.addEventListener('click', function (e) {
-                    var enlace = e.target.closest && e.target.closest('a[href*="#"]');
-                    if (enlace && !menu.classList.contains('hidden')) alternar(menu, abrirMenu);
+                    var enlace = e.target.closest && e.target.closest('a');
+                    if (enlace && !menu.classList.contains('hidden')) menuAbierto(false);
                 });
+
+            // `<html>` sobrevive a las transiciones de página: el bloqueo no
+            // puede quedarse puesto si se navega con el menú abierto.
+            document.addEventListener('astro:before-swap', function () {
+                document.documentElement.classList.remove('menu-abierto');
+            });
 
             // Escape cierra lo que este abierto, empezando por el buscador.
             document.addEventListener('keydown', function (e) {
@@ -634,7 +674,7 @@ const activo = (item: ItemMenu) =>
                     alternar(caja, abrirBuscador);
                     abrirBuscador && abrirBuscador.focus();
                 } else if (menu && !menu.classList.contains('hidden')) {
-                    alternar(menu, abrirMenu);
+                    menuAbierto(false);
                     abrirMenu && abrirMenu.focus();
                 }
             });

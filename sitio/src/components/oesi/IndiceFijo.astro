@@ -1,0 +1,154 @@
+---
+/**
+ * Índice fijo bajo la cabecera, para las páginas largas: las secciones de
+ * /examen o los pasos de la inscripción en /cronograma e /inscripcion.
+ *
+ * Aparece cuando ya se ha bajado más allá del principio de la página —ahí
+ * arriba la página ya enseña su recorrido (los pasos grandes, el título)— y
+ * marca dónde se está: la sección que ocupa el centro de la pantalla, o la
+ * página actual si la entrada lleva a otra. En el móvil es una fila de
+ * pastillas que se desliza con el dedo.
+ *
+ * Es `fixed` y no `sticky` a propósito: `sticky` solo se pega dentro de su
+ * sección, y aquí tiene que seguir visible hasta el final. Al ser fijo no
+ * empuja nada al aparecer: la página no da saltos.
+ */
+interface Props {
+    /** Nombre del índice para el lector de pantalla. */
+    etiqueta: string;
+    /** `href` a un ancla de esta página («#requisito») o a otra («/cronograma»). */
+    items: { texto: string; href: string; actual?: boolean }[];
+}
+
+const { etiqueta, items } = Astro.props;
+---
+
+{/* El centinela marca el principio de la página: cuando sale por arriba, el
+    índice entra. */}
+<div data-indice-centinela aria-hidden="true"></div>
+
+<nav aria-label={etiqueta} class="indice-fijo" data-indice-fijo inert>
+    <ol class="mx-auto flex max-w-max gap-1.5 overflow-x-auto rounded-full bg-white/90 p-1.5 shadow-lg ring-1 ring-slate-200 backdrop-blur-md [scrollbar-width:none]">
+        {
+            items.map((item, i) => (
+                <li class="flex-none">
+                    <a
+                        href={item.href}
+                        data-indice-enlace
+                        aria-current={item.actual ? 'step' : undefined}
+                        class="indice-item flex items-center gap-2 whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-unmsm-azul"
+                    >
+                        <span aria-hidden="true" class="indice-numero flex h-5 w-5 items-center justify-center rounded-full bg-slate-100 text-[0.7rem] font-bold text-slate-500">
+                            {i + 1}
+                        </span>
+                        {item.texto}
+                    </a>
+                </li>
+            ))
+        }
+    </ol>
+</nav>
+
+<style>
+    .indice-fijo {
+        position: fixed;
+        z-index: 40;
+        left: 1rem;
+        right: 1rem;
+        /* Bajo la cápsula comprimida: su hueco (1,25 rem), su alto y un respiro. */
+        top: 5rem;
+        opacity: 0;
+        translate: 0 -0.75rem;
+        pointer-events: none;
+        transition:
+            opacity 250ms ease,
+            translate 250ms ease;
+    }
+
+    .indice-fijo[data-visible] {
+        opacity: 1;
+        translate: none;
+        pointer-events: auto;
+    }
+
+    @media (min-width: 64rem) {
+        .indice-fijo {
+            top: 5.5rem;
+        }
+    }
+
+    .indice-item[aria-current] {
+        background-color: var(--color-unmsm-azul);
+        color: #fff;
+    }
+
+    .indice-item[aria-current] .indice-numero {
+        background-color: rgb(255 255 255 / 0.2);
+        color: #fff;
+    }
+
+    /* Con el índice debajo de la cabecera, un ancla tiene que quedarse más
+       abajo para no esconderse tras los dos. Solo en las páginas que lo usan:
+       el estilo viaja con el componente. */
+    :global(.panel-oesi),
+    :global([data-oesi] section[id]) {
+        scroll-margin-top: 9.5rem;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .indice-fijo {
+            transition: none;
+        }
+    }
+</style>
+
+<script>
+    function iniciarIndice() {
+        const nav = document.querySelector<HTMLElement>('[data-indice-fijo]');
+        const centinela = document.querySelector<HTMLElement>('[data-indice-centinela]');
+        if (!nav || !centinela || nav.dataset.listo) return;
+        nav.dataset.listo = '1';
+
+        // Visible cuando el principio de la página ya quedó atrás. Mientras no
+        // se ve, `inert`: que el tabulador no se pare en enlaces invisibles.
+        new IntersectionObserver(
+            ([e]) => {
+                const pasado = !e.isIntersecting && e.boundingClientRect.top < 0;
+                nav.toggleAttribute('data-visible', pasado);
+                nav.toggleAttribute('inert', !pasado);
+            },
+            { rootMargin: '-80px 0px 0px 0px' }
+        ).observe(centinela);
+
+        // La sección del centro de la pantalla es la actual. Las entradas que
+        // llevan a otra página no se tocan: su `aria-current` viene puesto.
+        const enlaces = [...nav.querySelectorAll<HTMLAnchorElement>('[data-indice-enlace]')];
+        const propias = enlaces
+            .map((a) => ({ a, destino: a.hash && a.pathname === location.pathname ? document.getElementById(decodeURIComponent(a.hash.slice(1))) : null }))
+            .filter((x): x is { a: HTMLAnchorElement; destino: HTMLElement } => !!x.destino);
+        if (!propias.length) return;
+
+        // La pastilla marcada se centra dentro de la fila (en el móvil no
+        // caben todas); se desplaza la fila, nunca la página.
+        const fila = nav.querySelector<HTMLElement>('ol');
+        const marcar = (actual: HTMLElement) => {
+            for (const { a, destino } of propias) {
+                if (destino === actual) {
+                    a.setAttribute('aria-current', 'location');
+                    if (fila && fila.scrollWidth > fila.clientWidth) {
+                        const li = a.parentElement as HTMLElement;
+                        fila.scrollTo({ left: li.offsetLeft - (fila.clientWidth - li.offsetWidth) / 2, behavior: 'smooth' });
+                    }
+                } else a.removeAttribute('aria-current');
+            }
+        };
+        const espia = new IntersectionObserver(
+            (entradas) => entradas.forEach((e) => e.isIntersecting && marcar(e.target as HTMLElement)),
+            { rootMargin: '-45% 0px -50% 0px' }
+        );
+        propias.forEach(({ destino }) => espia.observe(destino));
+    }
+
+    iniciarIndice();
+    document.addEventListener('astro:page-load', iniciarIndice);
+</script>
