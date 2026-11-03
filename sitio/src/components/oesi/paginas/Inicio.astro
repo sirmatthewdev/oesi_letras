@@ -1,0 +1,289 @@
+---
+/**
+ * El inicio: cómo inscribirse, conocer el examen, ¿qué necesitas? y el curso.
+ *
+ * Parte de `PaginaOesi`, que pone el marco (cabecera, índice, «Continúa» y
+ * las anclas). Los estilos de estas páginas están allí, en su <style>.
+ */
+import type { Oesi } from '../../../lib/api';
+import Boton from '../../Boton.astro';
+import Icono from '../../Icono.astro';
+import FondoSeccion from '../../FondoSeccion.astro';
+import TituloSeccion from '../../TituloSeccion.astro';
+import PasosInscripcion from '../PasosInscripcion.astro';
+import TarjetaOesi from '../TarjetaOesi.astro';
+import Negritas from '../Negritas.astro';
+import ImagenConRespaldo from '../ImagenConRespaldo.astro';
+import QueNecesitas from '../QueNecesitas.astro';
+import { Image } from 'astro:assets';
+import ilFecha from '../../../assets/ilustraciones/paso-fecha.webp';
+import ilPago from '../../../assets/ilustraciones/paso-pago.webp';
+import ilFormulario from '../../../assets/ilustraciones/paso-formulario.webp';
+import ilAccesoExamen from '../../../assets/ilustraciones/acceso-examen.webp';
+import ilAccesoModalidades from '../../../assets/ilustraciones/acceso-modalidades.webp';
+import ilAccesoPreguntas from '../../../assets/ilustraciones/acceso-preguntas.webp';
+import { faWhatsapp } from '@fortawesome/free-brands-svg-icons';
+import { faCalendarDays, faCircleInfo, faGraduationCap, faLaptop, faListCheck, faAward, faCircleQuestion, faArrowRight } from '@fortawesome/free-solid-svg-icons';
+import { icono } from '../../../lib/oesi-vista';
+
+interface Props {
+    oesi: Oesi;
+}
+
+const { oesi } = Astro.props;
+const { curso, examen, inscripcion } = oesi;
+
+// Los accesos del inicio a las páginas de consulta. La inscripción no va aquí:
+// tiene su propio bloque, el del recorrido.
+const ACCESOS = [
+    { clave: 'examen', titulo: 'El examen', texto: 'Qué es, a quién va dirigido, el requisito, qué se evalúa y cómo se califica.', icono: faAward, ilustracion: ilAccesoExamen },
+    { clave: 'modalidades', titulo: 'Modalidades', texto: 'Las indicaciones para rendirlo de forma presencial o virtual.', icono: faLaptop, ilustracion: ilAccesoModalidades },
+    {
+        clave: 'preguntas',
+        titulo: 'Preguntas frecuentes',
+        texto: `${oesi.faqs.items.length} respuestas sobre fechas, requisitos, pagos y resultados.`,
+        icono: faCircleQuestion,
+        ilustracion: ilAccesoPreguntas,
+    },
+];
+
+// El recorrido de la inscripción, en el inicio, con la numeración de la
+// oficina (ver `PasosInscripcion`). `destino` es la página a la que el inicio
+// lleva las anclas antiguas (ver el script de abajo).
+const PASOS_INICIO = [
+    {
+        rotulo: 'Antes de empezar',
+        marca: null,
+        titulo: 'Elige tu fecha',
+        texto: 'Consulta la fecha de tu idioma en el cronograma del mes.',
+        detalle: oesi.cronograma.imagen?.alt || null,
+        enlace: '/cronograma',
+        destino: 'cronograma',
+        accion: 'Ver el cronograma',
+        ilustracion: ilFecha,
+    },
+    {
+        rotulo: 'Paso 1',
+        marca: '1',
+        titulo: 'Paga el derecho de examen',
+        texto: 'En San Market, con el concepto que te corresponde.',
+        detalle: null,
+        enlace: '/inscripcion#paso-pago',
+        destino: 'inscripcion',
+        accion: 'Ver costos y pagar',
+        ilustracion: ilPago,
+    },
+    {
+        rotulo: 'Paso 2',
+        marca: '2',
+        titulo: 'Envía el formulario',
+        texto: 'Con el recibo de pago, tu documento de identidad y la declaración jurada.',
+        detalle: null,
+        enlace: '/inscripcion#paso-formulario',
+        destino: null,
+        accion: 'Ver los formularios',
+        ilustracion: ilFormulario,
+    },
+];
+---
+
+    {/* ══ Cómo inscribirte ══ */}
+    {/*
+     * La tarea principal de quien llega, y por eso lo primero tras el
+     * hero: la fecha y los dos pasos, cada uno a su página, con lo que hay que
+     * comprobar antes —el requisito— y lo que cambia cada mes —la
+     * publicación vigente—.
+     */}
+    <div id="como-inscribirte" class="panel-oesi">
+        <section aria-labelledby="t-como-inscribirte" class="relative isolate overflow-hidden bg-fondo-suave py-20">
+            <FondoSeccion />
+            <div class="mx-auto max-w-6xl px-6">
+                <TituloSeccion id="t-como-inscribirte" titulo="Cómo inscribirte" kicker="Fecha, pago y formulario" centrado />
+
+                {/* Cada tarjeta lleva la barra de avance de la
+                    referencia («Vamos a descubrir tu nivel ideal»):
+                    un tercio, dos tercios, completa. Dice cuánto
+                    falta sin tener que contar las tarjetas. */}
+                <ol class="mt-12 grid gap-5 lg:grid-cols-3">
+                    {PASOS_INICIO.map((paso, i) => (
+                        <li class="relative">
+                            <a
+                                href={paso.enlace}
+                                data-destino={paso.destino ?? undefined}
+                                class="tarjeta-recurso group flex h-full flex-col rounded-3xl bg-white p-7 shadow-sm ring-1 ring-slate-200/70"
+                            >
+                                <Image
+                                    src={paso.ilustracion}
+                                    alt=""
+                                    widths={[260, 520]}
+                                    sizes="260px"
+                                    loading="lazy"
+                                    class="mx-auto mb-6 h-40 w-auto mix-blend-multiply"
+                                />
+                                <span class="flex items-center gap-3">
+                                    <span aria-hidden="true" class="marca-degradado flex h-11 w-11 flex-none items-center justify-center rounded-2xl font-serif text-lg font-extrabold text-white shadow">
+                                        {paso.marca ?? <Icono icono={faCalendarDays} clase="h-4 w-4" />}
+                                    </span>
+                                    <span aria-hidden="true" class="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-100">
+                                        <span class="block h-full rounded-full bg-unmsm-acento" style={`width: ${((i + 1) / PASOS_INICIO.length) * 100}%`}></span>
+                                    </span>
+                                    <span class="text-xs font-semibold tabular-nums text-slate-500">{i + 1}/{PASOS_INICIO.length}</span>
+                                </span>
+                                <span class="mt-5 block text-[0.7rem] font-semibold uppercase tracking-wider text-slate-500">{paso.rotulo}</span>
+                                <span class="block font-serif text-xl font-bold leading-snug text-unmsm-azul">{paso.titulo}</span>
+                                <span class="mt-2 block text-sm leading-relaxed text-slate-600">{paso.texto}</span>
+                                {paso.detalle && (
+                                    <span class="mt-3 flex gap-2 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600">
+                                        <Icono icono={faCalendarDays} clase="mt-0.5 h-3.5 w-3.5 flex-none text-unmsm-dorado" />
+                                        <span>Publicación vigente: {paso.detalle}</span>
+                                    </span>
+                                )}
+                                <span class="mt-auto inline-flex items-center gap-1.5 pt-5 text-sm font-semibold text-unmsm-azul">
+                                    {paso.accion}
+                                    <Icono icono={faArrowRight} clase="h-3.5 w-3.5 transition group-hover:translate-x-0.5" />
+                                </span>
+                            </a>
+                        </li>
+                    ))}
+                </ol>
+
+                {examen.requisitos && (
+                    <p class="mx-auto mt-10 flex max-w-3xl gap-3 rounded-xl border border-unmsm-dorado/30 bg-white px-5 py-4 text-sm leading-relaxed text-slate-700">
+                        <Icono icono={faListCheck} clase="mt-0.5 h-4 w-4 flex-none text-unmsm-dorado" />
+                        <span>
+                            <strong class="font-semibold text-slate-800">Antes, comprueba el requisito:</strong>{' '}
+                            <Negritas texto={examen.requisitos} />
+                        </span>
+                    </p>
+                )}
+            </div>
+        </section>
+    </div>
+
+    {/* ══ Conoce el examen ══ */}
+    <div id="conoce-el-examen" class="panel-oesi">
+        <section aria-labelledby="t-conoce" class="relative isolate overflow-hidden bg-white py-20">
+            <div class="mx-auto max-w-6xl px-6">
+                <TituloSeccion id="t-conoce" titulo="Conoce el examen" kicker="Antes de rendirlo" centrado />
+
+                {/* Como las «razones» de la referencia: sin tarjeta,
+                    una ilustración por acceso y un filete
+                    discontinuo entre columnas. */}
+                <ul class="mt-12 grid gap-y-8 md:grid-cols-3 md:divide-x md:divide-dashed md:divide-slate-300">
+                    {ACCESOS.map((a) => (
+                        <li class="md:px-6 md:first:pl-0 md:last:pr-0">
+                            <a href={`/${a.clave}`} data-destino={a.clave} class="group flex h-full flex-col rounded-3xl p-2 transition hover:bg-slate-50">
+                                <Image
+                                    src={a.ilustracion}
+                                    alt=""
+                                    widths={[280, 560]}
+                                    sizes="280px"
+                                    loading="lazy"
+                                    class="mx-auto h-44 w-auto mix-blend-multiply"
+                                />
+                                <span class="mt-5 flex items-center gap-1.5 font-serif text-lg font-bold leading-snug text-unmsm-azul">
+                                    {a.titulo}
+                                    <Icono icono={faArrowRight} clase="h-3.5 w-3.5 opacity-0 transition group-hover:translate-x-0.5 group-hover:opacity-100" />
+                                </span>
+                                <span class="mt-1 block text-sm leading-relaxed text-slate-600">{a.texto}</span>
+                            </a>
+                        </li>
+                    ))}
+                </ul>
+            </div>
+        </section>
+    </div>
+
+{/* ══ ¿Qué necesitas? ══ */}
+<QueNecesitas idiomas={oesi.idiomas} />
+
+{/* ══ Curso de preparación ══ */}
+<div id="curso-preparacion" class="panel-oesi">
+    <section class="relative isolate overflow-hidden bg-fondo-calido py-20">
+        <FondoSeccion />
+        <div class="mx-auto max-w-6xl px-6">
+            <TituloSeccion
+                id="t-curso-preparacion"
+                titulo="Curso de preparación"
+                kicker="Opcional · lo dicta el CEID"
+                bajada={curso.bajada ?? undefined}
+                centrado
+            />
+
+            <div class="mt-12 grid items-start gap-10 lg:grid-cols-2">
+                {curso.imagen && (
+                    <ImagenConRespaldo
+                        imagen={curso.imagen}
+                        enlace={curso.url}
+                        queEs="el flyer del curso"
+                        whatsapp={curso.whatsapp?.enlace}
+                        alternativa={curso.url ? { texto: 'Ver la información del curso', url: curso.url } : null}
+                        clase="mx-auto w-full max-w-lg"
+                    />
+                )}
+
+                <TarjetaOesi titulo={curso.titulo ?? 'Curso de preparación'} icono={faGraduationCap} antetitulo="Recurso relacionado">
+                    {curso.url && (
+                        <p class="break-all text-sm text-slate-600">
+                            Más información:{' '}
+                            <a href={curso.url} target="_blank" rel="noopener noreferrer" class="font-medium text-unmsm-azul underline-offset-2 hover:underline">
+                                {curso.url}
+                            </a>
+                        </p>
+                    )}
+                    {curso.whatsapp && (
+                        <div class="mt-6">
+                            <Boton href={curso.whatsapp.enlace} variante="azul" icono={faWhatsapp} nuevaPestana>
+                                Contáctanos por WhatsApp
+                            </Boton>
+                        </div>
+                    )}
+                    <p class="mt-6 flex gap-2.5 rounded-xl bg-slate-50 px-4 py-3 text-sm leading-relaxed text-slate-600">
+                        <Icono icono={faCircleInfo} clase="mt-0.5 h-4 w-4 flex-none text-unmsm-dorado" />
+                        <span>
+                            El curso es una preparación opcional. La inscripción al examen de suficiencia se hace aparte:
+                            consulta <a href="#como-inscribirte" class="font-semibold text-unmsm-azul hover:underline">cómo inscribirte</a>.
+                        </span>
+                    </p>
+                </TarjetaOesi>
+            </div>
+        </div>
+    </section>
+</div>
+
+    {/*
+     * Las anclas de la landing anterior (`/#inscripcion`,
+     * `/#preguntas`…) circulan en mensajes y publicaciones: se llevan
+     * a su página. En línea, para que salte sin esperar a que cargue
+     * el resto, y al final del inicio porque el destino sale de los
+     * enlaces de arriba (`data-destino`), no de rutas escritas aquí:
+     * así funciona igual en la vista previa, que sirve el sitio bajo
+     * otra ruta.
+     */}
+    <script is:inline>
+        (function () {
+            var ANCLAS = {
+                examen: ['examen', ''],
+                requisito: ['examen', '#requisito'],
+                habilidades: ['examen', '#habilidades'],
+                modalidades: ['modalidades', ''],
+                'modalidad-presencial': ['modalidades', '#modalidad-presencial'],
+                'modalidad-virtual': ['modalidades', '#modalidad-virtual'],
+                cronograma: ['cronograma', ''],
+                inscripcion: ['inscripcion', ''],
+                'paso-pago': ['inscripcion', '#paso-pago'],
+                'paso-formulario': ['inscripcion', '#paso-formulario'],
+                preguntas: ['preguntas', ''],
+            };
+            var id = '';
+            try {
+                id = decodeURIComponent(location.hash.slice(1));
+            } catch (e) {}
+            var destino = ANCLAS[id] || (id.indexOf('faq-') === 0 ? ['preguntas', '#' + id] : null);
+            var enlace = destino && document.querySelector('[data-destino="' + destino[0] + '"]');
+            if (!enlace) return;
+            var url = new URL(enlace.href);
+            url.hash = destino[1];
+            location.replace(url.href);
+        })();
+    </script>

@@ -45,6 +45,17 @@
     --color-fondo-suave: #F3F7FC;
     --color-fondo-calido: #FBF8F0;
 
+    /*
+     * Los fondos oscuros, con nombre: estaban escritos a mano en tres sitios
+     * (el pie y las bandas oscuras de Modalidades e Inscripción). La banda va
+     * de `noche-alta` a `noche`; el pie, de `noche` al azul de la casa pasando
+     * por `noche-azul`.
+     */
+    --color-fondo-noche: #0C1217;
+    --color-fondo-noche-alta: #111827;
+    --color-fondo-noche-azul: #0A1F33;
+
+
     --color-unmsm-azul: #143B63;
     --color-unmsm-azul-light: #1C5287;
     --color-unmsm-azul-dark: #0F2B48;
@@ -87,6 +98,25 @@
     /* La regla dorada que separaba secciones en el pie: se desvanece por los
        dos extremos en vez de cortarse en seco. */
     --regla-dorada: linear-gradient(90deg, transparent, var(--color-unmsm-dorado), transparent);
+}
+
+/*
+ * Un color por panel del hero de idiomas, en el orden del panel: si hay más
+ * idiomas que colores, se repiten. Todos llevan texto blanco por encima en AA
+ * (el peor, `panel-4`, 5,2:1). Tres son los de la casa.
+ *
+ * En `:root` y no en `@theme`: no hay utilidades que generar, solo se leen con
+ * `var()`, y el componente arma su nombre (`--color-panel-${n}`), así que
+ * Tailwind no los vería y los quitaría del CSS.
+ */
+:root {
+    --color-panel-1: var(--color-unmsm-azul);
+    --color-panel-2: #7A1F3D;
+    --color-panel-3: #0F5E6B;
+    --color-panel-4: var(--color-unmsm-acento);
+    --color-panel-5: #5C4A12;
+    --color-panel-6: #3B2F6B;
+    --color-panel-7: var(--color-unmsm-azul-dark);
 }
 
 /*

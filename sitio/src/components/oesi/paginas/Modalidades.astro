@@ -1,0 +1,244 @@
+---
+/**
+ * /modalidades: las indicaciones para el día del examen, presencial y virtual.
+ *
+ * Parte de `PaginaOesi`, que pone el marco (cabecera, índice, «Continúa» y
+ * las anclas). Los estilos de estas páginas están allí, en su <style>.
+ */
+import Icono from '../../Icono.astro';
+import FondoSeccion from '../../FondoSeccion.astro';
+import Negritas from '../Negritas.astro';
+import type { Oesi } from '../../../lib/api';
+import { faBan, faBuildingColumns, faCircleInfo, faLaptop, faCheck, faLocationDot, faTriangleExclamation } from '@fortawesome/free-solid-svg-icons';
+import { icono } from '../../../lib/oesi-vista';
+
+interface Props {
+    oesi: Oesi;
+}
+
+const { oesi } = Astro.props;
+const { examen } = oesi;
+
+// Modalidades: presencial por un lado y virtual por otro. Un bloque sin
+// modalidad —el panel la pide, pero por si acaso— va con las virtuales, que es
+// la secuencia y donde un paso de más no descoloca nada.
+const presenciales = oesi.modalidades.items.filter((m) => m.modalidad === 'presencial');
+const virtuales = oesi.modalidades.items.filter((m) => m.modalidad !== 'presencial');
+
+// El título de un bloque dentro de su modalidad. «Modalidad Virtual» con el
+// subtítulo «Sobre la conectividad» repetiría el rótulo del bloque, que ya dice
+// la modalidad: en ese caso manda el subtítulo.
+const tituloBloque = (m: Oesi['modalidades']['items'][number]) =>
+    /^modalidad\s/i.test(m.titulo) && m.subtitulo ? m.subtitulo : m.titulo;
+
+const modalidadesIndice = [
+    presenciales.length > 0 && {
+        clave: 'presencial',
+        etiqueta: 'Presencial',
+        icono: faBuildingColumns,
+        resumen: presenciales.map((m) => m.subtitulo ?? m.titulo).join(' · '),
+    },
+    virtuales.length > 0 && {
+        clave: 'virtual',
+        etiqueta: 'Virtual',
+        icono: faLaptop,
+        resumen: virtuales.map(tituloBloque).join(' · '),
+    },
+].filter(Boolean) as { clave: string; etiqueta: string; icono: typeof faLaptop; resumen: string }[];
+
+// «Cómo llegar» al examen presencial. Se busca el lugar por su nombre —la
+// Facultad, que es la que da el panel—, no por coordenadas escritas a mano. La
+// referencia de la puerta va en la nota de la oficina, justo encima.
+const lugar = encodeURIComponent(
+    `${(oesi.institucion || 'Facultad de Letras y Ciencias Humanas UNMSM').replace(/\s*·\s*/g, ' ')}, Ciudad Universitaria, Lima`
+);
+const comoLlegar = {
+    maps: `https://www.google.com/maps/search/?api=1&query=${lugar}`,
+    waze: `https://waze.com/ul?q=${lugar}&navigate=yes`,
+};
+---
+
+{/* ══ Modalidades ══ */}
+{/*
+ * Dos bloques y no cuatro tarjetas iguales: una era presencial y tres
+ * virtuales, y en la rejilla de dos por dos pesaban lo mismo, así que la
+ * división que importa —presencial o virtual— no se veía. Además, las
+ * tres virtuales son una secuencia (el equipo, antes, durante) y ahora se
+ * leen como tal, numeradas.
+ *
+ * Se arma desde los datos, agrupando por `modalidad`: un bloque nuevo
+ * que la oficina añada en el panel cae en su sitio.
+ */}
+<div id="modalidades" class="panel-oesi">
+    <section class="relative isolate overflow-clip bg-fondo-suave py-12">
+        <FondoSeccion />
+        <div class="mx-auto max-w-6xl px-6">
+            {/* El selector de la referencia («¿Cómo deseas rendir
+                el examen?»): una tarjeta por modalidad, con su
+                marca redonda y lo que cubre en lista. Aquí no es
+                un formulario sino un índice —cada tarjeta lleva a
+                su bloque—, así que son enlaces y no radios. */}
+            <p class="mx-auto max-w-4xl text-sm font-semibold text-slate-700">¿Cómo vas a rendir el examen?</p>
+            <ul class="mx-auto mt-3 grid max-w-4xl gap-4 sm:grid-cols-2">
+                {modalidadesIndice.map((m) => (
+                    <li>
+                        <a href={`#modalidad-${m.clave}`} class="opcion-modalidad group flex h-full flex-col rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+                            <span class="flex items-center gap-3">
+                                <span aria-hidden="true" class="flex h-10 w-10 flex-none items-center justify-center rounded-xl bg-sky-50 text-unmsm-acento">
+                                    <Icono icono={m.icono} clase="h-5 w-5" />
+                                </span>
+                                <span class="flex-1 font-serif text-lg font-bold text-unmsm-azul">{m.etiqueta}</span>
+                                <span aria-hidden="true" class="marca-opcion h-5 w-5 flex-none rounded-full border-2 border-slate-300 transition"></span>
+                            </span>
+                            <ul class="mt-4 space-y-1.5 text-sm text-slate-600">
+                                {m.resumen.split(' · ').map((r) => (
+                                    <li class="flex gap-2">
+                                        <Icono icono={faCheck} clase="mt-1 h-3 w-3 flex-none text-unmsm-acento" />
+                                        <span>{r}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        </a>
+                    </li>
+                ))}
+            </ul>
+        </div>
+    </section>
+
+    {/* ── Presencial ── */}
+    {presenciales.length > 0 && (
+        <section id="modalidad-presencial" aria-labelledby="t-mod-presencial" class="relative isolate scroll-mt-28 bg-white py-20">
+            <div class="mx-auto max-w-6xl px-6">
+                <header class="flex items-start gap-4 border-b border-slate-200 pb-8">
+                    <span aria-hidden="true" class="marca-degradado flex h-12 w-12 flex-none items-center justify-center rounded-full text-white shadow">
+                        <Icono icono={faBuildingColumns} clase="h-5 w-5" />
+                    </span>
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-unmsm-dorado-texto">Modalidad</p>
+                        <h2 id="t-mod-presencial" class="font-serif text-2xl font-bold text-unmsm-azul sm:text-3xl">Presencial</h2>
+                    </div>
+                </header>
+
+                {presenciales.map((m) => (
+                    <div class="mt-10 grid items-start gap-8 lg:grid-cols-12">
+                        <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8 lg:col-span-7">
+                            <h3 class="font-serif text-xl font-bold text-unmsm-azul">{tituloBloque(m)}</h3>
+                            {m.introduccion && <p class="texto-oesi mt-2">{m.introduccion}</p>}
+                            <ul class="mt-5 space-y-4">
+                                {m.reglas.map((r) => (
+                                    <li class="flex gap-3">
+                                        <span aria-hidden="true" class="mt-0.5 flex h-6 w-6 flex-none items-center justify-center rounded-full bg-unmsm-azul/10 text-unmsm-azul">
+                                            <Icono icono={faCheck} clase="h-3 w-3" />
+                                        </span>
+                                        <span class="texto-oesi"><Negritas texto={r} /></span>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+
+                        {m.nota && (
+                            <aside class="relative overflow-hidden rounded-2xl bg-linear-to-br from-unmsm-azul to-unmsm-azul-dark p-6 text-white shadow-sm sm:p-8 lg:col-span-5">
+                                <div aria-hidden="true" class="marca-regla absolute inset-x-0 top-0 h-px opacity-70"></div>
+                                <div class="flex items-center gap-3">
+                                    <span aria-hidden="true" class="flex h-11 w-11 items-center justify-center rounded-xl bg-white/10 text-unmsm-dorado-light">
+                                        <Icono icono={faLocationDot} clase="h-5 w-5" />
+                                    </span>
+                                    <p class="font-serif text-lg font-bold">Aula y local</p>
+                                </div>
+                                <p class="mt-4 leading-relaxed text-slate-200"><Negritas texto={m.nota} /></p>
+                                <div class="mt-5 flex flex-wrap items-center gap-2 border-t border-white/10 pt-5">
+                                    <span class="mr-1 text-sm font-semibold text-white">¿Cómo llegar?</span>
+                                    <a href={comoLlegar.maps} target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 rounded-full bg-white px-4 py-2 text-sm font-semibold text-unmsm-azul transition hover:bg-unmsm-dorado-light">
+                                        <Icono icono={faLocationDot} clase="h-3.5 w-3.5" />
+                                        Google Maps<span class="sr-only"> (se abre en una pestaña nueva)</span>
+                                    </a>
+                                    <a href={comoLlegar.waze} target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 rounded-full border border-white/40 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/10">
+                                        Waze<span class="sr-only"> (se abre en una pestaña nueva)</span>
+                                    </a>
+                                </div>
+                            </aside>
+                        )}
+                    </div>
+                ))}
+            </div>
+        </section>
+    )}
+
+    {/* ── Virtual: la secuencia, en la banda oscura de pasos ── */}
+    {virtuales.length > 0 && (
+        <section
+            id="modalidad-virtual"
+            aria-labelledby="t-mod-virtual"
+            class="relative isolate scroll-mt-28 overflow-hidden bg-linear-to-b from-fondo-noche-alta to-fondo-noche py-20 text-white"
+        >
+            <div
+                aria-hidden="true"
+                class="absolute inset-0 -z-10 opacity-[0.06]"
+                style="background-image: radial-gradient(circle at 1px 1px, #fff 1.5px, transparent 0); background-size: 34px 34px;"
+            />
+            <div aria-hidden="true" class="absolute -top-40 left-1/2 -z-10 h-[40rem] w-[40rem] -translate-x-1/2 rounded-full bg-unmsm-azul/40 blur-3xl" />
+
+            <div class="mx-auto max-w-6xl px-6">
+                <header class="flex items-start gap-4 border-b border-white/10 pb-8">
+                    <span aria-hidden="true" class="marca-degradado flex h-12 w-12 flex-none items-center justify-center rounded-full text-white shadow">
+                        <Icono icono={faLaptop} clase="h-5 w-5" />
+                    </span>
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-unmsm-dorado-light">Modalidad</p>
+                        <h2 id="t-mod-virtual" class="font-serif text-2xl font-bold sm:text-3xl">Virtual</h2>
+                        <p class="mt-2 max-w-2xl text-slate-300">Las indicaciones, en el orden en que se cumplen: el equipo, la entrada y el desarrollo del examen.</p>
+                    </div>
+                </header>
+
+                <ol class="mt-10 grid gap-5 lg:grid-cols-3">
+                    {virtuales.map((m, i) => {
+                        const sancion = m.icono === 'durante';
+                        return (
+                            <li class="paso relative flex flex-col rounded-xl bg-white/[0.06] p-6 ring-1 ring-white/10">
+                                <div class="flex items-center gap-3">
+                                    <span aria-hidden="true" class="flex h-11 w-11 flex-none items-center justify-center rounded-full bg-unmsm-dorado/20 font-serif text-lg font-bold text-unmsm-dorado-light ring-1 ring-unmsm-dorado/30">
+                                        {i + 1}
+                                    </span>
+                                    <span aria-hidden="true" class="text-unmsm-dorado-light/80">
+                                        <Icono icono={icono(m.icono) ?? faLaptop} clase="h-4 w-4" />
+                                    </span>
+                                </div>
+                                <p class="mt-4 text-xs font-semibold uppercase tracking-wider opacity-60">Paso {i + 1}</p>
+                                <h3 class="mt-1 font-serif text-xl font-bold leading-snug">{tituloBloque(m)}</h3>
+                                {m.introduccion && <p class="mt-2 text-sm text-slate-300">{m.introduccion}</p>}
+                                <ul class="mt-4 space-y-3">
+                                    {m.reglas.map((r) => (
+                                        <li class="flex gap-2.5 text-sm leading-relaxed text-slate-200">
+                                            <Icono
+                                                icono={sancion ? faBan : faCheck}
+                                                clase={`mt-1 h-3.5 w-3.5 flex-none ${sancion ? 'text-amber-300' : 'text-unmsm-dorado-light'}`}
+                                            />
+                                            <span><Negritas texto={r} /></span>
+                                        </li>
+                                    ))}
+                                </ul>
+                                {m.nota && (
+                                    <p
+                                        class:list={[
+                                            'mt-5 flex gap-2.5 rounded-lg px-4 py-3 text-sm leading-relaxed',
+                                            m.nota_tipo === 'aviso'
+                                                ? 'bg-amber-400/10 text-amber-100 ring-1 ring-amber-300/30'
+                                                : 'bg-white/[0.06] text-slate-300',
+                                        ]}
+                                    >
+                                        <Icono
+                                            icono={m.nota_tipo === 'aviso' ? faTriangleExclamation : faCircleInfo}
+                                            clase="mt-0.5 h-4 w-4 flex-none"
+                                            etiqueta={m.nota_tipo === 'aviso' ? 'Advertencia' : 'Información'}
+                                        />
+                                        <span><Negritas texto={m.nota} /></span>
+                                    </p>
+                                )}
+                            </li>
+                        );
+                    })}
+                </ol>
+            </div>
+        </section>
+    )}
+</div>

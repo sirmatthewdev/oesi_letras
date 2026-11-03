@@ -47,10 +47,10 @@ const clave = (nombre: string) => normalizar(nombre).replace(/\s+/g, '-');
 const FONDOS = import.meta.glob<{ default: ImageMetadata }>('../../assets/fondos-idioma/*.jpg', { eager: true });
 const fondo = (nombre: string) => FONDOS[`../../assets/fondos-idioma/${clave(nombre)}.jpg`]?.default;
 
-// Un color por idioma, todos con texto blanco por encima en AA. Los de la casa
-// —azul, acento, azul hondo— y cuatro de apoyo de la misma luminosidad para
-// que la fila no se lea como siete veces el mismo panel.
-const COLORES = ['#143B63', '#7A1F3D', '#0F5E6B', '#1F6FB8', '#5C4A12', '#3B2F6B', '#0F2B48'];
+// Un color por idioma, de `--color-panel-1` a `-7` (en styles/global.css):
+// los de la casa —azul, acento, azul hondo— y cuatro de apoyo de la misma
+// luminosidad, para que la fila no se lea como siete veces el mismo panel.
+const COLORES = Array.from({ length: 7 }, (_, i) => `var(--color-panel-${i + 1})`);
 
 const MODALIDADES = {
     presencial: { etiqueta: 'Presencial', icono: faBuildingColumns },
@@ -294,7 +294,7 @@ const MODALIDADES = {
      * ninguno de los siete (AA para texto grande).
      */
     .panel-acento {
-        color: #fde68a;
+        color: var(--color-amber-200);
     }
 
     .panel {

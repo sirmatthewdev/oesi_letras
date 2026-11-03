@@ -1,0 +1,320 @@
+---
+/**
+ * /inscripcion: el pago (paso 1) y el formulario (paso 2).
+ *
+ * Parte de `PaginaOesi`, que pone el marco (cabecera, índice, «Continúa» y
+ * las anclas). Los estilos de estas páginas están allí, en su <style>.
+ */
+import type { Oesi } from '../../../lib/api';
+import Icono from '../../Icono.astro';
+import FondoSeccion from '../../FondoSeccion.astro';
+import PasosInscripcion from '../PasosInscripcion.astro';
+import Negritas from '../Negritas.astro';
+import ImagenConRespaldo from '../ImagenConRespaldo.astro';
+import AsistenteInscripcion from '../AsistenteInscripcion.astro';
+import { soles } from '../../../lib/oesi';
+import { faCircleInfo, faFilePdf, faFileSignature, faIdCard, faListCheck, faPenToSquare, faReceipt, faTriangleExclamation, faUpRightFromSquare } from '@fortawesome/free-solid-svg-icons';
+import { icono, cabeceraTabla, marcoTabla } from '../../../lib/oesi-vista';
+
+interface Props {
+    oesi: Oesi;
+}
+
+const { oesi } = Astro.props;
+const { examen, inscripcion } = oesi;
+const { contacto } = oesi;
+const wa = contacto.whatsapp;
+
+// Los documentos requeridos, en la banda de pasos: un icono por documento en
+// el orden de la fuente (recibo, identidad, declaración jurada).
+const ICONOS_DOCUMENTO = [faReceipt, faIdCard, faFileSignature];
+const LETRAS = 'abcdefghijklmnopqrstuvwxyz';
+
+// Los enlaces a formularios del paso 2, en la banda oscura.
+const claseFormulario =
+    'group flex h-full items-center gap-4 rounded-xl bg-white/[0.06] p-5 ring-1 ring-white/10 transition hover:bg-white/[0.12] hover:ring-unmsm-dorado/50';
+const claseIconoFormulario =
+    'flex h-11 w-11 flex-none items-center justify-center rounded-xl bg-white/10 text-unmsm-dorado-light transition group-hover:bg-unmsm-dorado group-hover:text-unmsm-azul-dark';
+---
+
+{/* ══ Inscripción ══ */}
+{/*
+ * Los dos pasos de la fuente —«Paso N° 1: Pago por el derecho de examen»
+ * y «Paso N° 2: Completar el formulario»—, cada uno con todo lo suyo
+ * junto. Antes los precios, los botones de pago, los documentos y la
+ * imagen del segundo paso salían intercalados, y el botón de pagar —que
+ * es la acción principal— quedaba al fondo, debajo de una segunda tabla
+ * de precios.
+ */}
+<div id="inscripcion" class="panel-oesi">
+    <section class="relative isolate overflow-clip bg-fondo-suave py-12">
+        <FondoSeccion />
+        <div class="mx-auto max-w-6xl px-6">
+            <PasosInscripcion actuales={['pago', 'formulario']} />
+
+            {/* El requisito, aquí también: es la última ocasión de verlo
+                antes de pagar. Es el mismo dato del panel. */}
+            {examen.requisitos && (
+                <p class="mx-auto mt-8 flex max-w-3xl gap-3 rounded-xl border border-unmsm-dorado/30 bg-white px-5 py-4 text-sm leading-relaxed text-slate-700">
+                    <Icono icono={faListCheck} clase="mt-0.5 h-4 w-4 flex-none text-unmsm-dorado" />
+                    <span>
+                        <strong class="font-semibold text-slate-800">Requisito:</strong> <Negritas texto={examen.requisitos} />
+                    </span>
+                </p>
+            )}
+
+            <AsistenteInscripcion casos={inscripcion.casos} />
+        </div>
+    </section>
+
+    {/* ── Paso 1: el pago ── */}
+    <section id="paso-pago" aria-labelledby="t-paso-pago" class="relative isolate scroll-mt-28 overflow-clip bg-white py-20">
+        <div class="mx-auto max-w-6xl px-6">
+            <header class="flex flex-col gap-6 border-b border-slate-200 pb-8 md:flex-row md:items-center md:justify-between">
+                <div class="flex items-start gap-4">
+                    <span aria-hidden="true" class="marca-degradado flex h-12 w-12 flex-none items-center justify-center rounded-full font-serif text-xl font-bold text-white shadow">1</span>
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-unmsm-dorado-texto">Paso 1</p>
+                        <h2 id="t-paso-pago" class="font-serif text-2xl font-bold text-unmsm-azul sm:text-3xl">Paga el derecho de examen</h2>
+                        {inscripcion.costos_intro && <p class="mt-2 max-w-2xl text-slate-600">{inscripcion.costos_intro}</p>}
+                    </div>
+                </div>
+                {inscripcion.imagenes.proceso_1 && (
+                    <ImagenConRespaldo imagen={inscripcion.imagenes.proceso_1} queEs="el resumen del paso 1" whatsapp={wa?.enlace} clase="w-full max-w-xs flex-none" />
+                )}
+            </header>
+
+            <div class="mt-10 grid items-start gap-8 lg:grid-cols-12">
+                <div class="space-y-10 lg:col-span-7">
+                    {/* Lo que se hace: elegir el concepto y pagar. */}
+                    {inscripcion.tarifario.length > 0 && (
+                        <div>
+                            <h3 class="font-serif text-xl font-bold text-unmsm-azul">Elige tu concepto y paga en San Market</h3>
+                            <p class="mt-1 text-sm text-slate-500">Cada botón abre el pago de ese concepto en la plataforma de la UNMSM.</p>
+                            <ul class="mt-5 space-y-3">
+                                {inscripcion.tarifario.map((t) => (
+                                    <li class="flex flex-wrap items-center gap-x-4 gap-y-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-unmsm-dorado/50 hover:shadow-md sm:flex-nowrap sm:p-5">
+                                        {/* En móvil el concepto ocupa su línea y precio y
+                                            botón van debajo: compartiendo fila, el concepto
+                                            se partía en cuatro renglones. */}
+                                        <div class="min-w-0 basis-full sm:flex-1 sm:basis-auto">
+                                            <p class="font-medium text-slate-800">
+                                                {t.concepto}
+                                                {t.distintivo && (
+                                                    <span class="marca-degradado ml-2 inline-block whitespace-nowrap rounded-full px-2.5 py-0.5 align-middle text-[10px] font-semibold text-white">
+                                                        {t.distintivo}
+                                                    </span>
+                                                )}
+                                            </p>
+                                        </div>
+                                        <p class="mr-auto whitespace-nowrap font-serif text-xl font-bold text-unmsm-azul sm:mr-0">{soles(t.monto)}</p>
+                                        {t.url_pago ? (
+                                            <a
+                                                href={t.url_pago}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg bg-unmsm-azul px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-unmsm-azul-light"
+                                            >
+                                                Pagar
+                                                <span class="sr-only"> {t.concepto} en San Market (se abre en una pestaña nueva)</span>
+                                                <Icono icono={faUpRightFromSquare} clase="h-3 w-3" />
+                                            </a>
+                                        ) : (
+                                            <span class="text-xs text-slate-500">Enlace no disponible</span>
+                                        )}
+                                    </li>
+                                ))}
+                            </ul>
+                            {inscripcion.tarifario_nota && <p class="mt-4 text-sm text-slate-500">{inscripcion.tarifario_nota}</p>}
+                        </div>
+                    )}
+
+                    {/* Lo que cuesta cada modalidad, para saber qué concepto
+                        pagar. Es la tabla de la fuente, con sus cinco filas. */}
+                    {inscripcion.costos.length > 0 && (
+                        <div>
+                            <h3 class="font-serif text-xl font-bold text-unmsm-azul">Costos por modalidad y grado</h3>
+                            <div class:list={[marcoTabla, 'tabla-apilable mt-5 shadow-none']}>
+                                <table class="w-full text-sm">
+                                    <caption class="sr-only">Costos de inscripción por modalidad y grado</caption>
+                                    <thead class="bg-slate-50">
+                                        <tr>
+                                            <th scope="col" class={cabeceraTabla}>Concepto</th>
+                                            <th scope="col" class={`${cabeceraTabla} text-right`}>Costo</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-100">
+                                        {inscripcion.costos.map((c) => (
+                                            <tr>
+                                                <td class="px-4 py-3 text-slate-700" data-etiqueta="Concepto">{c.concepto}</td>
+                                                <td class="whitespace-nowrap px-4 py-3 text-right font-serif text-base font-bold text-unmsm-azul" data-etiqueta="Costo">{soles(c.monto)}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                {/* Cómo se paga: la guía de San Market, el banco y lo que
+                    no se acepta. Acompaña a la lista al bajar. */}
+                <aside aria-labelledby="t-como-pagar" class="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50/70 shadow-sm lg:sticky lg:top-28 lg:col-span-5">
+                    <div aria-hidden="true" class="marca-degradado h-1 w-full"></div>
+                    <div class="p-6 sm:p-7">
+                        <div class="flex items-center gap-3">
+                            <span aria-hidden="true" class="flex h-11 w-11 items-center justify-center rounded-xl bg-white text-unmsm-dorado shadow-sm">
+                                <Icono icono={faReceipt} clase="h-5 w-5" />
+                            </span>
+                            <h3 id="t-como-pagar" class="font-serif text-xl font-bold text-unmsm-azul">Cómo pagar</h3>
+                        </div>
+
+                        {inscripcion.imagenes.medio_pago && (
+                            <ImagenConRespaldo imagen={inscripcion.imagenes.medio_pago} queEs="la guía del medio de pago" whatsapp={wa?.enlace} clase="mt-5" />
+                        )}
+
+                        {(inscripcion.pago.banco || inscripcion.pago.codigo) && (
+                            <dl class="mt-6 divide-y divide-slate-200 rounded-xl border border-slate-200 bg-white text-sm">
+                                {inscripcion.pago.banco && (
+                                    <div class="flex flex-wrap justify-between gap-x-4 gap-y-1 px-4 py-3">
+                                        <dt class="text-slate-500">Banco</dt>
+                                        <dd class="font-semibold text-slate-800">{inscripcion.pago.banco}</dd>
+                                    </div>
+                                )}
+                                {inscripcion.pago.codigo && (
+                                    <div class="flex flex-wrap justify-between gap-x-4 gap-y-1 px-4 py-3">
+                                        <dt class="text-slate-500">Código de pago</dt>
+                                        <dd class="text-slate-800"><Negritas texto={inscripcion.pago.codigo} /></dd>
+                                    </div>
+                                )}
+                            </dl>
+                        )}
+
+                        {inscripcion.pago.advertencias.length > 0 && (
+                            <ul class="mt-5 space-y-3">
+                                {inscripcion.pago.advertencias.map((a, i) => (
+                                    <li
+                                        class:list={[
+                                            'flex gap-2.5 rounded-xl px-4 py-3 text-sm leading-relaxed',
+                                            i === 0 ? 'border border-amber-200 bg-amber-50 text-amber-950' : 'bg-white text-slate-600',
+                                        ]}
+                                    >
+                                        <Icono icono={i === 0 ? faTriangleExclamation : faCircleInfo} clase="mt-0.5 h-4 w-4 flex-none" />
+                                        <span><Negritas texto={a} /></span>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+
+                        <p class="mt-5 text-xs leading-relaxed text-slate-500">
+                            Los botones llevan a San Market, la plataforma de pagos de la UNMSM: esta página no procesa pagos ni pide datos bancarios.
+                        </p>
+                    </div>
+                </aside>
+            </div>
+        </div>
+    </section>
+
+    {/* ── Paso 2: el formulario, en la banda oscura de pasos ── */}
+    <section
+        id="paso-formulario"
+        aria-labelledby="t-paso-formulario"
+        class="relative isolate scroll-mt-28 overflow-hidden bg-linear-to-b from-fondo-noche-alta to-fondo-noche py-20 text-white"
+    >
+        <div
+            aria-hidden="true"
+            class="absolute inset-0 -z-10 opacity-[0.06]"
+            style="background-image: radial-gradient(circle at 1px 1px, #fff 1.5px, transparent 0); background-size: 34px 34px;"
+        />
+        <div aria-hidden="true" class="absolute -top-40 left-1/2 -z-10 h-[40rem] w-[40rem] -translate-x-1/2 rounded-full bg-unmsm-azul/40 blur-3xl" />
+
+        <div class="mx-auto max-w-6xl px-6">
+            <header class="flex flex-col gap-6 border-b border-white/10 pb-8 md:flex-row md:items-center md:justify-between">
+                <div class="flex items-start gap-4">
+                    <span aria-hidden="true" class="marca-degradado flex h-12 w-12 flex-none items-center justify-center rounded-full font-serif text-xl font-bold text-white shadow">2</span>
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-unmsm-dorado-light">Paso 2</p>
+                        <h2 id="t-paso-formulario" class="font-serif text-2xl font-bold sm:text-3xl">Envía el formulario</h2>
+                        {inscripcion.cierre && <p class="mt-2 max-w-2xl text-slate-300">{inscripcion.cierre}</p>}
+                    </div>
+                </div>
+                {inscripcion.imagenes.proceso_2 && (
+                    <ImagenConRespaldo imagen={inscripcion.imagenes.proceso_2} queEs="el resumen del paso 2" whatsapp={wa?.enlace} clase="w-full max-w-xs flex-none" />
+                )}
+            </header>
+
+            {inscripcion.documentos.length > 0 && (
+                <>
+                    <h3 class="mt-10 text-xs font-semibold uppercase tracking-[0.18em] text-unmsm-dorado-light">Ten listos estos documentos, en PDF</h3>
+                    <ol class="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                        {inscripcion.documentos.map((d, i) => (
+                            <li class="paso relative rounded-xl bg-white/[0.06] p-6 ring-1 ring-white/10 transition hover:bg-white/[0.1]">
+                                <div class="flex h-12 w-12 items-center justify-center rounded-full bg-unmsm-dorado/20 text-unmsm-dorado-light ring-1 ring-unmsm-dorado/30">
+                                    <Icono icono={ICONOS_DOCUMENTO[i] ?? faFilePdf} clase="h-5 w-5" />
+                                </div>
+                                <p class="mt-4 text-xs font-semibold uppercase tracking-wider opacity-60">Documento {LETRAS[i]}.</p>
+                                <p class="mt-1 leading-relaxed text-slate-200"><Negritas texto={d} /></p>
+                            </li>
+                        ))}
+                    </ol>
+                </>
+            )}
+
+            {/*
+             * Dos grupos con dos finalidades. Antes se titulaban igual
+             * («Elige tu formulario») y en páginas distintas, y quien
+             * venía de posgrado encontraba «Posgrado» en uno y
+             * «Formulario para posgrado» en el otro sin saber cuál era
+             * el suyo. La descripción de cada uno la escribe la oficina
+             * en el panel.
+             */}
+            {oesi.cronograma.formularios.length > 0 && (
+                <>
+                    <h3 class="mt-12 text-xs font-semibold uppercase tracking-[0.18em] text-unmsm-dorado-light">Formulario de la convocatoria del mes</h3>
+                    <p class="mt-2 text-sm text-slate-400">Para rendir el examen en una fecha del <a href="/cronograma" class="font-semibold text-unmsm-dorado-light hover:underline">cronograma</a>.</p>
+                    <ul class="mt-5 grid gap-4 sm:grid-cols-2">
+                        {oesi.cronograma.formularios.map((f) => (
+                            <li>
+                                <a href={f.url} target="_blank" rel="noopener noreferrer" class={claseFormulario}>
+                                    <span aria-hidden="true" class={claseIconoFormulario}>
+                                        <Icono icono={faPenToSquare} clase="h-4 w-4" />
+                                    </span>
+                                    <span class="min-w-0 flex-1">
+                                        <span class="block font-serif text-lg font-bold leading-snug">{f.nombre}</span>
+                                        <span class="block text-xs text-slate-400">{f.descripcion ?? 'Google Forms'}</span>
+                                    </span>
+                                    <Icono icono={faUpRightFromSquare} clase="h-3.5 w-3.5 flex-none text-unmsm-dorado-light" />
+                                    <span class="sr-only">(se abre en una pestaña nueva)</span>
+                                </a>
+                            </li>
+                        ))}
+                    </ul>
+                </>
+            )}
+
+            {inscripcion.formularios.length > 0 && (
+                <>
+                    <h3 class="mt-12 text-xs font-semibold uppercase tracking-[0.18em] text-unmsm-dorado-light">Otros trámites</h3>
+                    <p class="mt-2 text-sm text-slate-400">Solo si tu caso es uno de estos; si no, usa el de la convocatoria.</p>
+                    <ul class="mt-5 grid gap-4 sm:grid-cols-3">
+                        {inscripcion.formularios.map((f) => (
+                            <li>
+                                <a href={f.url} target="_blank" rel="noopener noreferrer" class={claseFormulario}>
+                                    <span aria-hidden="true" class={claseIconoFormulario}>
+                                        <Icono icono={faFileSignature} clase="h-4 w-4" />
+                                    </span>
+                                    <span class="min-w-0 flex-1">
+                                        <span class="block font-serif text-lg font-bold leading-snug">{f.nombre}</span>
+                                        <span class="block text-xs text-slate-400">{f.descripcion ?? 'Google Forms'}</span>
+                                    </span>
+                                    <Icono icono={faUpRightFromSquare} clase="h-3.5 w-3.5 flex-none text-unmsm-dorado-light" />
+                                    <span class="sr-only">(se abre en una pestaña nueva)</span>
+                                </a>
+                            </li>
+                        ))}
+                    </ul>
+                </>
+            )}
+        </div>
+    </section>
+</div>
