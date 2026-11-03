@@ -414,16 +414,11 @@ const activo = (item: ItemMenu) =>
         }
     }
 
+    /* El logotipo va con su color en los dos estados: desde el rediseño todos
+       los heros son claros, y ya no hace falta forzarlo a blanco arriba. */
     .logo-capsula {
         height: var(--capsula-logo);
-        filter: brightness(0) invert(1);
-        transition:
-            height 420ms cubic-bezier(0.32, 0.72, 0, 1),
-            filter 300ms ease;
-    }
-
-    .cabecera.bajada .logo-capsula {
-        filter: none;
+        transition: height 420ms cubic-bezier(0.32, 0.72, 0, 1);
     }
 
     /* El menú se separa del logotipo con el mismo `gap` que se comprime, y entre
@@ -447,8 +442,11 @@ const activo = (item: ItemMenu) =>
      * el menu. El `display` va en el marcado, como utilidad, y aqui solo lo que
      * no compite con ella.
      */
+    /* El azul hondo y no el institucional: arriba la cápsula es transparente
+       y detrás pasan las manchas de color del hero; con el más oscuro el menú
+       no pierde contraste sobre ninguna. */
     .cabecera .nav-item {
-        color: #fff;
+        color: var(--color-unmsm-azul-dark);
         border-radius: 9999px;
         padding: 0.5rem 0.75rem;
         font-size: 0.875rem;
@@ -479,30 +477,18 @@ const activo = (item: ItemMenu) =>
         padding-inline: 0.5rem;
     }
 
+    /* Azul sobre claro en los dos estados: arriba sobre el hero, abajo sobre
+       el cristal blanco. */
     .cabecera .nav-item:hover,
     .cabecera .nav-item.esta-abierto {
-        background-color: rgb(255 255 255 / 0.14);
-    }
-
-    /* Sobre el cristal blanco, el mismo juego invertido. */
-    .cabecera.bajada .nav-item {
-        color: var(--color-unmsm-azul);
-    }
-
-    .cabecera.bajada .nav-item:hover,
-    .cabecera.bajada .nav-item.esta-abierto {
         background-color: rgb(16 48 80 / 0.07);
     }
 
     /* El apartado en el que se está, en pastilla muy tenue: se distingue sin
        competir con la acción principal. */
     .cabecera .nav-item-activo {
-        background-color: rgb(255 255 255 / 0.16);
-        font-weight: 600;
-    }
-
-    .cabecera.bajada .nav-item-activo {
         background-color: rgb(16 48 80 / 0.06);
+        font-weight: 600;
     }
 
     /* La barra de contacto se pliega al bajar y la cápsula sube a su sitio. */
@@ -526,9 +512,12 @@ const activo = (item: ItemMenu) =>
     }
 
     /*
-     * Acción principal. Usa el degradado de marca del proyecto —azul a dorado—
-     * en vez del morado de la referencia: el color aquí ya está decidido y es
-     * institucional.
+     * Acción principal: azul institucional macizo, con el dorado en el filo.
+     *
+     * Antes era el degradado de marca —azul a dorado— con el texto en blanco,
+     * y sobre el tramo dorado el contraste caía a 2,5:1, por debajo del 4,5:1
+     * que pide AA. El azul macizo da 11:1; el dorado se queda en el aro, donde
+     * no hay texto encima.
      */
     /* Sin `display` por lo mismo que arriba: lo pone el marcado, que es quien
        decide en que anchos se ve. */
@@ -539,17 +528,21 @@ const activo = (item: ItemMenu) =>
         font-weight: 600;
         color: #fff;
         white-space: nowrap;
-        background-image: var(--degradado-marca);
-        box-shadow: 0 6px 18px -8px rgb(15 43 72 / 0.55);
+        background-color: var(--color-unmsm-azul);
+        box-shadow:
+            inset 0 0 0 1.5px color-mix(in oklab, var(--color-unmsm-dorado-light) 80%, transparent),
+            0 6px 18px -8px rgb(15 43 72 / 0.55);
         transition:
             transform 200ms ease,
             box-shadow 200ms ease,
-            filter 200ms ease;
+            background-color 200ms ease;
     }
 
     .cta-capsula:hover {
-        filter: saturate(1.12) brightness(1.04);
-        box-shadow: 0 10px 24px -10px rgb(15 43 72 / 0.65);
+        background-color: var(--color-unmsm-azul-dark);
+        box-shadow:
+            inset 0 0 0 2px var(--color-unmsm-dorado-light),
+            0 10px 24px -10px rgb(15 43 72 / 0.65);
         transform: translateY(-1px);
     }
 

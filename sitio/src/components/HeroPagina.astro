@@ -1,6 +1,9 @@
 ---
 import { Image } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
+import Icono from './Icono.astro';
 import { paraDescargar } from '../lib/api';
+import { faHouse, faChevronRight } from '@fortawesome/free-solid-svg-icons';
 
 interface Props {
     titulo: string;
@@ -9,12 +12,27 @@ interface Props {
     imagen?: string | null;
     /** Migas: pares [texto, url]; el último sin url es la página actual. */
     migas?: { texto: string; url?: string }[];
+    /**
+     * Ilustración a la derecha del título. Con ella el texto se alinea a la
+     * izquierda; sin ella, centrado como antes. Es decorativa: el título ya
+     * dice de qué va la página.
+     */
+    ilustracion?: ImageMetadata;
 }
 
-const { titulo, bajada, kicker, imagen, migas = [] } = Astro.props;
+const { titulo, bajada, kicker, imagen, migas = [], ilustracion } = Astro.props;
+
+// El mismo titulo en dos tonos que `TituloSeccion`: la ultima palabra en el
+// azul de acento.
+const corte = titulo.trimEnd().lastIndexOf(' ');
+const [inicio, final] = corte > 0 ? [titulo.slice(0, corte + 1), titulo.slice(corte + 1)] : [titulo, ''];
 ---
 
-<section class="hero-pagina relative isolate overflow-hidden text-white">
+{/* Claro, como la referencia (Idiomas PUCP): migas arriba a la izquierda,
+    titulo grande en dos tonos y la bajada debajo, sobre un fondo blanco con
+    manchas de color. La version anterior era una banda azul con texto blanco;
+    la cabecera ahora va en azul tambien arriba, y necesita algo claro detras. */}
+<section class="hero-pagina fondo-manchas relative overflow-hidden border-b border-slate-200/70 bg-white">
     {
         imagen && (
             <Image
@@ -24,36 +42,26 @@ const { titulo, bajada, kicker, imagen, migas = [] } = Astro.props;
                 height={600}
                 fetchpriority="high"
                 decoding="async"
-                class="absolute inset-0 -z-10 h-full w-full object-cover"
+                class="absolute inset-0 -z-20 h-full w-full object-cover opacity-15"
             />
         )
     }
 
-    {/* Sin foto, el degradado solo. Con foto, el mismo degradado por encima:
-        el texto blanco necesita ese velo para mantener el contraste AA sobre
-        las zonas claras. */}
-    <div
-        aria-hidden="true"
-        class="absolute inset-0 -z-10 bg-linear-to-r from-unmsm-azul-dark via-unmsm-azul/95 to-unmsm-azul/70"
-    >
-    </div>
-
-    <div class="mx-auto max-w-6xl px-6 py-16 sm:py-20">
+    <div class="mx-auto max-w-6xl px-6 pb-14 pt-8 sm:pb-16">
         {
             migas.length > 0 && (
                 <nav aria-label="Ruta de navegación">
-                    <ol class="flex flex-wrap items-center gap-2 text-sm text-unmsm-azul-soft">
+                    <ol class="flex flex-wrap items-center gap-1.5 text-xs text-slate-500">
                         {migas.map((miga, i) => (
-                            <li class="flex items-center gap-2">
-                                {i > 0 && <span aria-hidden="true">/</span>}
+                            <li class="flex items-center gap-1.5">
+                                {i > 0 && <Icono icono={faChevronRight} clase="h-2.5 w-2.5 text-slate-400" />}
                                 {miga.url ? (
-                                    <a href={miga.url} class="hover:text-white">
+                                    <a href={miga.url} class="flex items-center gap-1.5 text-unmsm-azul hover:underline">
+                                        {i === 0 && <Icono icono={faHouse} clase="h-3 w-3" />}
                                         {miga.texto}
                                     </a>
                                 ) : (
-                                    <span class="text-white" aria-current="page">
-                                        {miga.texto}
-                                    </span>
+                                    <span aria-current="page">{miga.texto}</span>
                                 )}
                             </li>
                         ))}
@@ -62,19 +70,43 @@ const { titulo, bajada, kicker, imagen, migas = [] } = Astro.props;
             )
         }
 
-        {
-            kicker && (
-                <p class="mt-6 text-xs font-semibold uppercase tracking-[0.18em] text-unmsm-dorado-light">
-                    {kicker}
-                </p>
-            )
-        }
+        <div
+            class:list={[
+                'mt-8',
+                ilustracion
+                    ? 'grid items-center gap-8 text-center lg:grid-cols-[1fr_auto] lg:gap-12 lg:text-left'
+                    : 'mx-auto max-w-3xl text-center',
+            ]}
+        >
+            {
+                ilustracion && (
+                    <Image
+                        src={ilustracion}
+                        alt=""
+                        widths={[300, 440, 600, 880]}
+                        sizes="(min-width: 64rem) 440px, (min-width: 40rem) 320px, 270px"
+                        loading="eager"
+                        class="mx-auto h-40 w-auto mix-blend-multiply sm:h-48 lg:order-last lg:h-64"
+                    />
+                )
+            }
+            <div>
+                {
+                    kicker && (
+                        <p class="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-unmsm-azul shadow-sm ring-1 ring-slate-200">
+                            <span aria-hidden="true" class="h-1.5 w-1.5 rounded-full bg-unmsm-dorado" />
+                            {kicker}
+                        </p>
+                    )
+                }
 
-        <h1 class="mt-3 max-w-3xl font-serif text-4xl font-bold leading-tight sm:text-5xl">
-            {titulo}
-        </h1>
+                <h1 class="mt-5 font-serif text-4xl font-extrabold leading-tight text-unmsm-azul sm:text-5xl">
+                    {inicio}{final && <span class="text-unmsm-acento">{final}</span>}
+                </h1>
 
-        {bajada && <p class="mt-5 max-w-2xl text-lg text-slate-100">{bajada}</p>}
+                {bajada && <p class:list={['mx-auto mt-5 max-w-2xl text-lg leading-relaxed text-slate-600', ilustracion && 'lg:mx-0']}>{bajada}</p>}
+            </div>
+        </div>
 
         <slot />
     </div>

@@ -112,6 +112,16 @@ class OesiApiController extends Controller
                 'requisitos' => $o->requisitos ?: null,
             ],
 
+            // Una pestaña del hero por idioma. Las modalidades se filtran a las
+            // dos que existen: el sitio pinta un icono por cada una.
+            'idiomas' => array_map(fn ($i) => [
+                'nombre' => (string) ($i['nombre'] ?? ''),
+                'saludo' => ($i['saludo'] ?? null) ?: null,
+                'publico' => ($i['publico'] ?? null) ?: null,
+                'modalidades' => array_values(array_intersect(['presencial', 'virtual'], (array) ($i['modalidades'] ?? []))),
+                'imagen' => $this->imagen($i['imagen'] ?? null, $i['imagen_alt'] ?? null),
+            ], array_values(array_filter($this->lista($o->idiomas), fn ($i) => filled($i['nombre'] ?? null)))),
+
             'habilidades' => [
                 'intro' => $o->habilidades_intro ?: null,
                 'items' => array_map(fn ($h) => [

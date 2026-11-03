@@ -1,13 +1,13 @@
-/* Las mismas familias y pesos que el sitio en Blade, auto-alojadas: Inter para
-   el texto, Playfair Display para los titulos y Merriweather para los
-   destacados. Sin peticiones a Google Fonts en la ruta critica. */
+/* Una sola familia, auto-alojada: Inter para el texto y para los titulos.
+   Antes los titulos iban en Playfair Display y los destacados en Merriweather;
+   el rediseño los pasa a una sans geometrica de peso alto, como la referencia
+   (Idiomas PUCP), y de paso son tres ficheros de fuente menos en la ruta
+   critica. Sin peticiones a Google Fonts. */
 @import "@fontsource/inter/latin-400.css";
 @import "@fontsource/inter/latin-500.css";
 @import "@fontsource/inter/latin-600.css";
 @import "@fontsource/inter/latin-700.css";
-@import "@fontsource/playfair-display/latin-600.css";
-@import "@fontsource/playfair-display/latin-700.css";
-@import "@fontsource/merriweather/latin-700.css";
+@import "@fontsource/inter/latin-800.css";
 
 @import "tailwindcss";
 
@@ -22,7 +22,28 @@
    depende del árbol de Laravel para construirse. */
 @theme {
     --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-    --font-serif: "Playfair Display", Merriweather, ui-serif, Georgia, serif;
+    /* `font-serif` se conserva como nombre —lo usan todos los titulos— pero ya
+       no es una serif: es el Inter de los titulos, con el interletrado cerrado
+       que le da `.font-serif` mas abajo. Cambiarlo aqui cambia todos a la vez. */
+    --font-serif: "Inter", ui-sans-serif, system-ui, sans-serif;
+
+    /* Acento de los titulos en dos tonos («Cómo *inscribirte*»): el azul
+       institucional abierto, que sobre blanco sigue pasando AA. */
+    --color-unmsm-acento: #1F6FB8;
+
+    /* El dorado de la casa, oscurecido para texto sobre fondo claro: el de
+       marca (#B6A350) se quedaba en 2,5:1 sobre blanco; este da 5,6:1 y 5,2:1
+       sobre la banda azulada. El de marca sigue en iconos y filetes. */
+    --color-unmsm-dorado-texto: #7D6519;
+
+    /*
+     * Fondos de sección. Las bandas alternaban blanco y slate-50, y los dos
+     * son tan parecidos que en pantalla no se distinguía dónde acababa una
+     * sección y empezaba otra. Ahora la banda alterna lleva un tinte del azul
+     * de la casa, y la del curso (un recurso aparte, del CEID) uno cálido.
+     */
+    --color-fondo-suave: #F3F7FC;
+    --color-fondo-calido: #FBF8F0;
 
     --color-unmsm-azul: #143B63;
     --color-unmsm-azul-light: #1C5287;
@@ -266,19 +287,43 @@ html {
  * anima: si encogiera con la capsula, la pagina daria un salto al empezar a
  * rodar la rueda.
  */
+/* Los titulos en Inter necesitan el interletrado cerrado que Playfair traia de
+   serie: abiertos, a 48 px se leen flojos. */
+.font-serif {
+    letter-spacing: -0.02em;
+}
+
+/*
+ * Manchas de color desenfocadas detras del contenido: el fondo de la
+ * referencia. Son dos gradientes radiales en un pseudo-elemento, sin imagen ni
+ * peticion, y no se animan: no cuestan nada despues de pintarse.
+ */
+@utility fondo-manchas {
+    position: relative;
+    isolation: isolate;
+
+    &::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        z-index: -1;
+        pointer-events: none;
+        background:
+            radial-gradient(38rem 26rem at 8% 0%, color-mix(in oklab, var(--color-unmsm-azul-soft) 30%, transparent), transparent 70%),
+            radial-gradient(34rem 24rem at 96% 30%, color-mix(in oklab, var(--color-unmsm-dorado) 20%, transparent), transparent 70%);
+    }
+}
+
 .separador-cabecera {
     height: var(--alto-cabecera);
     /*
-     * Banda oscura, no un hueco en blanco.
-     *
-     * Arriba la capsula es transparente y su texto va en blanco, asi que
-     * necesita algo oscuro detras. En las paginas con hero lo pone el hero, que
-     * sube a taparla; en las que no lo tienen —busqueda, 404, la ficha de un
-     * docente— este separador es lo unico que hay, y sin color la navegacion
-     * seria texto blanco sobre fondo blanco. Es la garantia de que ninguna
-     * pagina, ni las que se anadan despues, pueda quedarse sin cabecera legible.
+     * Claro, como los heros. Desde el rediseño la capsula lleva el texto en
+     * azul tambien arriba, asi que necesita algo claro detras: antes era al
+     * reves —texto blanco sobre una banda oscura—. Con un filo abajo, para que
+     * en las paginas sin hero la cabecera no se funda con el contenido.
      */
-    background-color: var(--color-unmsm-azul-dark);
+    background-color: #fff;
+    border-bottom: 1px solid rgb(15 43 72 / 0.08);
 }
 
 /*
