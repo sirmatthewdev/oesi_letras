@@ -25,8 +25,9 @@
 import Flecha from '../Flecha.astro';
 import Icono from '../Icono.astro';
 import Negritas from './Negritas.astro';
+import Desplegable from '../Desplegable.astro';
 import { corta, larga, piezas, vigentes, type FechaExamen } from '../../lib/fechas';
-import { normalizar } from '../../lib/oesi';
+import { colorPanel, normalizar } from '../../lib/oesi';
 import { faBuildingColumns, faEnvelope, faLaptop, faCircleInfo } from '@fortawesome/free-solid-svg-icons';
 import { faWhatsapp } from '@fortawesome/free-brands-svg-icons';
 
@@ -53,11 +54,15 @@ const colorIdioma = (nombre: string) => {
         if (!extra.includes(normalizar(nombre))) extra.push(normalizar(nombre));
         i = conocidos.length + extra.indexOf(normalizar(nombre));
     }
-    return `var(--color-panel-${(i % 7) + 1})`;
+    return colorPanel(i);
 };
 const ahora = new Date();
 const ordenadas = [...fechas].sort((a, b) => a.inicio.localeCompare(b.inicio));
 const mes = (f: FechaExamen) => f.inicio.slice(0, 7);
+
+// La clave de un idioma en los filtros y en la dirección (`?idioma=frances`):
+// la misma que usa el hero para enlazar aquí.
+const clave = (nombre: string) => normalizar(nombre).replace(/\s+/g, '-');
 
 const proximas = vigentes(ordenadas, ahora);
 const hayProximas = proximas.length > 0;
@@ -72,8 +77,17 @@ const carteles = clavesMes.map((clave) => {
     const p = piezas(de[0].inicio);
     return { clave, mes: p.mes, anio: clave.slice(0, 4), fechas: de };
 });
-const idiomas = [...new Set(carteles.flatMap((c) => c.fechas.map((f) => f.idioma)))];
+// Los idiomas del filtro: todos los del panel, en su orden, y los que solo
+// aparezcan en el cronograma. Así se puede elegir el propio aunque este mes no
+// tenga examen, y la página lo dice.
+const idiomas = [...ordenIdiomas, ...carteles.flatMap((c) => c.fechas.map((f) => f.idioma))].filter(
+    (i, k, todos) => todos.findIndex((x) => normalizar(x) === normalizar(i)) === k
+);
 const modalidades = [...new Set(carteles.flatMap((c) => c.fechas.map((f) => f.modalidad)))];
+// Cuántos exámenes hay en el cartel, para el número de cada opción del filtro.
+const enCartel = carteles.flatMap((c) => c.fechas);
+const totalExamenes = enCartel.length;
+const cuantos = (cumple: (f: FechaExamen) => boolean) => enCartel.filter(cumple).length;
 
 // La fecha del próximo examen, para resaltarlo (lo corrige el script al cargar).
 const proximoInicio = proximas[0]?.inicio.slice(0, 10) ?? null;
@@ -140,27 +154,40 @@ const estado = (f: FechaExamen): Estado =>
         )
     }
 
-    {/* Filtros, solo si hay de qué filtrar y algo por venir. Sin JavaScript no
-        se ven (`hidden`) y el cartel sale entero. */}
+    {/* Filtros encima del cartel: todos los idiomas o uno, y la modalidad. El
+        elegido va en la dirección (`?idioma=frances`), así que se puede
+        compartir; el hero de la portada enlaza así a cada idioma. Sin
+        JavaScript no se ven (`hidden`) y el cartel sale entero. */}
     {
-        hayProximas && (idiomas.length > 1 || modalidades.length > 1) && (
-            <div class="mt-6 flex flex-wrap items-center gap-2" role="group" aria-label="Filtrar por idioma o modalidad" data-filtros hidden>
-                <button type="button" class="filtro" data-filtro="" aria-pressed="true">Todos</button>
-                {idiomas.map((i) => (
-                    <button type="button" class="filtro" data-filtro={`idioma:${normalizar(i)}`} aria-pressed="false" style={`--idioma-color: ${colorIdioma(i)}`}>
-                        <span aria-hidden="true" class="punto-idioma" />
-                        {i}
-                    </button>
-                ))}
+        carteles.length > 0 && (idiomas.length > 1 || modalidades.length > 1) && (
+            <div class="mt-6 flex flex-wrap items-end gap-3" role="group" aria-label="Filtrar el cronograma" data-filtros hidden>
+                {/* Idioma y modalidad, en listas desplegables con diseño propio
+                    (components/Desplegable.astro): el punto de color o el icono
+                    de cada opción y cuántos exámenes tiene en el cartel. */}
+                <Desplegable
+                    etiqueta="Idioma"
+                    atributo="data-filtro-idioma"
+                    clase="min-w-[15rem]"
+                    opciones={[
+                        { valor: '', texto: 'Todos los idiomas', cantidad: totalExamenes },
+                        ...idiomas.map((i) => ({ valor: clave(i), texto: i, color: colorIdioma(i), cantidad: cuantos((f) => clave(f.idioma) === clave(i)) })),
+                    ]}
+                />
                 {modalidades.length > 1 && (
-                    <span class="inline-flex gap-1 rounded-full bg-slate-100 p-1">
-                        {modalidades.map((m) => (
-                            <button type="button" class="filtro" data-filtro={`modalidad:${m}`} aria-pressed="false">
-                                <Icono icono={m === 'presencial' ? faBuildingColumns : faLaptop} clase="h-3 w-3" />
-                                {m === 'presencial' ? 'Presencial' : 'Virtual'}
-                            </button>
-                        ))}
-                    </span>
+                    <Desplegable
+                        etiqueta="Modalidad"
+                        atributo="data-filtro-modalidad"
+                        clase="min-w-[12rem]"
+                        opciones={[
+                            { valor: '', texto: 'Todas', cantidad: totalExamenes },
+                            ...modalidades.map((m) => ({
+                                valor: m,
+                                texto: m === 'presencial' ? 'Presencial' : 'Virtual',
+                                icono: m === 'presencial' ? faBuildingColumns : faLaptop,
+                                cantidad: cuantos((f) => f.modalidad === m),
+                            })),
+                        ]}
+                    />
                 )}
             </div>
         )
@@ -197,7 +224,7 @@ const estado = (f: FechaExamen): Estado =>
                                 class="examen flex items-stretch"
                                 data-inicio={f.inicio}
                                 data-cierre={f.cierre_inscripcion}
-                                data-idioma={normalizar(f.idioma)}
+                                data-idioma={clave(f.idioma)}
                                 data-modalidad={f.modalidad}
                                 data-estado={e}
                                 data-proximo={f.inicio.slice(0, 10) === proximoInicio ? '' : undefined}
@@ -277,7 +304,14 @@ const estado = (f: FechaExamen): Estado =>
     }
 
     <p class="mt-6 hidden rounded-2xl bg-white px-5 py-4 text-sm text-slate-600 ring-1 ring-slate-200" data-sin-resultados>
-        No hay exámenes con ese filtro. <button type="button" class="font-semibold text-unmsm-azul underline" data-filtro="">Ver todos</button>
+        <span data-sin-texto>No hay exámenes con ese filtro en este cronograma.</span>
+        {whatsapp && (
+            <>
+                {' '}
+                <a href={whatsapp.enlace} target="_blank" rel="noopener noreferrer" class="font-semibold text-unmsm-azul underline">Pregúntanos por WhatsApp</a> o
+            </>
+        )}{' '}
+        <button type="button" class="font-semibold text-unmsm-azul underline" data-ver-todo>ver todo el cronograma</button>.
     </p>
 
     {/* Ni siquiera un cronograma anterior: lo dice, y da el contacto. */}
@@ -324,14 +358,6 @@ const estado = (f: FechaExamen): Estado =>
         letter-spacing: 0.02em;
         color: #fff;
         background-color: var(--idioma-color);
-    }
-
-    .punto-idioma {
-        height: 0.55rem;
-        width: 0.55rem;
-        border-radius: 9999px;
-        background-color: var(--idioma-color);
-        box-shadow: 0 0 0 2px #fff;
     }
 
     /* El próximo examen, resaltado: la banda más clara y luminosa, un aro
@@ -387,32 +413,6 @@ const estado = (f: FechaExamen): Estado =>
         color: color-mix(in oklab, var(--color-unmsm-azul) 70%, #fff);
     }
 
-    .filtro {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.375rem;
-        border-radius: 9999px;
-        padding: 0.45rem 0.95rem;
-        font-size: 0.875rem;
-        font-weight: 600;
-        color: var(--color-unmsm-azul);
-        background-color: #fff;
-        box-shadow: inset 0 0 0 1px rgb(15 43 72 / 0.15);
-        transition:
-            background-color 200ms ease,
-            color 200ms ease,
-            box-shadow 200ms ease;
-    }
-
-    .filtro:hover {
-        box-shadow: inset 0 0 0 1.5px var(--color-unmsm-acento);
-    }
-
-    .filtro[aria-pressed='true'] {
-        background-color: var(--color-unmsm-azul);
-        color: #fff;
-        box-shadow: none;
-    }
 </style>
 
 <script>
@@ -449,22 +449,68 @@ const estado = (f: FechaExamen): Estado =>
         filtros.hidden = false;
         const sinResultados = raiz.querySelector<HTMLElement>('[data-sin-resultados]')!;
 
-        const aplicar = (filtro: string) => {
-            const [campo, valor] = filtro.split(':');
-            filtros.querySelectorAll<HTMLButtonElement>('[data-filtro]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.filtro === filtro)));
+        const sinTexto = raiz.querySelector<HTMLElement>('[data-sin-texto]')!;
+        const select = filtros.querySelector<HTMLSelectElement>('select[data-filtro-idioma]')!;
+        const selectModalidad = filtros.querySelector<HTMLSelectElement>('select[data-filtro-modalidad]');
+        // Idioma y modalidad se combinan: Francés + virtual.
+        const estado = { idioma: '', modalidad: '' };
+
+        const aplicar = ({ guardar = true } = {}) => {
+            // Los desplegables, al día (el de diseño escucha `sincronizar`).
+            select.value = estado.idioma;
+            select.dispatchEvent(new Event('sincronizar'));
+            if (selectModalidad) {
+                selectModalidad.value = estado.modalidad;
+                selectModalidad.dispatchEvent(new Event('sincronizar'));
+            }
             let visibles = 0;
             examenes.forEach((e) => {
-                e.hidden = !!filtro && e.dataset[campo as 'idioma' | 'modalidad'] !== valor;
+                e.hidden =
+                    (!!estado.idioma && e.dataset.idioma !== estado.idioma) || (!!estado.modalidad && e.dataset.modalidad !== estado.modalidad);
                 if (!e.hidden) visibles++;
             });
             raiz.querySelectorAll<HTMLElement>('[data-cartel]').forEach((c) => (c.hidden = !c.querySelector('.examen:not([hidden])')));
+            const idioma = estado.idioma ? select.selectedOptions[0]?.textContent?.trim() : '';
+            const modalidad = estado.modalidad ? ` en modalidad ${estado.modalidad}` : '';
+            sinTexto.textContent = `No hay exámenes${idioma ? ` de ${idioma}` : ''}${modalidad} en este cronograma.`;
             sinResultados.classList.toggle('hidden', visibles > 0);
+
+            // El filtro, en la dirección: se puede compartir y sobrevive a recargar.
+            if (guardar) {
+                const url = new URL(location.href);
+                for (const c of ['idioma', 'modalidad'] as const) {
+                    if (estado[c]) url.searchParams.set(c, estado[c]);
+                    else url.searchParams.delete(c);
+                }
+                history.replaceState(history.state, '', url);
+            }
         };
 
-        raiz.addEventListener('click', (e) => {
-            const b = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-filtro]');
-            if (b) aplicar(b.dataset.filtro ?? '');
+        select.addEventListener('change', () => {
+            estado.idioma = select.value;
+            aplicar();
         });
+        selectModalidad?.addEventListener('change', () => {
+            estado.modalidad = selectModalidad.value;
+            aplicar();
+        });
+        raiz.addEventListener('click', (e) => {
+            const t = e.target as HTMLElement;
+            if (t.closest('[data-ver-todo]')) {
+                estado.idioma = '';
+                estado.modalidad = '';
+                aplicar();
+            }
+        });
+
+        // Al llegar con `?idioma=…` (desde el hero) o `?modalidad=…`, ya filtrado.
+        // Un valor que no está en los filtros se ignora.
+        const pedido = new URLSearchParams(location.search);
+        const idiomaPedido = pedido.get('idioma') ?? '';
+        const modalidadPedida = pedido.get('modalidad') ?? '';
+        if ([...select.options].some((o) => o.value === idiomaPedido)) estado.idioma = idiomaPedido;
+        if (selectModalidad && [...selectModalidad.options].some((o) => o.value === modalidadPedida)) estado.modalidad = modalidadPedida;
+        if (estado.idioma || estado.modalidad) aplicar({ guardar: false });
     }
 
     iniciarCronograma();

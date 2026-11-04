@@ -24,7 +24,7 @@ import { Image } from 'astro:assets';
 import type { ImageMetadata } from 'astro';
 import Icono from '../Icono.astro';
 import type { Oesi } from '../../lib/api';
-import { normalizar } from '../../lib/oesi';
+import { colorPanel, normalizar } from '../../lib/oesi';
 import { corta, vigentes, type FechaExamen } from '../../lib/fechas';
 import { faBuildingColumns, faLaptop, faPause, faPlay, faReceipt, faUserPlus } from '@fortawesome/free-solid-svg-icons';
 
@@ -47,10 +47,9 @@ const clave = (nombre: string) => normalizar(nombre).replace(/\s+/g, '-');
 const FONDOS = import.meta.glob<{ default: ImageMetadata }>('../../assets/fondos-idioma/*.jpg', { eager: true });
 const fondo = (nombre: string) => FONDOS[`../../assets/fondos-idioma/${clave(nombre)}.jpg`]?.default;
 
-// Un color por idioma, de `--color-panel-1` a `-7` (en styles/global.css):
-// los de la casa —azul, acento, azul hondo— y cuatro de apoyo de la misma
-// luminosidad, para que la fila no se lea como siete veces el mismo panel.
-const COLORES = Array.from({ length: 7 }, (_, i) => `var(--color-panel-${i + 1})`);
+// Un color por idioma, de `--color-panel-1` a `-9` (en styles/global.css):
+// los de la casa —azul, acento, azul hondo— y seis de apoyo de la misma
+// luminosidad, para que la fila no se lea como el mismo panel repetido.
 
 const MODALIDADES = {
     presencial: { etiqueta: 'Presencial', icono: faBuildingColumns },
@@ -68,7 +67,7 @@ const MODALIDADES = {
                     data-activo={i === 0 ? '' : undefined}
                     aria-roledescription="diapositiva"
                     aria-label={`${i + 1} de ${idiomas.length}: ${idioma.nombre}`}
-                    style={`--panel-color: ${COLORES[i % COLORES.length]}`}
+                    style={`--panel-color: ${colorPanel(i)}`}
                 >
                     {/* La foto de fondo: decorativa (`alt` vacío) salvo la que sube
                         la oficina, que trae su descripción. En el móvil el panel
@@ -152,8 +151,9 @@ const MODALIDADES = {
                             {/* «Inscríbete» lleva al primer paso —elegir la fecha—, igual
                                 que el botón de la cabecera: antes aquí saltaba al pago
                                 y el mismo botón llevaba a dos sitios. */}
+                            {/* Al cronograma ya filtrado por este idioma. */}
                             <a
-                                href="/cronograma"
+                                href={`/cronograma?idioma=${clave(idioma.nombre)}`}
                                 class="inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-semibold text-unmsm-azul shadow-sm transition hover:bg-unmsm-dorado-light hover:text-unmsm-azul-dark"
                             >
                                 <Icono icono={faUserPlus} clase="h-4 w-4" />

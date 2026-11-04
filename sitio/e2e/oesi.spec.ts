@@ -202,6 +202,28 @@ test.describe('OESI', () => {
         await expect(convocatoria).toContainText('Paso 2');
     });
 
+    test('la guía del medio de pago se amplía en un visor con zoom', async ({ page }) => {
+        await abrir(page, '/inscripcion');
+        const ampliar = page.locator('#paso-pago [data-ampliar]');
+        await ampliar.scrollIntoViewIfNeeded();
+        // Sin JavaScript, el enlace lleva al fichero: el navegador ya lo amplía.
+        await expect(ampliar).toHaveAttribute('href', /medio-pago/);
+
+        await ampliar.click();
+        const visor = page.locator('#paso-pago [data-visor]');
+        await expect(visor).toBeVisible();
+
+        // Un clic acerca (tamaño real, se recorre) y otro vuelve a verla entera.
+        const lienzo = visor.locator('[data-visor-lienzo]');
+        await visor.locator('[data-visor-img]').click();
+        await expect(lienzo).toHaveAttribute('data-acercado', '');
+        await visor.locator('[data-visor-img]').click();
+        await expect(lienzo).not.toHaveAttribute('data-acercado', '');
+
+        await page.keyboard.press('Escape');
+        await expect(visor).toBeHidden();
+    });
+
     test('si una imagen no carga, se ve su respaldo con salida', async ({ page }) => {
         // Las imágenes viven en la web de Letras: se simula que no responde.
         await page.route('https://letras.unmsm.edu.pe/**', (ruta) => ruta.abort());
@@ -217,7 +239,7 @@ test.describe('OESI', () => {
         await expect(respaldo).toContainText('No pudimos mostrar la guía del medio de pago');
         await expect(respaldo.getByRole('link', { name: 'Abrir la imagen' })).toHaveAttribute('href', /medio-pago/);
         await expect(respaldo.getByRole('link', { name: /WhatsApp/ })).toHaveAttribute('href', /wa\.me\/51914033108/);
-        await expect(figura.locator('img')).toBeHidden();
+        await expect(figura.locator('[data-imagen-cuerpo]')).toBeHidden();
     });
 
     test('el flyer roto también tiene respaldo, aunque esté dentro de un enlace', async ({ page }) => {

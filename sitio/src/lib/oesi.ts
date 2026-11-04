@@ -94,3 +94,13 @@ export function normalizar(texto: string): string {
         .replace(/\s+/g, ' ')
         .trim();
 }
+
+/**
+ * Cuántos colores de panel hay (`--color-panel-1` a `-9`, en styles/global.css).
+ * Cada idioma toma el suyo por su orden en la pestaña Idiomas; con más idiomas
+ * que colores, se repiten.
+ */
+export const COLORES_PANEL = 9;
+
+/** El color de panel del idioma en la posición `i` (desde 0). */
+export const colorPanel = (i: number) => `var(--color-panel-${(i % COLORES_PANEL) + 1})`;

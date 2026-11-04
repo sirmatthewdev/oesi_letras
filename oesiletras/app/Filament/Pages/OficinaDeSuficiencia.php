@@ -23,6 +23,7 @@ use Filament\Schemas\Components\Form;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Tabs\Tab;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 
@@ -311,7 +312,7 @@ class OficinaDeSuficiencia extends Page
     {
         return [
             Section::make('Idiomas que se evalúan')
-                ->description('Cada idioma es una pestaña del carrusel de la portada, en este orden: el primero es el que se ve al entrar. Conviene revisarlos con cada cronograma.')
+                ->description('Cada idioma es una categoría: una pestaña del carrusel de la portada (en este orden; el primero es el que se ve al entrar), una opción del filtro del cronograma y del buscador. Se añaden, se quitan y se reordenan aquí. Un idioma que se escriba en una fecha del cronograma y no esté aquí se añade solo al guardar.')
                 ->schema([
                     Repeater::make('idiomas')
                         ->hiddenLabel()
@@ -333,15 +334,18 @@ class OficinaDeSuficiencia extends Page
                             CheckboxList::make('modalidades')
                                 ->options(['presencial' => 'Presencial', 'virtual' => 'Virtual'])
                                 ->columns(2),
+                            ImagenOptimizada::make('foto', 'idiomas', 1600, 'Fotografía de fondo (opcional)')
+                                ->helperText('Se ve tras un velo del color de la pestaña. Sin foto, la pestaña lleva su color y el saludo en grande. Se convierte a WebP y se reduce a 1600 px.'),
                             TextInput::make('imagen')
-                                ->label('Fotografía (URL, opcional)')
-                                ->helperText('Sin foto, la pestaña lleva el fondo de color.')
+                                ->label('…o su dirección (URL)')
+                                ->helperText('Si se sube una foto, manda la subida.')
                                 ->url()
                                 ->maxLength(500),
                             TextInput::make('imagen_alt')
                                 ->label('Descripción de la fotografía')
-                                ->requiredWith('imagen')
-                                ->maxLength(255),
+                                ->requiredWith('foto,imagen')
+                                ->maxLength(255)
+                                ->columnSpanFull(),
                         ]),
                 ]),
         ];
@@ -450,7 +454,10 @@ class OficinaDeSuficiencia extends Page
                             TextInput::make('idioma')
                                 ->required()
                                 ->maxLength(40)
-                                ->helperText('Igual que en la pestaña Idiomas.'),
+                                // Sugiere los de la pestaña Idiomas; uno nuevo se
+                                // añade allí al guardar (ver `guardar`).
+                                ->datalist(fn (Get $get): array => collect($get('../../idiomas') ?? [])->pluck('nombre')->filter()->values()->all())
+                                ->helperText('Elige uno de la lista o escribe uno nuevo: se añade a Idiomas al guardar.'),
                             DatePicker::make('fecha')->required()->native(false)->displayFormat('d/m/Y'),
                             TextInput::make('hora')
                                 ->required()
@@ -703,7 +710,21 @@ class OficinaDeSuficiencia extends Page
     public function guardar(): void
     {
         $oesi = OesiSetting::query()->firstOrCreate([]);
-        $oesi->update($this->form->getState());
+        $estado = $this->form->getState();
+
+        // Cada idioma es una categoría: el que aparezca en una fecha del
+        // cronograma y no esté en Idiomas se añade allí, para que tenga su
+        // pestaña en el carrusel y su opción en los filtros.
+        [$estado['idiomas'], $nuevos] = OesiSetting::idiomasConLosDelCronograma($estado['idiomas'] ?? [], $estado['cronograma_fechas'] ?? []);
+        $oesi->update($estado);
+        if ($nuevos) {
+            $this->form->fill($oesi->fresh()->attributesToArray());
+            Notification::make()
+                ->title('Idiomas añadidos')
+                ->body('Se añadieron a la pestaña Idiomas: ' . implode(', ', $nuevos) . '. Completa allí su público, modalidad y saludo.')
+                ->info()
+                ->send();
+        }
 
         Notification::make()
             ->title('OESI guardada')

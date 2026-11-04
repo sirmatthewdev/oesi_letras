@@ -1,7 +1,7 @@
 # Fotos de fondo del hero de idiomas
 
 Una por idioma, de [Unsplash](https://unsplash.com), descargadas el 3-11-2026 a
-1600 px de ancho. Las siete están bajo la
+1600 px de ancho. Ruso y Japonés se añadieron el 4-11-2026. Todas están bajo la
 [Licencia de Unsplash](https://unsplash.com/license): uso gratuito, también
 comercial, sin obligación de atribuir. Se dejan aquí los créditos igualmente.
 
@@ -18,3 +18,5 @@ nombre. Una foto subida desde el panel, en «Idiomas», manda sobre la de aquí.
 | `aleman.jpg` | [Puerta de Brandeburgo de noche, Berlín](https://unsplash.com/es/fotos/puerta-de-brandeburgo-de-noche-en-berlin-uFGi0_YciE0) | Florian Wehde |
 | `quechua.jpg` | [Ruinas de piedra de Machu Picchu, Perú](https://unsplash.com/es/fotos/ruinas-de-piedra-de-machu-picchu-en-peru-rFESpq5MMTg) | Eddie Kiszka |
 | `aimara.jpg` | [Cabañas con techo de paja junto al lago Titicaca](https://unsplash.com/es/fotos/cabanas-con-techo-de-paja-junto-a-un-lago-con-montanas-de-fondo--Wu_LYfg_eg) | Andrea Huls Pareja |
+| `ruso.jpg` | [Catedral de San Basilio, Moscú](https://unsplash.com/photos/saint-basils-cathedral-in-moscow-1K8pWXiRyIA) | Artem Beliaikin |
+| `japones.jpg` | [Pagoda Chureito y el monte Fuji](https://unsplash.com/photos/pagoda-and-mount-fuji-in-japan-FuxYvi-hcWQ) | Max Bender |

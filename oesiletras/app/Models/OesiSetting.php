@@ -74,6 +74,44 @@ class OesiSetting extends Model
         });
     }
 
+    /**
+     * Los idiomas, con los del cronograma que falten añadidos al final.
+     *
+     * Cada idioma es una categoría del sitio (pestaña del carrusel, opción de
+     * los filtros). Se compara por el nombre sin tildes ni mayúsculas; el
+     * añadido toma la modalidad de su fecha.
+     *
+     * @param  array<mixed>  $idiomas
+     * @param  array<mixed>  $fechas
+     * @return array{0: array<mixed>, 1: list<string>} los idiomas y los nombres añadidos
+     */
+    public static function idiomasConLosDelCronograma(array $idiomas, array $fechas): array
+    {
+        $clave = fn (?string $n) => \Illuminate\Support\Str::lower(\Illuminate\Support\Str::ascii(trim((string) $n)));
+        $hay = array_map(fn ($i) => $clave($i['nombre'] ?? ''), array_filter($idiomas, 'is_array'));
+        $nuevos = [];
+
+        foreach (array_filter($fechas, 'is_array') as $f) {
+            $nombre = trim((string) ($f['idioma'] ?? ''));
+            if ($nombre === '' || in_array($clave($nombre), $hay, true)) {
+                continue;
+            }
+            $hay[] = $clave($nombre);
+            $nuevos[] = $nombre;
+            $idiomas[] = [
+                'nombre' => $nombre,
+                'saludo' => null,
+                'publico' => ($f['publico'] ?? null) ?: null,
+                'modalidades' => in_array($f['modalidad'] ?? null, ['presencial', 'virtual'], true) ? [$f['modalidad']] : [],
+                'foto' => null,
+                'imagen' => null,
+                'imagen_alt' => null,
+            ];
+        }
+
+        return [array_values($idiomas), $nuevos];
+    }
+
     /** La fila de la OESI, o null si todavía no se ha sembrado. */
     public static function actual(): ?self
     {

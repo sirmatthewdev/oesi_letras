@@ -120,7 +120,10 @@ class OesiApiController extends Controller
                 'saludo' => ($i['saludo'] ?? null) ?: null,
                 'publico' => ($i['publico'] ?? null) ?: null,
                 'modalidades' => array_values(array_intersect(['presencial', 'virtual'], (array) ($i['modalidades'] ?? []))),
-                'imagen' => $this->imagen($i['imagen'] ?? null, $i['imagen_alt'] ?? null),
+                // La foto subida en el panel manda sobre la URL escrita.
+                'imagen' => filled($i['foto'] ?? null)
+                    ? ['url' => asset('storage/' . $i['foto']), 'alt' => (string) ($i['imagen_alt'] ?? '')]
+                    : $this->imagen($i['imagen'] ?? null, $i['imagen_alt'] ?? null),
             ], array_values(array_filter($this->lista($o->idiomas), fn ($i) => filled($i['nombre'] ?? null)))),
 
             'habilidades' => [

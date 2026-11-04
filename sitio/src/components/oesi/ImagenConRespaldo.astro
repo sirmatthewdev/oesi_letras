@@ -1,7 +1,7 @@
 ---
 import { inferRemoteSize } from 'astro:assets';
 import Icono from '../Icono.astro';
-import { faCircleExclamation, faUpRightFromSquare } from '@fortawesome/free-solid-svg-icons';
+import { faCircleExclamation, faMagnifyingGlassPlus, faUpRightFromSquare, faXmark } from '@fortawesome/free-solid-svg-icons';
 import { faWhatsapp } from '@fortawesome/free-brands-svg-icons';
 
 interface Props {
@@ -19,9 +19,16 @@ interface Props {
     prioritaria?: boolean;
     /** Pie de figura: lo que la imagen es, para quien la ve y para quien no. */
     pie?: string | null;
+    /**
+     * Se puede ampliar: un clic abre un visor a pantalla completa en el que la
+     * imagen se ve a su tamaño real y se recorre. Para las que llevan texto
+     * menudo, como la guía del medio de pago. Sin JavaScript es un enlace al
+     * fichero, que el navegador ya deja ampliar.
+     */
+    ampliable?: boolean;
 }
 
-const { imagen, enlace, queEs, whatsapp, alternativa, clase = '', prioritaria = false, pie } = Astro.props;
+const { imagen, enlace, queEs, whatsapp, alternativa, clase = '', prioritaria = false, pie, ampliable = false } = Astro.props;
 
 /*
  * <img> y no el <Image> de Astro, a propósito.
@@ -73,6 +80,22 @@ const tamano = medidas ? { width: medidas.width, height: medidas.height, style: 
                 />
                 <span class="sr-only"> (se abre en una pestaña nueva)</span>
             </a>
+        ) : ampliable ? (
+            <a href={imagen.url} target="_blank" rel="noopener noreferrer" class="group relative block cursor-zoom-in" data-imagen-cuerpo data-ampliar>
+                <img
+                    src={imagen.url}
+                    alt={imagen.alt}
+                    loading={prioritaria ? 'eager' : 'lazy'}
+                    decoding="async"
+                    {...tamano}
+                    class="mx-auto h-auto w-full rounded-xl shadow-md transition duration-300 group-hover:shadow-lg"
+                />
+                <span class="absolute bottom-3 right-3 inline-flex items-center gap-1.5 rounded-full bg-unmsm-azul-dark/90 px-3 py-1.5 text-xs font-semibold text-white shadow-lg transition group-hover:bg-unmsm-azul">
+                    <Icono icono={faMagnifyingGlassPlus} clase="h-3.5 w-3.5" />
+                    Ampliar
+                </span>
+                <span class="sr-only">: ver {queEs} a tamaño completo</span>
+            </a>
         ) : (
             <img
                 src={imagen.url}
@@ -83,6 +106,34 @@ const tamano = medidas ? { width: medidas.width, height: medidas.height, style: 
                 class="mx-auto h-auto w-full rounded-xl shadow-md"
                 data-imagen-cuerpo
             />
+        )
+    }
+
+    {/* El visor: un <dialog> nativo, que ya atrapa el foco, se cierra con Esc
+        y deja inerte el resto de la página. Un clic en la imagen alterna entre
+        verla entera y a su tamaño real, que se recorre con el dedo o la rueda. */}
+    {
+        ampliable && !enlace && (
+            <dialog class="visor m-auto h-[min(90vh,60rem)] w-[min(100%-2rem,72rem)] overflow-hidden rounded-3xl bg-white p-0 shadow-2xl" aria-label={imagen.alt} data-visor>
+                <div class="flex h-full flex-col">
+                    <header class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-5 py-3">
+                        <p class="font-semibold text-unmsm-azul">{imagen.alt}</p>
+                        <div class="flex items-center gap-2">
+                            <span class="hidden text-xs text-slate-500 sm:inline" data-visor-ayuda>Clic en la imagen para acercar</span>
+                            <a href={imagen.url} target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-sm font-semibold text-unmsm-azul hover:bg-slate-100">
+                                <Icono icono={faUpRightFromSquare} clase="h-3.5 w-3.5" />
+                                Abrir en otra pestaña
+                            </a>
+                            <button type="button" class="flex h-9 w-9 items-center justify-center rounded-full text-slate-600 hover:bg-slate-100 hover:text-unmsm-azul" data-visor-cerrar aria-label="Cerrar">
+                                <Icono icono={faXmark} clase="h-4 w-4" />
+                            </button>
+                        </div>
+                    </header>
+                    <div class="visor-lienzo flex-1 overflow-auto bg-slate-100" data-visor-lienzo>
+                        <img src={imagen.url} alt="" decoding="async" class="visor-img" data-visor-img />
+                    </div>
+                </div>
+            </dialog>
         )
     }
 
@@ -120,6 +171,39 @@ const tamano = medidas ? { width: medidas.width, height: medidas.height, style: 
 
     {pie && <figcaption class="mt-4 text-center text-sm leading-relaxed text-slate-500">{pie}</figcaption>}
 </figure>
+
+<style>
+    .visor::backdrop {
+        background-color: rgb(15 23 42 / 0.75);
+        backdrop-filter: blur(4px);
+    }
+
+    /* Entera: cabe en el visor. Acercada: a su tamaño real, y se recorre. */
+    .visor-lienzo {
+        display: grid;
+        place-items: center;
+        padding: 1rem;
+    }
+
+    .visor-img {
+        max-height: 100%;
+        max-width: 100%;
+        object-fit: contain;
+        cursor: zoom-in;
+        border-radius: 0.75rem;
+    }
+
+    .visor-lienzo[data-acercado] {
+        place-items: start;
+    }
+
+    .visor-lienzo[data-acercado] .visor-img {
+        max-height: none;
+        max-width: none;
+        width: auto;
+        cursor: zoom-out;
+    }
+</style>
 
 <script>
     /*
@@ -161,6 +245,47 @@ const tamano = medidas ? { width: medidas.width, height: medidas.height, style: 
             };
             if (img.complete) limitar();
             else img.addEventListener('load', limitar, { once: true });
+
+            // El visor de las ampliables: el enlace abre el <dialog> en vez de
+            // la pestaña (sin JavaScript, la pestaña).
+            const ampliar = figura.querySelector<HTMLAnchorElement>('[data-ampliar]');
+            const visor = figura.querySelector<HTMLDialogElement>('[data-visor]');
+            if (!ampliar || !visor || typeof visor.showModal !== 'function') return;
+            const lienzo = visor.querySelector<HTMLElement>('[data-visor-lienzo]')!;
+            const ayuda = visor.querySelector<HTMLElement>('[data-visor-ayuda]');
+
+            const grande = visor.querySelector<HTMLImageElement>('[data-visor-img]')!;
+            // Acercar es verla al doble de como cabe entera (y nunca menos que
+            // su tamaño real): la guía mide 765 px y, sin más, apenas crecía.
+            const acercar = (si: boolean) => {
+                grande.style.width = si ? `${Math.max(grande.getBoundingClientRect().width * 2, grande.naturalWidth)}px` : '';
+                lienzo.toggleAttribute('data-acercado', si);
+                if (ayuda) ayuda.textContent = si ? 'Clic en la imagen para verla entera' : 'Clic en la imagen para acercar';
+            };
+            ampliar.addEventListener('click', (e) => {
+                e.preventDefault();
+                acercar(false);
+                visor.showModal();
+            });
+            visor.querySelector('[data-visor-img]')!.addEventListener('click', (e) => {
+                const acercado = !lienzo.hasAttribute('data-acercado');
+                acercar(acercado);
+                // Al acercar, se centra en el punto pulsado.
+                if (acercado) {
+                    const r = (e.target as HTMLElement).getBoundingClientRect();
+                    const fx = ((e as MouseEvent).clientX - r.left) / r.width;
+                    const fy = ((e as MouseEvent).clientY - r.top) / r.height;
+                    requestAnimationFrame(() => {
+                        lienzo.scrollLeft = fx * lienzo.scrollWidth - lienzo.clientWidth / 2;
+                        lienzo.scrollTop = fy * lienzo.scrollHeight - lienzo.clientHeight / 2;
+                    });
+                }
+            });
+            visor.querySelector('[data-visor-cerrar]')!.addEventListener('click', () => visor.close());
+            // Un clic fuera de la caja (en el fondo oscuro) también cierra.
+            visor.addEventListener('click', (e) => {
+                if (e.target === visor) visor.close();
+            });
         });
     }
 
