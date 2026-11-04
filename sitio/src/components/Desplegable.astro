@@ -1,0 +1,209 @@
+---
+/**
+ * Una lista desplegable con diseño propio: una pastilla con el valor elegido
+ * y, al abrirla, la lista con el punto de color o el icono de cada opción,
+ * cuántos hay de cada una y una marca en la elegida. La de `<select>` no se
+ * puede dibujar igual en todos los navegadores.
+ *
+ * Debajo va un `<select>` de verdad, que es la fuente del valor: sin
+ * JavaScript se ve y funciona él solo; con JavaScript se oculta y la lista lo
+ * maneja (cada elección le pone el valor y dispara su `change`). Quien cambie
+ * el valor desde fuera dispara `sincronizar` en el `<select>` para que la
+ * pastilla se ponga al día.
+ *
+ * Teclado: Enter, Espacio o flecha abajo abren; flechas para moverse; Enter
+ * o Espacio eligen; Esc o Tab cierran. Un clic fuera, también.
+ */
+import Icono from './Icono.astro';
+import type { IconDefinition } from '@fortawesome/fontawesome-svg-core';
+import { faCheck, faChevronDown } from '@fortawesome/free-solid-svg-icons';
+
+interface Props {
+    etiqueta: string;
+    /** El atributo `data-*` que lleva el `<select>`, para quien lo escucha. */
+    atributo: string;
+    opciones: { valor: string; texto: string; color?: string; icono?: IconDefinition; cantidad?: number }[];
+    clase?: string;
+}
+
+const { etiqueta, atributo, opciones, clase = '' } = Astro.props;
+const id = `desplegable-${atributo.replace(/^data-/, '')}`;
+---
+
+<div class:list={['desplegable flex flex-col gap-1', clase]} data-desplegable>
+    <label for={id} id={`${id}-etiqueta`} class="px-1 text-[0.7rem] font-semibold uppercase tracking-wider text-slate-600">{etiqueta}</label>
+
+    {/* El de verdad: visible sin JavaScript. */}
+    <select id={id} {...{ [atributo]: '' }} class="rounded-full bg-white px-4 py-2.5 text-sm font-semibold text-unmsm-azul shadow-sm ring-1 ring-slate-200" data-desplegable-nativo>
+        {opciones.map((o) => <option value={o.valor}>{o.texto}</option>)}
+    </select>
+
+    {/* El de diseño: lo destapa el script. */}
+    <div class="relative" data-desplegable-ui hidden>
+        <button
+            type="button"
+            class="boton flex w-full items-center gap-2.5 rounded-full bg-white py-2.5 pl-4 pr-3 text-left text-sm font-semibold text-unmsm-azul shadow-sm ring-1 ring-slate-200 transition hover:ring-unmsm-acento"
+            aria-haspopup="listbox"
+            aria-expanded="false"
+            aria-labelledby={`${id}-etiqueta ${id}-valor`}
+            data-desplegable-boton
+        >
+            <span id={`${id}-valor`} class="flex min-w-0 flex-1 items-center gap-2.5" data-desplegable-valor></span>
+            <Icono icono={faChevronDown} clase="chevron h-3 w-3 flex-none text-slate-500 transition" />
+        </button>
+
+        <ul
+            role="listbox"
+            tabindex="-1"
+            aria-labelledby={`${id}-etiqueta`}
+            class="lista absolute left-0 z-30 mt-2 max-h-80 min-w-full overflow-auto rounded-2xl bg-white p-1.5 shadow-xl shadow-unmsm-azul/15 ring-1 ring-slate-200"
+            hidden
+            data-desplegable-lista
+        >
+            {
+                opciones.map((o) => (
+                    <li
+                        role="option"
+                        tabindex="-1"
+                        aria-selected="false"
+                        data-valor={o.valor}
+                        class="opcion flex cursor-pointer items-center gap-2.5 whitespace-nowrap rounded-xl px-3 py-2 text-sm font-medium text-slate-700"
+                    >
+                        <span class="contenido flex min-w-0 flex-1 items-center gap-2.5">
+                            {o.color ? (
+                                <span aria-hidden="true" class="h-2.5 w-2.5 flex-none rounded-full" style={`background-color: ${o.color}`} />
+                            ) : o.icono ? (
+                                <Icono icono={o.icono} clase="h-3.5 w-3.5 flex-none text-unmsm-acento" />
+                            ) : (
+                                <span aria-hidden="true" class="h-2.5 w-2.5 flex-none rounded-full ring-2 ring-inset ring-slate-300" />
+                            )}
+                            <span class="truncate">{o.texto}</span>
+                        </span>
+                        {o.cantidad !== undefined && (
+                            <span class="cantidad rounded-full bg-slate-100 px-2 py-0.5 text-[0.7rem] font-bold tabular-nums text-slate-600">{o.cantidad}</span>
+                        )}
+                        <Icono icono={faCheck} clase="marca h-3 w-3 flex-none text-unmsm-acento" />
+                    </li>
+                ))
+            }
+        </ul>
+    </div>
+</div>
+
+<style>
+    .opcion:hover,
+    .opcion:focus {
+        background-color: rgb(31 111 184 / 0.08);
+        outline: none;
+    }
+
+    .opcion[aria-selected='true'] {
+        color: var(--color-unmsm-azul);
+        font-weight: 700;
+    }
+
+    .opcion :global(.marca) {
+        visibility: hidden;
+    }
+
+    .opcion[aria-selected='true'] :global(.marca) {
+        visibility: visible;
+    }
+
+    .boton[aria-expanded='true'] {
+        box-shadow: 0 0 0 2px var(--color-unmsm-acento);
+    }
+
+    .boton[aria-expanded='true'] :global(.chevron) {
+        rotate: 180deg;
+    }
+
+    /* En la pastilla, sin el número ni la marca: solo lo elegido. */
+    .boton :global(.cantidad),
+    .boton :global(.marca) {
+        display: none;
+    }
+</style>
+
+<script>
+    function iniciarDesplegables() {
+        document.querySelectorAll<HTMLElement>('[data-desplegable]').forEach((raiz) => {
+            if (raiz.dataset.listo) return;
+            raiz.dataset.listo = '1';
+            const select = raiz.querySelector<HTMLSelectElement>('[data-desplegable-nativo]')!;
+            const ui = raiz.querySelector<HTMLElement>('[data-desplegable-ui]')!;
+            const boton = raiz.querySelector<HTMLButtonElement>('[data-desplegable-boton]')!;
+            const lista = raiz.querySelector<HTMLElement>('[data-desplegable-lista]')!;
+            const valor = raiz.querySelector<HTMLElement>('[data-desplegable-valor]')!;
+            const opciones = [...lista.querySelectorAll<HTMLElement>('[role="option"]')];
+
+            select.hidden = true;
+            ui.hidden = false;
+            // La etiqueta apunta ahora al botón.
+            raiz.querySelector('label')!.setAttribute('for', '');
+
+            const sincronizar = () => {
+                opciones.forEach((o) => o.setAttribute('aria-selected', String(o.dataset.valor === select.value)));
+                const elegida = opciones.find((o) => o.dataset.valor === select.value) ?? opciones[0];
+                valor.replaceChildren(...[...elegida.querySelector('.contenido')!.childNodes].map((n) => n.cloneNode(true)));
+            };
+
+            const abierta = () => !lista.hidden;
+            const abrir = () => {
+                lista.hidden = false;
+                boton.setAttribute('aria-expanded', 'true');
+                (opciones.find((o) => o.getAttribute('aria-selected') === 'true') ?? opciones[0]).focus();
+            };
+            const cerrar = (devolverFoco = true) => {
+                if (!abierta()) return;
+                lista.hidden = true;
+                boton.setAttribute('aria-expanded', 'false');
+                if (devolverFoco) boton.focus();
+            };
+            const elegir = (o: HTMLElement) => {
+                select.value = o.dataset.valor ?? '';
+                select.dispatchEvent(new Event('change', { bubbles: true }));
+                sincronizar();
+                cerrar();
+            };
+
+            boton.addEventListener('click', () => (abierta() ? cerrar() : abrir()));
+            boton.addEventListener('keydown', (e) => {
+                if (['ArrowDown', 'Enter', ' '].includes(e.key)) {
+                    e.preventDefault();
+                    abrir();
+                }
+            });
+            lista.addEventListener('click', (e) => {
+                const o = (e.target as HTMLElement).closest<HTMLElement>('[role="option"]');
+                if (o) elegir(o);
+            });
+            lista.addEventListener('keydown', (e) => {
+                const i = opciones.indexOf(document.activeElement as HTMLElement);
+                if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    opciones[(i + (e.key === 'ArrowDown' ? 1 : -1) + opciones.length) % opciones.length].focus();
+                } else if (e.key === 'Home' || e.key === 'End') {
+                    e.preventDefault();
+                    opciones[e.key === 'Home' ? 0 : opciones.length - 1].focus();
+                } else if ((e.key === 'Enter' || e.key === ' ') && i >= 0) {
+                    e.preventDefault();
+                    elegir(opciones[i]);
+                } else if (e.key === 'Escape') {
+                    e.preventDefault();
+                    cerrar();
+                } else if (e.key === 'Tab') {
+                    cerrar(false);
+                }
+            });
+            document.addEventListener('click', (e) => {
+                if (!raiz.contains(e.target as Node)) cerrar(false);
+            });
+            select.addEventListener('sincronizar', sincronizar);
+            sincronizar();
+        });
+    }
+
+    iniciarDesplegables();
+    document.addEventListener('astro:page-load', iniciarDesplegables);
+</script>

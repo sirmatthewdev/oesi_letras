@@ -267,7 +267,7 @@ class OesiTest extends TestCase
         $this->publicar();
 
         $this->getJson('/api/v1/oesi')
-            ->assertJsonCount(7, 'data.idiomas')
+            ->assertJsonCount(9, 'data.idiomas')
             ->assertJsonPath('data.idiomas.0', [
                 'nombre' => 'Inglés',
                 'saludo' => 'Hello',
@@ -275,7 +275,39 @@ class OesiTest extends TestCase
                 'modalidades' => ['presencial'],
                 'imagen' => null,
             ])
-            ->assertJsonPath('data.idiomas.6.nombre', 'Aimara');
+            ->assertJsonPath('data.idiomas.6.nombre', 'Aimara')
+            ->assertJsonPath('data.idiomas.7.nombre', 'Ruso')
+            ->assertJsonPath('data.idiomas.8.nombre', 'Japonés');
+    }
+
+    public function test_un_idioma_nuevo_en_el_cronograma_se_anade_a_los_idiomas(): void
+    {
+        [$idiomas, $nuevos] = OesiSetting::idiomasConLosDelCronograma(
+            [['nombre' => 'Inglés'], ['nombre' => 'Francés']],
+            [
+                ['idioma' => 'ingles', 'fecha' => '2026-12-01'],
+                ['idioma' => 'Coreano', 'fecha' => '2026-12-02', 'modalidad' => 'virtual', 'publico' => 'Pregrado'],
+                ['idioma' => 'COREANO', 'fecha' => '2026-12-03'],
+            ]
+        );
+
+        // «ingles» ya estaba (sin tildes ni mayúsculas); Coreano entra una vez.
+        $this->assertSame(['Coreano'], $nuevos);
+        $this->assertCount(3, $idiomas);
+        $coreano = array_values($idiomas)[2];
+        $this->assertSame(['virtual'], $coreano['modalidades']);
+        $this->assertSame('Pregrado', $coreano['publico']);
+    }
+
+    public function test_la_foto_subida_de_un_idioma_manda_sobre_la_url(): void
+    {
+        $this->publicar([
+            'idiomas' => [['nombre' => 'Ruso', 'foto' => 'idiomas/ruso.webp', 'imagen' => 'https://ejemplo.pe/otra.jpg', 'imagen_alt' => 'Moscú']],
+        ]);
+
+        $this->getJson('/api/v1/oesi')
+            ->assertJsonPath('data.idiomas.0.imagen.url', fn ($u) => str_ends_with($u, '/storage/idiomas/ruso.webp'))
+            ->assertJsonPath('data.idiomas.0.imagen.alt', 'Moscú');
     }
 
     public function test_un_idioma_sin_nombre_no_sale_y_una_modalidad_desconocida_se_descarta(): void
@@ -434,6 +466,27 @@ class OesiTest extends TestCase
             // Lo que no se tocó sigue como estaba.
             ->assertJsonCount(12, 'data.faqs.items')
             ->assertJsonPath('data.inscripcion.tarifario.4.monto', 100);
+    }
+
+    public function test_guardar_un_idioma_nuevo_en_el_cronograma_lo_suma_a_los_idiomas(): void
+    {
+        $this->sembrar();
+        $this->actingAs(User::factory()->create(['role' => 'admin']));
+
+        Livewire::test(OficinaDeSuficiencia::class)
+            ->fillForm([
+                'estado' => OesiSetting::ESTADO_PUBLICADO,
+                'cronograma_fechas' => [
+                    ['idioma' => 'Coreano', 'fecha' => '2026-12-07', 'hora' => '09:00', 'modalidad' => 'virtual', 'publico' => 'Pregrado'],
+                ],
+            ])
+            ->call('guardar')
+            ->assertHasNoFormErrors();
+
+        $this->getJson('/api/v1/oesi')
+            ->assertJsonCount(10, 'data.idiomas')
+            ->assertJsonPath('data.idiomas.9.nombre', 'Coreano')
+            ->assertJsonPath('data.idiomas.9.modalidades', ['virtual']);
     }
 
     public function test_el_panel_rechaza_una_imagen_sin_descripcion(): void

@@ -92,15 +92,30 @@ test.describe('El recorrido no tiene callejones sin salida', () => {
         await expect(enlace).toHaveAttribute('href', '/cronograma?idioma=frances');
 
         await page.goto('/cronograma?idioma=frances');
-        await expect(page.locator('[data-filtros] [aria-pressed="true"]')).toHaveText(/Francés/);
+        await expect(page.locator('select[data-filtro-idioma]')).toHaveValue('frances');
+        await expect(page.locator('[data-desplegable]').first().locator('[data-desplegable-valor]')).toHaveText('Francés');
         const visibles = await page
             .locator('#cronograma .examen:not([hidden])')
             .evaluateAll((e) => e.map((x) => (x as HTMLElement).dataset.idioma));
         expect(visibles.length).toBeGreaterThan(0);
         expect(new Set(visibles)).toEqual(new Set(['frances']));
 
-        // «Todos los idiomas» vuelve a la lista completa y limpia la dirección.
-        await page.locator('[data-filtros] button', { hasText: 'Todos los idiomas' }).click();
+        // Idioma y modalidad se combinan, y los dos van en la dirección.
+        const [idioma, modalidad] = [page.locator('[data-desplegable]').nth(0), page.locator('[data-desplegable]').nth(1)];
+        await modalidad.locator('[data-desplegable-boton]').click();
+        await modalidad.locator('[role="option"][data-valor="virtual"]').click();
+        await expect(page).toHaveURL(/idioma=frances&modalidad=virtual$/);
+
+        // Con el teclado también: abrir, ir a «Todos los idiomas», elegir.
+        await idioma.locator('[data-desplegable-boton]').focus();
+        await page.keyboard.press('Enter');
+        await page.keyboard.press('Home');
+        await page.keyboard.press('Enter');
+        await expect(page.locator('select[data-filtro-idioma]')).toHaveValue('');
+
+        // «Todas» vuelve a la lista completa y limpia la dirección.
+        await modalidad.locator('[data-desplegable-boton]').click();
+        await modalidad.locator('[role="option"][data-valor=""]').click();
         await expect(page).toHaveURL(/\/cronograma$/);
         expect(await page.locator('#cronograma .examen:not([hidden])').count()).toBeGreaterThan(visibles.length);
     });

@@ -98,7 +98,7 @@
 
     "requisitos": "Contar con estudios del nivel **BÁSICO COMPLETO** de un centro de idiomas, instituto, colegio bilingüe o mediante un examen internacional reconocido.",
 
-    "_idiomas": "Los siete idiomas del cronograma publicado por la oficina para septiembre de 2026 (CRONOGRAMA-OESI-21-28-SEP.png), con su público y su modalidad tal como salen allí. El saludo es decorativo: lo pinta el hero de la portada, una pestaña por idioma.",
+    "_idiomas": "Los siete idiomas del cronograma publicado por la oficina para septiembre de 2026 (CRONOGRAMA-OESI-21-28-SEP.png), con su público y su modalidad tal como salen allí, más Ruso y Japonés, que la oficina también evalúa (su público y modalidad se completan en el panel). El saludo es decorativo: lo pinta el hero de la portada, una pestaña por idioma.",
     "idiomas": [
         { "nombre": "Inglés", "saludo": "Hello", "publico": "Pregrado", "modalidades": ["presencial"], "imagen": null, "imagen_alt": null },
         { "nombre": "Portugués", "saludo": "Olá", "publico": "Pregrado y posgrado", "modalidades": ["virtual"], "imagen": null, "imagen_alt": null },
@@ -106,7 +106,9 @@
         { "nombre": "Italiano", "saludo": "Ciao", "publico": "Pregrado y posgrado", "modalidades": ["virtual"], "imagen": null, "imagen_alt": null },
         { "nombre": "Alemán", "saludo": "Hallo", "publico": "Pregrado y posgrado", "modalidades": ["virtual"], "imagen": null, "imagen_alt": null },
         { "nombre": "Quechua", "saludo": "Allillanchu", "publico": "Pregrado y posgrado", "modalidades": ["virtual"], "imagen": null, "imagen_alt": null },
-        { "nombre": "Aimara", "saludo": "Kamisaki", "publico": "Pregrado y posgrado", "modalidades": ["virtual"], "imagen": null, "imagen_alt": null }
+        { "nombre": "Aimara", "saludo": "Kamisaki", "publico": "Pregrado y posgrado", "modalidades": ["virtual"], "imagen": null, "imagen_alt": null },
+        { "nombre": "Ruso", "saludo": "Привет", "publico": null, "modalidades": [], "imagen": null, "imagen_alt": null },
+        { "nombre": "Japonés", "saludo": "こんにちは", "publico": null, "modalidades": [], "imagen": null, "imagen_alt": null }
     ],
 
     "habilidades_intro": "El examen de suficiencia evalúa cuatro habilidades lingüísticas fundamentales para certificar el dominio del idioma.",
