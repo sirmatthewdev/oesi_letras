@@ -73,9 +73,14 @@ class OficinaDeSuficiencia extends Page
                     ->persistTabInQueryString()
                     ->tabs([
                         Tab::make('Publicación')->schema($this->publicacion()),
+                        // Segunda y con icono: es lo primero que se ve de la
+                        // portada (el carrusel de idiomas), y como «Idiomas» a secas no se
+                        // encontraba.
+                        Tab::make('Portada')
+                            ->icon(Heroicon::OutlinedLanguage)
+                            ->schema($this->idiomas()),
                         Tab::make('Contacto')->schema($this->contacto()),
                         Tab::make('Sitio')->schema($this->sitio()),
-                        Tab::make('Idiomas')->schema($this->idiomas()),
                         Tab::make('Curso')->schema($this->curso()),
                         Tab::make('Examen')->schema($this->examen()),
                         Tab::make('Habilidades')->schema($this->habilidades()),
@@ -311,8 +316,8 @@ class OficinaDeSuficiencia extends Page
     private function idiomas(): array
     {
         return [
-            Section::make('Idiomas que se evalúan')
-                ->description('Cada idioma es una categoría: una pestaña del carrusel de la portada (en este orden; el primero es el que se ve al entrar), una opción del filtro del cronograma y del buscador. Se añaden, se quitan y se reordenan aquí. Un idioma que se escriba en una fecha del cronograma y no esté aquí se añade solo al guardar.')
+            Section::make('Carrusel de idiomas de la portada')
+                ->description('El acordeón grande del inicio de la web: cada idioma es una de sus pestañas, en este orden (el primero es el que se ve al entrar). Cada idioma es además una categoría: una opción del filtro del cronograma y del buscador. Se añaden, se quitan y se reordenan aquí. Un idioma que se escriba en una fecha del cronograma y no esté aquí se añade solo al guardar.')
                 ->schema([
                     Repeater::make('idiomas')
                         ->hiddenLabel()
