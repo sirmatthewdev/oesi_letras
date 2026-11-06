@@ -201,7 +201,12 @@ class OficinaDeSuficiencia extends Page
                         ->rows(3)
                         ->columnSpanFull()
                         ->helperText('Sale en el pie y en lo que se ve al compartir un enlace.'),
-                    ImagenOptimizada::make('logo_path', 'sitio', 600, 'Logotipo'),
+                    ImagenOptimizada::make('logo_path', 'sitio', 600, 'Logotipo (cabecera)')
+                        ->helperText('El de colores, sobre fondo transparente. JPG, PNG o WebP de hasta 5 MB; se convierte a WebP.'),
+                    // El pie es azul oscuro: sin esta versión, blanquea el de
+                    // arriba con un filtro y uno de varios colores queda plano.
+                    ImagenOptimizada::make('logo_blanco_path', 'sitio', 600, 'Logotipo en blanco (pie)')
+                        ->helperText('La versión en blanco, sobre fondo transparente (PNG o WebP). Vacío, el pie blanquea el de la cabecera.'),
                     ImagenOptimizada::make('favicon_path', 'sitio', 512, 'Favicon'),
                     Textarea::make('direccion')->label('Dirección')->rows(2),
                     TextInput::make('web_facultad')->label('Web de la Facultad')->url()->maxLength(500),

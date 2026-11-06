@@ -84,6 +84,8 @@ export type ConfiguracionSitio = {
     descripcion: string | null;
     /** El logotipo de la oficina, o el de la Facultad si no se ha subido uno. */
     logo: string | null;
+    /** La versión en blanco para el pie; null si no se subió. */
+    logo_pie: string | null;
     favicon: string | null;
     contacto: {
         email: string | null;

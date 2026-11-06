@@ -30,6 +30,9 @@ class SitioApiController extends Controller
                 // Sin logotipo propio, el de la Facultad, a la que pertenece la
                 // oficina: mejor una marca institucional cierta que un hueco.
                 'logo' => $this->imagen($o?->logo_path) ?? asset('images/logo-letras.webp'),
+                // La versión en blanco para el pie; sin ella, el pie blanquea
+                // la de arriba con un filtro.
+                'logo_pie' => $this->imagen($o?->logo_blanco_path),
                 'favicon' => $this->imagen($o?->favicon_path),
                 'contacto' => [
                     'email' => $o?->email ?: null,

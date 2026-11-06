@@ -291,10 +291,21 @@ const enlacesDelPie = [
                     {/* Quiénes somos: la marca, una línea de qué es esto, y las
                         redes. */}
                     <div class="lg:col-span-4">
-                        {/* Sobre el azul del pie el logotipo se fuerza a blanco
-                            con el mismo filtro que en la cabecera: servido tal
-                            cual saldria oscuro sobre oscuro. */}
-                        {sitio.logo ? (
+                        {/* Sobre el azul del pie va la versión en blanco que sube
+                            la oficina. Sin ella, el de la cabecera se fuerza a
+                            blanco con un filtro: servido tal cual saldria oscuro
+                            sobre oscuro. */}
+                        {sitio.logo_pie ? (
+                            <img
+                                src={sitio.logo_pie}
+                                alt={sitio.nombre}
+                                width="1234"
+                                height="310"
+                                loading="lazy"
+                                decoding="async"
+                                class="h-12 w-auto"
+                            />
+                        ) : sitio.logo ? (
                             <img
                                 src={sitio.logo}
                                 alt={sitio.nombre}

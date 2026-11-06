@@ -74,6 +74,19 @@ class SitioApiTest extends TestCase
         $this->assertStringEndsWith('/storage/sitio/logo.webp', $this->getJson('/api/v1/sitio')->json('data.logo'));
     }
 
+    public function test_el_pie_recibe_el_logo_en_blanco_solo_si_se_subio(): void
+    {
+        $this->seed(OesiSeeder::class);
+        OesiSetting::actual()->update(['logo_path' => 'sitio/logo.webp']);
+
+        // Sin versión en blanco, null: el pie blanquea el de la cabecera.
+        $this->getJson('/api/v1/sitio')->assertJsonPath('data.logo_pie', null);
+
+        OesiSetting::actual()->update(['logo_blanco_path' => 'sitio/logo-blanco.webp']);
+
+        $this->assertStringEndsWith('/storage/sitio/logo-blanco.webp', $this->getJson('/api/v1/sitio')->json('data.logo_pie'));
+    }
+
     public function test_el_menu_lleva_a_las_secciones_con_su_ancla(): void
     {
         $padre = MenuItem::create(['etiqueta' => 'Examen', 'orden' => 0, 'is_visible' => true]);
