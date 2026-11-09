@@ -27,7 +27,7 @@ import Icono from '../Icono.astro';
 import Negritas from './Negritas.astro';
 import Desplegable from '../Desplegable.astro';
 import { corta, larga, piezas, vigentes, type FechaExamen } from '../../lib/fechas';
-import { colorPanel, normalizar } from '../../lib/oesi';
+import { colorPanel, normalizar, vinetas } from '../../lib/oesi';
 import { faBuildingColumns, faEnvelope, faLaptop, faCircleInfo } from '@fortawesome/free-solid-svg-icons';
 import { faWhatsapp } from '@fortawesome/free-brands-svg-icons';
 
@@ -208,7 +208,10 @@ const estado = (f: FechaExamen): Estado =>
                         </p>
                     )}
                     <p class="ml-auto text-right">
-                        <span class="block font-serif text-5xl font-extrabold leading-none tracking-tight sm:text-6xl">Cronograma</span>
+                        {/* En el celular, una talla menos: «Cronograma» no se
+                            parte y a 3rem ensanchaba la columna más que la
+                            pantalla, que cortaba el cartel por la derecha. */}
+                        <span class="block font-serif text-[2.5rem] font-extrabold leading-none tracking-tight sm:text-6xl">Cronograma</span>
                         <span class="mt-1 block text-2xl font-light uppercase tracking-[0.08em] text-white/90 sm:text-3xl">
                             {c.mes} {c.anio}
                         </span>
@@ -289,11 +292,14 @@ const estado = (f: FechaExamen): Estado =>
                 <div class="requisitos mt-8 rounded-3xl bg-slate-50 px-6 py-5 text-slate-800 ring-1 ring-white/30 sm:px-8">
                     <p class="text-lg font-extrabold uppercase tracking-wide text-unmsm-azul">Requisitos importantes</p>
                     <ul class="mt-3 list-disc space-y-1.5 pl-5 text-sm leading-relaxed">
-                        {requisitos && (
-                            <li>
-                                <Negritas texto={requisitos} />
-                            </li>
-                        )}
+                        {/* El requisito escrito como lista en el panel sale
+                            punto por punto, no como una sola viñeta. */}
+                        {requisitos &&
+                            (vinetas(requisitos) ?? [requisitos]).map((r) => (
+                                <li>
+                                    <Negritas texto={r} />
+                                </li>
+                            ))}
                         <li>
                             Las inscripciones estarán abiertas <strong>hasta 2 días antes del examen</strong> o <strong>hasta completar vacantes</strong>.
                         </li>

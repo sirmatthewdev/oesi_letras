@@ -14,7 +14,7 @@ import FondoSeccion from '../../FondoSeccion.astro';
 import TituloSeccion from '../../TituloSeccion.astro';
 import PasosInscripcion from '../PasosInscripcion.astro';
 import TarjetaOesi from '../TarjetaOesi.astro';
-import Negritas from '../Negritas.astro';
+import TextoOesi from '../TextoOesi.astro';
 import ImagenConRespaldo from '../ImagenConRespaldo.astro';
 import QueNecesitas from '../QueNecesitas.astro';
 import { Image } from 'astro:assets';
@@ -156,13 +156,13 @@ const PASOS_INICIO = [
                 </ol>
 
                 {examen.requisitos && (
-                    <p class="mx-auto mt-10 flex max-w-3xl gap-3 rounded-xl border border-unmsm-dorado/30 bg-white px-5 py-4 text-sm leading-relaxed text-slate-700">
+                    <div class="mx-auto mt-10 flex max-w-3xl gap-3 rounded-xl border border-unmsm-dorado/30 bg-white px-5 py-4 text-sm leading-relaxed text-slate-700">
                         <Icono icono={faListCheck} clase="mt-0.5 h-4 w-4 flex-none text-unmsm-dorado" />
-                        <span>
+                        <div>
                             <strong class="font-semibold text-slate-800">Antes, comprueba el requisito:</strong>{' '}
-                            <Negritas texto={examen.requisitos} />
-                        </span>
-                    </p>
+                            <TextoOesi texto={examen.requisitos} clase="mt-1.5" />
+                        </div>
+                    </div>
                 )}
             </div>
         </section>

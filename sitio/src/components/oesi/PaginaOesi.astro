@@ -460,6 +460,43 @@ const vecina = (i: number) =>
             };
 
             campo.addEventListener('input', filtrar);
+
+            /*
+             * Al abrir una pregunta se cierra la que estaba abierta (`name`).
+             * Si esa estaba más arriba, la página se encoge por encima y, en
+             * el celular, la recién abierta quedaba fuera de la pantalla: se
+             * trae de vuelta, justo bajo la cabecera. `toggle` no burbujea,
+             * por eso se escucha en captura.
+             */
+            const sinMovimiento = matchMedia('(prefers-reduced-motion: reduce)');
+            raiz.addEventListener(
+                'toggle',
+                (e) => {
+                    const pregunta = e.target as HTMLDetailsElement;
+                    if (!pregunta.matches?.('details.pregunta-oesi') || !pregunta.open) return;
+                    // Se espera a que la otra termine de cerrarse: hasta que
+                    // la pregunta lleve un rato quieta, y como mucho 1,5 s.
+                    // Un plazo fijo no sirve: el cierre no siempre dura igual.
+                    const inicio = performance.now();
+                    let antes = NaN;
+                    let quietaDesde = inicio;
+                    const mirar = (ahora: number) => {
+                        const arriba = pregunta.getBoundingClientRect().top;
+                        if (arriba !== antes) quietaDesde = ahora;
+                        antes = arriba;
+                        const lista = ahora - quietaDesde > 200 && ahora - inicio > 450;
+                        if (!lista && ahora - inicio < 1500) {
+                            requestAnimationFrame(mirar);
+                            return;
+                        }
+                        if (arriba < 88 || arriba > innerHeight * 0.6) {
+                            pregunta.scrollIntoView({ block: 'start', behavior: sinMovimiento.matches ? 'auto' : 'smooth' });
+                        }
+                    };
+                    requestAnimationFrame(mirar);
+                },
+                true
+            );
         }
 
         iniciarBuscador();
@@ -531,6 +568,63 @@ const vecina = (i: number) =>
 
     .pregunta-oesi summary::-webkit-details-marker {
         display: none;
+    }
+
+    /* Bajo la cabecera fija cuando el script la trae a la vista. */
+    .pregunta-oesi {
+        scroll-margin-top: 6rem;
+    }
+
+    /* Abre y cierra deslizando, en vez de saltar. Donde el navegador no sabe
+       animar la altura del contenido de un <details> (`::details-content`),
+       abre como siempre: nada se rompe. */
+    @supports selector(::details-content) {
+        .pregunta-oesi {
+            interpolate-size: allow-keywords;
+        }
+
+        .pregunta-oesi::details-content {
+            block-size: 0;
+            overflow: hidden;
+            transition:
+                block-size 300ms ease,
+                content-visibility 300ms allow-discrete;
+        }
+
+        .pregunta-oesi[open]::details-content {
+            block-size: auto;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .pregunta-oesi::details-content {
+                transition: none;
+            }
+        }
+    }
+
+    /* Toda la pregunta es el botón: en el celular, que el toque se note. */
+    .pregunta-oesi summary {
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .pregunta-oesi summary:active {
+        background: rgb(248 250 252);
+    }
+
+    .pregunta-oesi summary:focus-visible {
+        outline: 2px solid var(--color-unmsm-azul);
+        outline-offset: -2px;
+        border-radius: 1rem;
+    }
+
+    /* La escala de calificación, en el celular: celdas más juntas para que
+       las cuatro columnas quepan sin desplazamiento lateral. */
+    @media (max-width: 639px) {
+        .tabla-escala th,
+        .tabla-escala td {
+            padding-left: 0.5rem;
+            padding-right: 0.5rem;
+        }
     }
 
     /* Las tarjetas de recurso de la portada del CERSEU. */

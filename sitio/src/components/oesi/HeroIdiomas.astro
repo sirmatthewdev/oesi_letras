@@ -303,6 +303,7 @@ const MODALIDADES = {
     }
 
     .punto {
+        position: relative;
         height: 0.5rem;
         width: 0.5rem;
         border-radius: 9999px;
@@ -310,6 +311,14 @@ const MODALIDADES = {
         transition:
             width 300ms ease,
             background-color 300ms ease;
+    }
+
+    /* El punto se ve de 8 px, pero se toca en un área de unos 36 px de alto:
+       con el dedo, acertarle a uno tan chico era cuestión de suerte. */
+    .punto::after {
+        content: '';
+        position: absolute;
+        inset: -14px -4px;
     }
 
     .punto[aria-current='true'] {

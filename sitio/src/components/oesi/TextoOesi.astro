@@ -1,0 +1,30 @@
+---
+import Negritas from './Negritas.astro';
+import { vinetas } from '../../lib/oesi';
+
+interface Props {
+    texto: string | null | undefined;
+    /** Clases de la lista, cuando el texto lo es. */
+    clase?: string;
+}
+
+// Un texto del panel que puede venir escrito como lista («- uno⏎- dos»):
+// entonces sale como <ul> con la viñeta de la casa; si no, como texto con sus
+// negritas. Va dentro de un <div>, no de un <p>: un <ul> no cabe en un párrafo.
+const { texto, clase } = Astro.props;
+const puntos = vinetas(texto);
+---
+
+{
+    puntos ? (
+        <ul class:list={['space-y-1.5', clase]}>
+            {puntos.map((p) => (
+                <li class="vineta-oesi">
+                    <Negritas texto={p} />
+                </li>
+            ))}
+        </ul>
+    ) : (
+        <Negritas texto={texto} />
+    )
+}

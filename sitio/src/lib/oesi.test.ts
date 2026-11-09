@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { agruparPreguntas, normalizar, sinMarcas, soles, trozos } from './oesi';
+import { agruparPreguntas, normalizar, sinMarcas, soles, trozos, vinetas } from './oesi';
 
 describe('soles', () => {
     it('da dos decimales y el símbolo vigente', () => {
@@ -15,6 +15,26 @@ describe('soles', () => {
     it('no inventa un cero cuando no hay importe', () => {
         expect(soles(null)).toBe('—');
         expect(soles(Number.NaN)).toBe('—');
+    });
+});
+
+describe('vinetas', () => {
+    it('saca los puntos de un texto escrito como lista', () => {
+        expect(vinetas('- Manejar el nivel básico. \n- No es necesario adjuntar **constancia**.')).toEqual([
+            'Manejar el nivel básico.',
+            'No es necesario adjuntar **constancia**.',
+        ]);
+    });
+
+    it('acepta el punto «•» y salta las líneas vacías', () => {
+        expect(vinetas('• Uno\n\n• Dos')).toEqual(['Uno', 'Dos']);
+    });
+
+    it('un párrafo, o una lista a medias, no es lista', () => {
+        expect(vinetas('Manejar el nivel básico del idioma.')).toBeNull();
+        expect(vinetas('Antes:\n- Uno\n- Dos')).toBeNull();
+        expect(vinetas('-5 grados')).toBeNull();
+        expect(vinetas(null)).toBeNull();
     });
 });
 

@@ -126,8 +126,10 @@ const sociales = Object.entries(redes)
                         target="_blank"
                         rel="noopener noreferrer"
                         aria-label={`${red.nombre} de la OESI (se abre en una pestaña nueva)`}
-                        class="block transition hover:text-white/70"
+                        class="-m-2 block p-2 transition hover:text-white/70"
                     >
+                        {/* El relleno agranda el área de toque sin mover el
+                            icono: a 14 px, en el celular se fallaba. */}
                         <Icono icono={red.icono} clase="h-3.5 w-3.5" />
                     </a>
                 </li>

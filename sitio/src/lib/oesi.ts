@@ -55,6 +55,24 @@ export function sinMarcas(texto: string | null | undefined): string {
         .join('');
 }
 
+/**
+ * Los puntos de un texto del panel escrito como lista: una línea por punto,
+ * cada una empezando con «-» o «•». Si no lo es entero, null, y se pinta como
+ * párrafo.
+ *
+ * Existe porque el requisito se escribe así en el panel y, pintado como
+ * párrafo, los saltos de línea se perdían y quedaba «- Manejar… - No es…» en
+ * una sola tira.
+ */
+export function vinetas(texto: string | null | undefined): string[] | null {
+    const lineas = (texto ?? '')
+        .split('\n')
+        .map((l) => l.trim())
+        .filter(Boolean);
+    if (lineas.length === 0 || !lineas.every((l) => /^[-•]\s/.test(l))) return null;
+    return lineas.map((l) => l.replace(/^[-•]\s+/, ''));
+}
+
 export type GrupoPreguntas<T> = { clave: string; etiqueta: string; items: T[] };
 
 /**

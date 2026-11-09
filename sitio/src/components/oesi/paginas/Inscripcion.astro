@@ -10,6 +10,7 @@ import Icono from '../../Icono.astro';
 import FondoSeccion from '../../FondoSeccion.astro';
 import PasosInscripcion from '../PasosInscripcion.astro';
 import Negritas from '../Negritas.astro';
+import TextoOesi from '../TextoOesi.astro';
 import ImagenConRespaldo from '../ImagenConRespaldo.astro';
 import AsistenteInscripcion from '../AsistenteInscripcion.astro';
 import { soles } from '../../../lib/oesi';
@@ -55,12 +56,12 @@ const claseIconoFormulario =
             {/* El requisito, aquí también: es la última ocasión de verlo
                 antes de pagar. Es el mismo dato del panel. */}
             {examen.requisitos && (
-                <p class="mx-auto mt-8 flex max-w-3xl gap-3 rounded-xl border border-unmsm-dorado/30 bg-white px-5 py-4 text-sm leading-relaxed text-slate-700">
+                <div class="mx-auto mt-8 flex max-w-3xl gap-3 rounded-xl border border-unmsm-dorado/30 bg-white px-5 py-4 text-sm leading-relaxed text-slate-700">
                     <Icono icono={faListCheck} clase="mt-0.5 h-4 w-4 flex-none text-unmsm-dorado" />
-                    <span>
-                        <strong class="font-semibold text-slate-800">Requisito:</strong> <Negritas texto={examen.requisitos} />
-                    </span>
-                </p>
+                    <div>
+                        <strong class="font-semibold text-slate-800">Requisito:</strong> <TextoOesi texto={examen.requisitos} clase="mt-1.5" />
+                    </div>
+                </div>
             )}
 
             <AsistenteInscripcion casos={inscripcion.casos} />
