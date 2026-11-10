@@ -247,7 +247,8 @@ html {
  * VolverArriba (que pone `opacity: 1`): sin él, ganaba una u otra según el
  * orden en que el build emitiera las hojas.
  */
-:root[data-flotantes-ocultos] .boton-flotante:not(:focus-visible) {
+:root[data-flotantes-ocultos] .boton-flotante:not(:focus-visible),
+:root[data-flotantes-tapan] .boton-flotante:not(:focus-visible) {
     translate: 0 calc(100% + 2rem);
     opacity: 0;
 }

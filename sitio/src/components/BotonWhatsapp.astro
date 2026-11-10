@@ -22,3 +22,52 @@ const { url, telefono } = Astro.props;
         />
     </svg>
 </a>
+
+<script is:inline>
+    (function () {
+        /*
+         * Fuera mientras un formulario pasa por la esquina de abajo: en el
+         * móvil, nada más abrir la portada, el botón tapaba el selector de
+         * idioma de «Encuentra tu examen». Se marca la zona con
+         * `data-sin-flotantes` y aquí solo se mira la franja inferior de la
+         * ventana, que es donde vive el botón.
+         */
+        var observador;
+
+        function iniciar() {
+            if (observador) observador.disconnect();
+            var zonas = document.querySelectorAll('[data-sin-flotantes]');
+            var raiz = document.documentElement;
+            raiz.removeAttribute('data-flotantes-tapan');
+            if (!zonas.length || !('IntersectionObserver' in window)) return;
+
+            var dentro = new Set();
+            observador = new IntersectionObserver(
+                function (entradas) {
+                    entradas.forEach(function (e) {
+                        if (e.isIntersecting) dentro.add(e.target);
+                        else dentro.delete(e.target);
+                    });
+                    raiz.toggleAttribute('data-flotantes-tapan', dentro.size > 0);
+                },
+                // Solo los 6rem de abajo (96 px): el botón, 3.5rem, más su
+                // margen. `rootMargin` no admite calc(), de ahí los píxeles.
+                { rootMargin: '-' + Math.max(window.innerHeight - 96, 0) + 'px 0px 0px 0px', threshold: 0 }
+            );
+            zonas.forEach(function (z) {
+                observador.observe(z);
+            });
+        }
+
+        iniciar();
+        document.addEventListener('astro:page-load', iniciar);
+
+        // La franja depende del alto de la ventana: si cambia (girar el
+        // teléfono), se vuelve a medir.
+        var espera;
+        window.addEventListener('resize', function () {
+            clearTimeout(espera);
+            espera = setTimeout(iniciar, 200);
+        });
+    })();
+</script>
