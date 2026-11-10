@@ -260,10 +260,12 @@ const estado = (f: FechaExamen): Estado =>
 
                                     {/* El estado; lo corrige el script al cargar. */}
                                     <div class="flex flex-none flex-col items-start gap-2 sm:items-end">
-                                        <span class="estado estado-abierta inline-flex items-center gap-1.5 rounded-full bg-white/70 px-3 py-1 text-xs font-bold text-emerald-800">
+                                        {/* Puede partirse en dos líneas: a 360 px, de una sola, se salía
+                                            de la banda. La fecha no se parte. */}
+                                        <span class="estado estado-abierta inline-flex items-center gap-1.5 rounded-2xl bg-white/70 px-3 py-1 text-xs font-bold text-emerald-800 sm:rounded-full">
                                             <span aria-hidden="true" class="h-2 w-2 flex-none rounded-full bg-emerald-500" />
-                                            <span class="whitespace-nowrap">
-                                                Inscripción hasta el <time datetime={f.cierre_inscripcion}>{corta(f.cierre_inscripcion).split(' · ')[0]}</time>
+                                            <span>
+                                                Inscripción hasta el <time datetime={f.cierre_inscripcion} class="whitespace-nowrap">{corta(f.cierre_inscripcion).split(' · ')[0]}</time>
                                             </span>
                                         </span>
                                         <span class="estado estado-cerrada inline-flex items-center gap-1.5 rounded-full bg-white/70 px-3 py-1 text-xs font-bold text-slate-700">

@@ -627,6 +627,19 @@ const vecina = (i: number) =>
         }
     }
 
+    /* A 360 px tampoco cabía con 0.5rem: la columna Nota quedaba cortada. */
+    @media (max-width: 379px) {
+        .tabla-escala th,
+        .tabla-escala td {
+            padding-left: 0.3rem;
+            padding-right: 0.3rem;
+        }
+
+        .tabla-escala thead th {
+            letter-spacing: 0.02em;
+        }
+    }
+
     /* Las tarjetas de recurso de la portada del CERSEU. */
     /* La tarjeta del selector de modalidad: al pasar, el filo y la marca
        redonda toman el azul, como la opción elegida de la referencia. */
